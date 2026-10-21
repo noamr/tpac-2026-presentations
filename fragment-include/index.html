@@ -169,6 +169,20 @@
     <p>A new &lt;fragment&gt; element is rejected because &lt;template&gt; already has the self-consuming "disappear from the DOM" behavior and is valid everywhere in the HTML parser without foster-parenting.</p>
   </section>
 
+  <section class="slide" id="dpu-ecosystem">
+    <h2>Also in Declarative Partial Updates (DPU)</h2>
+    <ul>
+      <li><strong>Progressive Shells (<code>&lt;?shellboundary&gt;</code>):</strong> 0ms cached shell + in-place navigation upgrades</li>
+      <li><strong>DOM Preservation &amp; Merging (<code>preserve</code>):</strong> Patch regions while keeping islands (<code>&lt;video&gt;</code>, <code>&lt;iframe&gt;</code>, state) alive</li>
+      <li><strong>Parser-Aware <code>MutationObserver</code> (<code>{ parser: true }</code>):</strong> Observe <code>&lt;template&gt;</code> patch lifecycle &amp; <code>isParsing</code></li>
+      <li><strong>Streaming DOM &amp; Trusted Types:</strong> <code>streamHTML</code> + <code>createParserOptions</code></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Quickly highlight sibling developments in WICG/declarative-partial-updates: progressive shells (&lt;?shellboundary&gt;), DOM preservation/merging (preserve attribute for islands inside patched ranges), parser-aware MutationObserver ({ parser: true }), and streamHTML with Sanitizer/Trusted Types.</p>
+  </section>
+
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
