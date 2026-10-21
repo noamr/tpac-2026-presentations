@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The focusreset Event Demo — TPAC 2026</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { margin: 0; font-size: 1.35rem; }
+    .subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+    .back-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .badge.bad { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .badge.good { background: rgba(34,197,94,0.2); color: #86efac; }
+    .hud {
+      background: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .hud.lost { border-color: var(--bad); background: rgba(239,68,68,0.12); }
+    .hud.saved { border-color: var(--good); background: rgba(34,197,94,0.12); }
+    .todo-list {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
+    .del-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .del-btn:focus, .action-btn:focus {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+    .action-btn {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mode-switch {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #0b1120;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a class="back-link" href="index.html">← Back to Slides</a>
+      <h1>The <code>focusreset</code> Event: Live Keyboard &amp; Focus Visualizer</h1>
+      <div class="subtitle">Click or press Enter on any "Delete" button to remove the focused element from the DOM</div>
+    </div>
+    <button class="action-btn" id="resetBtn">↺ Restore Items</button>
+  </header>
+
+  <div class="grid">
+    <!-- Left: Today's Behavior (Silent Focus Loss) -->
+    <div class="card">
+      <h2>
+        1. Today (Standard HTML Behavior)
+        <span class="badge bad">Silent Focus Loss</span>
+      </h2>
+      <div class="hud" id="hud1">
+        <div><strong>activeElement:</strong> <span id="active1">&lt;body&gt;</span></div>
+        <div><strong>Events Fired on Removal:</strong> <span id="events1">None</span></div>
+        <div><strong>Keyboard User Impact:</strong> <span id="impact1">Click a Delete button below…</span></div>
+      </div>
+      <div class="todo-list" id="list1"></div>
+    </div>
+
+    <!-- Right: With focusreset -->
+    <div class="card">
+      <h2>
+        2. With <code>document.onfocusreset</code>
+        <span class="badge good">Microtask Recovery + Auto-Cancel</span>
+      </h2>
+      <div class="mode-switch">
+        <label><input type="checkbox" id="explicitFocusToggle"> Also call <code>undoBtn.focus()</code> synchronously after <code>item.remove()</code> (tests Auto-Cancellation)</label>
+      </div>
+      <div class="hud" id="hud2">
+        <div><strong>activeElement:</strong> <span id="active2">&lt;body&gt;</span></div>
+        <div><strong>focusreset Microtask:</strong> <span id="events2">Waiting…</span></div>
+        <div><strong>Keyboard User Impact:</strong> <span id="impact2">Click a Delete button below…</span></div>
+      </div>
+      <div class="todo-list" id="list2"></div>
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="action-btn" id="undoBtn" style="background:#e2e8f0; color:#0f172a;">↶ Undo Last Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const list1 = document.getElementById('list1');
+    const list2 = document.getElementById('list2');
+    const hud1 = document.getElementById('hud1');
+    const hud2 = document.getElementById('hud2');
+    const undoBtn = document.getElementById('undoBtn');
+    const explicitToggle = document.getElementById('explicitFocusToggle');
+
+    function buildLists() {
+      hud1.className = 'hud';
+      hud2.className = 'hud';
+      document.getElementById('active1').textContent = '<body (default)>';
+      document.getElementById('events1').textContent = '—';
+      document.getElementById('impact1').textContent = 'Click or press Enter on a Delete button…';
+      document.getElementById('active2').textContent = '<body (default)>';
+      document.getElementById('events2').textContent = '—';
+      document.getElementById('impact2').textContent = 'Click or press Enter on a Delete button…';
+
+      list1.innerHTML = '';
+      list2.innerHTML = '';
+
+      ['Review HTML PR #13050', 'Run WPT focusreset tests', 'Prepare TPAC slides', 'Book Dublin flights'].forEach((label, idx) => {
+        // List 1 (Today)
+        const row1 = document.createElement('div');
+        row1.className = 'todo-item';
+        row1.innerHTML = `<span>Task #${idx + 1}: ${label}</span>`;
+        const btn1 = document.createElement('button');
+        btn1.className = 'del-btn';
+        btn1.textContent = `Delete #${idx + 1}`;
+        btn1.addEventListener('click', () => {
+          btn1.focus();
+          row1.remove(); // Removes focused button!
+          // Per HTML spec, activeElement silently becomes document.body
+          hud1.className = 'hud lost';
+          document.getElementById('active1').textContent = 'document.body (SILENT RESET!)';
+          document.getElementById('events1').textContent = '0 events (no blur, no focusout)';
+          document.getElementById('impact1').textContent = '❌ User lost their place in the list; next Tab jumps to top of page!';
+        });
+        row1.appendChild(btn1);
+        list1.appendChild(row1);
+
+        // List 2 (With focusreset polyfill/simulation)
+        const row2 = document.createElement('div');
+        row2.className = 'todo-item';
+        row2.innerHTML = `<span>Task #${idx + 1}: ${label}</span>`;
+        const btn2 = document.createElement('button');
+        btn2.className = 'del-btn';
+        btn2.textContent = `Delete #${idx + 1}`;
+        btn2.addEventListener('click', () => {
+          btn2.focus();
+          const nextRow = row2.nextElementSibling || row2.previousElementSibling;
+          const nextBtn = nextRow ? nextRow.querySelector('button') : undoBtn;
+
+          // Step 1: Node removal sets document's pending focus reset flag
+          let focusWasReset = true;
+          row2.remove();
+
+          // Optional synchronous focus move by author script
+          if (explicitToggle.checked) {
+            undoBtn.focus();
+            focusWasReset = false; // Focused area updated -> cancels pending focusreset!
+          }
+
+          // Step 2: MutationObserver microtask checkpoint
+          queueMicrotask(() => {
+            if (focusWasReset) {
+              // Dispatch focusreset on Document
+              const ev = new Event('focusreset');
+              document.dispatchEvent(ev);
+              if (nextBtn) nextBtn.focus();
+              hud2.className = 'hud saved';
+              document.getElementById('active2').textContent = `<button "${nextBtn.textContent}">`;
+              document.getElementById('events2').textContent = '✓ Fired "focusreset" in microtask (before paint)';
+              document.getElementById('impact2').textContent = '✓ Focus smoothly moved to adjacent item in the same frame!';
+            } else {
+              hud2.className = 'hud saved';
+              document.getElementById('active2').textContent = '<button "↶ Undo Last Delete">';
+              document.getElementById('events2').textContent = '✓ Auto-Cancelled (script explicitly focused Undo)';
+              document.getElementById('impact2').textContent = '✓ Fallback handler did NOT override explicit Undo focus!';
+            }
+          });
+        });
+        row2.appendChild(btn2);
+        list2.appendChild(row2);
+      });
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', buildLists);
+    undoBtn.addEventListener('click', buildLists);
+    buildLists();
+  </script>
+</body>
+</html>

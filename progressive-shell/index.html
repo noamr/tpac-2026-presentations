@@ -49,6 +49,7 @@
       <li>❌ <strong>Source page must know destination UI</strong></li>
       <li>❌ <strong>Doesn't help cold starts</strong></li>
     </ul>
+    <p class="note"><strong><a href="demo.html#vt">▶ Demo 1: Two-Phase View Transition State Loss</a></strong></p>
   </section>
 
   <section class="comment">
@@ -62,6 +63,7 @@
       <li>✅ Fixes cold starts &amp; destination owns its skeleton</li>
       <li>❌ <strong>The Double-Swap Trap:</strong> swapping from the skeleton <code>Document</code> to the real <code>Document</code> <em>still wipes user input, focus, and scroll!</em></li>
     </ul>
+    <p class="note"><strong><a href="demo.html#skeleton">▶ Demo 2: Declarative Skeleton Double-Swap Trap</a></strong></p>
   </section>
 
   <section class="comment">
@@ -105,10 +107,12 @@
       <div>
         <h3>1. Instant Shell (Cold / Cross-Shell)</h3>
         <p>Paint cached shell at <strong>0ms</strong> → stream post-boundary patches into the <strong>same Document</strong>.</p>
+        <p><a href="demo.html#shell-cold">▶ Demo 3: 0ms Cold Start</a></p>
       </div>
       <div>
         <h3>2. Navigation Upgrade (Same Shell)</h3>
         <p>Keep current Document <strong>live</strong> → skip pre-boundary bytes &amp; patch in place.</p>
+        <p><a href="demo.html#shell-upgrade">▶ Demo 4: In-Place Upgrade</a></p>
       </div>
     </div>
   </section>
@@ -136,6 +140,7 @@
       <li>Path-prefix scoping + strict CSP / COOP / COEP match</li>
       <li>Any mismatch → clean fallback to normal MPA navigation</li>
       <li><strong>Discussion:</strong> Navigation API &amp; View Transitions integration</li>
+      <li><strong><a href="demo.html">▶ Open All 4 Interactive Navigation Demos</a></strong></li>
     </ul>
   </section>
 

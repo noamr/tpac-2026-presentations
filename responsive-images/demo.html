@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Better Responsive Image Knobs Demo — TPAC 2026</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { margin: 0; font-size: 1.35rem; }
+    .subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+    .back-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 1.02rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .toggle-bar {
+      display: flex;
+      gap: 8px;
+    }
+    .toggle-btn {
+      flex: 1;
+      background: #0b1120;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .toggle-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+    .preview-stage {
+      background: #0b1120;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 195px;
+    }
+    .photo-box {
+      width: 160px;
+      height: 160px;
+      border-radius: 8px;
+      border: 2px solid #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 700;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0284c7, #4f46e5);
+      color: white;
+      flex-shrink: 0;
+    }
+    .photo-box.blurry {
+      filter: blur(2.6px) contrast(0.92);
+    }
+    .stats {
+      flex: 1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 8px;
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    .stat-row.bad { color: #fca5a5; border-left: 3px solid var(--bad); }
+    .stat-row.good { color: #86efac; border-left: 3px solid var(--good); }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a class="back-link" href="index.html">← Back to Slides</a>
+      <h1>Better Responsive Image Knobs: Blur &amp; Bandwidth Visualizer</h1>
+      <div class="subtitle">Interactive simulator for WHATWG HTML #12248, #11428, #13069, and #12565</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- Card 1: #12248 object-fit: cover & contain -->
+    <div class="card">
+      <h2>1. 2D <code>sizes</code> + <code>h</code> Descriptor (<code>#12248</code>)</h2>
+      <div class="toggle-bar">
+        <button class="toggle-btn active" id="coverTodayBtn">cover: Today (1D sizes)</button>
+        <button class="toggle-btn" id="coverFixedBtn">cover: With w+h (#12248)</button>
+        <button class="toggle-btn" id="containTodayBtn">contain: Today</button>
+        <button class="toggle-btn" id="containFixedBtn">contain: With w+h</button>
+      </div>
+      <div class="preview-stage">
+        <div class="photo-box blurry" id="box1">
+          <div>
+            <div id="box1Label">400×225 crop</div>
+            <small id="box1Sub" style="opacity:0.85">0.56x Blurry!</small>
+          </div>
+        </div>
+        <div class="stats" id="stats1"></div>
+      </div>
+    </div>
+
+    <!-- Card 2: #11428 object-fit: scale-down -->
+    <div class="card">
+      <h2>2. <code>object-fit: scale-down</code> Upscaling Bug (<code>#11428</code>)</h2>
+      <div class="toggle-bar">
+        <button class="toggle-btn active" id="scaleTodayBtn">Today: srcset="icon.png 200w" sizes="auto"</button>
+        <button class="toggle-btn" id="scaleFixedBtn">Proposed Fix (#11428): Cap at 1x native</button>
+      </div>
+      <div class="preview-stage">
+        <div style="width:160px; height:160px; border:2px dashed #64748b; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+          <div id="scaleIcon" style="width:150px; height:150px; background:#f59e0b; color:#0f172a; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.78rem; text-align:center; filter:blur(2px);">
+            200px icon<br>upscaled to 800px!
+          </div>
+        </div>
+        <div class="stats" id="stats2"></div>
+      </div>
+    </div>
+
+    <!-- Card 3: #13069 densityscale knob -->
+    <div class="card">
+      <h2>3. Author Target Density Knob: <code>densityscale</code> (<code>#13069</code>)</h2>
+      <div>
+        <label style="font-size:0.85rem; font-weight:600;">
+          <code>densityscale="<span id="dsVal">0.75</span>"</code> on a 2x Retina display (40 thumbnail grid):
+        </label>
+        <input type="range" id="dsSlider" min="0.5" max="1.5" step="0.25" value="0.75">
+      </div>
+      <div class="preview-stage">
+        <div class="photo-box" id="box3">
+          <div>
+            <div id="box3Label">Target: 1.5x</div>
+            <small id="box3Sub">-44% Bandwidth</small>
+          </div>
+        </div>
+        <div class="stats" id="stats3"></div>
+      </div>
+    </div>
+
+    <!-- Card 4: #12565 resourceWidth vs naturalWidth -->
+    <div class="card">
+      <h2>4. True Pixel Dimensions: <code>resourceWidth</code> (<code>#12565</code>)</h2>
+      <div style="font-size:0.83rem; color:var(--muted);">
+        Resize simulated <code>sizes="auto"</code> layout width for an <strong>800×600</strong> downloaded image file:
+      </div>
+      <input type="range" id="layoutSlider" min="200" max="600" step="50" value="400">
+      <div class="preview-stage">
+        <div class="photo-box" style="width:130px; height:100px;">
+          <div>800×600<br><small>Actual File</small></div>
+        </div>
+        <div class="stats" id="stats4"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Card 1: #12248
+    const box1 = document.getElementById('box1');
+    const box1Label = document.getElementById('box1Label');
+    const box1Sub = document.getElementById('box1Sub');
+    const stats1 = document.getElementById('stats1');
+
+    function setCard1(mode) {
+      ['coverTodayBtn','coverFixedBtn','containTodayBtn','containFixedBtn'].forEach(id => {
+        document.getElementById(id).classList.toggle('active', id === mode);
+      });
+      if (mode === 'coverTodayBtn') {
+        box1.className = 'photo-box blurry';
+        box1Label.textContent = '400×225 file';
+        box1Sub.textContent = '0.56x Blurry!';
+        stats1.innerHTML = `
+          <div class="stat-row"><span>Container:</span><strong>400×400 (object-fit: cover)</strong></div>
+          <div class="stat-row"><span>1D sizes="auto":</span><strong>400px (ignores height!)</strong></div>
+          <div class="stat-row bad"><span>Selected Source:</span><strong>400w (400×225)</strong></div>
+          <div class="stat-row bad"><span>Visible Horizontal Pixels:</span><strong>225px in 400px (0.56x)</strong></div>
+        `;
+      } else if (mode === 'coverFixedBtn') {
+        box1.className = 'photo-box';
+        box1Label.textContent = '800×450 file';
+        box1Sub.textContent = '1.12x Crisp ✓';
+        stats1.innerHTML = `
+          <div class="stat-row"><span>Container:</span><strong>400×400 (object-fit: cover)</strong></div>
+          <div class="stat-row good"><span>2D sizes="auto" (#12248):</span><strong>max(400, 400 × 16/9) = 711px</strong></div>
+          <div class="stat-row good"><span>Selected Source:</span><strong>800w 450h</strong></div>
+          <div class="stat-row good"><span>Visible Horizontal Pixels:</span><strong>450px in 400px (Crisp ✓)</strong></div>
+        `;
+      } else if (mode === 'containTodayBtn') {
+        box1.className = 'photo-box';
+        box1Label.textContent = '1000×1000 file';
+        box1Sub.textContent = '10× Over-fetch!';
+        stats1.innerHTML = `
+          <div class="stat-row"><span>Container:</span><strong>1000×200 (object-fit: contain)</strong></div>
+          <div class="stat-row"><span>1D sizes="auto":</span><strong>1000px (ignores 200px height!)</strong></div>
+          <div class="stat-row bad"><span>Selected Source:</span><strong>1000w (1,000,000 px)</strong></div>
+          <div class="stat-row bad"><span>Rendered Size:</span><strong>200×200 (96% pixels wasted!)</strong></div>
+        `;
+      } else {
+        box1.className = 'photo-box';
+        box1Label.textContent = '200×200 file';
+        box1Sub.textContent = '96% Saved ✓';
+        stats1.innerHTML = `
+          <div class="stat-row"><span>Container:</span><strong>1000×200 (object-fit: contain)</strong></div>
+          <div class="stat-row good"><span>2D sizes="auto" (#12248):</span><strong>min(1000, 200 × 1/1) = 200px</strong></div>
+          <div class="stat-row good"><span>Selected Source:</span><strong>200w 200h (40,000 px)</strong></div>
+          <div class="stat-row good"><span>Bandwidth Saved:</span><strong>96% fewer pixels ✓</strong></div>
+        `;
+      }
+    }
+    ['coverTodayBtn','coverFixedBtn','containTodayBtn','containFixedBtn'].forEach(id => {
+      document.getElementById(id).addEventListener('click', () => setCard1(id));
+    });
+    setCard1('coverTodayBtn');
+
+    // Card 2: #11428 scale-down
+    const scaleIcon = document.getElementById('scaleIcon');
+    const stats2 = document.getElementById('stats2');
+    function setCard2(fixed) {
+      document.getElementById('scaleTodayBtn').classList.toggle('active', !fixed);
+      document.getElementById('scaleFixedBtn').classList.toggle('active', fixed);
+      if (!fixed) {
+        scaleIcon.style.width = '150px';
+        scaleIcon.style.height = '150px';
+        scaleIcon.style.filter = 'blur(2px)';
+        scaleIcon.innerHTML = '200px icon<br>upscaled to 800px!';
+        stats2.innerHTML = `
+          <div class="stat-row"><span>Container:</span><strong>800×600 (object-fit: scale-down)</strong></div>
+          <div class="stat-row bad"><span>Computed Density:</span><strong>200w / 800px = 0.25x</strong></div>
+          <div class="stat-row bad"><span>Derived naturalWidth:</span><strong>200 / 0.25 = 800px!</strong></div>
+          <div class="stat-row bad"><span>Result:</span><strong>scale-down upscales 200px → 800px blurry!</strong></div>
+        `;
+      } else {
+        scaleIcon.style.width = '64px';
+        scaleIcon.style.height = '64px';
+        scaleIcon.style.filter = 'none';
+        scaleIcon.innerHTML = '200px<br>1x crisp';
+        stats2.innerHTML = `
+          <div class="stat-row"><span>Container:</span><strong>800×600 (object-fit: scale-down)</strong></div>
+          <div class="stat-row good"><span>Intrinsic Cap (#11428):</span><strong>Do not inflate past 1x (200px)</strong></div>
+          <div class="stat-row good"><span>naturalWidth:</span><strong>200px</strong></div>
+          <div class="stat-row good"><span>Result:</span><strong>Renders at crisp 200px without upscaling ✓</strong></div>
+        `;
+      }
+    }
+    document.getElementById('scaleTodayBtn').addEventListener('click', () => setCard2(false));
+    document.getElementById('scaleFixedBtn').addEventListener('click', () => setCard2(true));
+    setCard2(false);
+
+    // Card 3: #13069 densityscale
+    const dsSlider = document.getElementById('dsSlider');
+    const dsVal = document.getElementById('dsVal');
+    const box3 = document.getElementById('box3');
+    const box3Label = document.getElementById('box3Label');
+    const box3Sub = document.getElementById('box3Sub');
+    const stats3 = document.getElementById('stats3');
+    function updateDs() {
+      const scale = parseFloat(dsSlider.value);
+      dsVal.textContent = scale.toFixed(2);
+      const effDpr = (2 * scale).toFixed(2);
+      const kbPerImg = Math.round(60 * scale * scale);
+      const totalMb = ((kbPerImg * 40) / 1024).toFixed(2);
+      box3.style.filter = scale < 0.75 ? 'blur(1.2px)' : 'none';
+      box3Label.textContent = `Target: ${effDpr}x`;
+      const diffPct = Math.round((scale * scale - 1) * 100);
+      box3Sub.textContent = diffPct <= 0 ? `${diffPct}% Bandwidth` : `+${diffPct}% Pixels (Zoom Ready)`;
+      stats3.innerHTML = `
+        <div class="stat-row"><span>Device Pixel Ratio:</span><strong>2.0x</strong></div>
+        <div class="stat-row good"><span>Effective Target Density:</span><strong>2.0 × ${scale} = ${effDpr}x</strong></div>
+        <div class="stat-row"><span>Per-Thumbnail Weight:</span><strong>${kbPerImg} KB (vs. 60 KB at 1.0)</strong></div>
+        <div class="stat-row good"><span>40-Thumbnail Grid Total:</span><strong>${totalMb} MB (vs. 2.34 MB)</strong></div>
+      `;
+    }
+    dsSlider.addEventListener('input', updateDs);
+    updateDs();
+
+    // Card 4: #12565 resourceWidth
+    const layoutSlider = document.getElementById('layoutSlider');
+    const stats4 = document.getElementById('stats4');
+    function updateResourceDim() {
+      const w = parseInt(layoutSlider.value, 10);
+      const h = Math.round(w * 0.75);
+      stats4.innerHTML = `
+        <div class="stat-row"><span>Rendered Layout Size (clientWidth):</span><strong>${w}×${h} CSS px</strong></div>
+        <div class="stat-row bad"><span>img.naturalWidth / naturalHeight:</span><strong>${w}×${h} (Just echoes layout!)</strong></div>
+        <div class="stat-row good"><span>img.resourceWidth / resourceHeight:</span><strong>800×600 (True file pixels ✓)</strong></div>
+        <div class="stat-row good"><span>RUM Over-fetch Ratio:</span><strong>${(800 / w).toFixed(2)}x pixel density</strong></div>
+      `;
+    }
+    layoutSlider.addEventListener('input', updateResourceDim);
+    updateResourceDim();
+  </script>
+</body>
+</html>

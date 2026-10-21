@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progressive Shells Interactive Demos — TPAC 2026</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { margin: 0; font-size: 1.35rem; }
+    .subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+    .back-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+    .stage {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .browser-chrome {
+      background: #0b1120;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .url-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: #1e293b;
+      border-bottom: 1px solid var(--border);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+    }
+    .doc-badge {
+      margin-left: auto;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #334155;
+      color: #f8fafc;
+    }
+    .doc-badge.swap-alert {
+      background: var(--bad);
+      color: white;
+    }
+    .doc-badge.same-doc {
+      background: var(--good);
+      color: #052e16;
+    }
+    .viewport {
+      background: #ffffff;
+      color: #0f172a;
+      min-height: 290px;
+      padding: 14px;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .store-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      color: white;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .search-input {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 2px solid #38bdf8;
+      width: 230px;
+      font-size: 0.85rem;
+    }
+    .search-input.wiped {
+      border-color: var(--bad);
+      background: #fef2f2;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .product-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 10px;
+      background: #f8fafc;
+    }
+    .skeleton-pulse {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: pulse 1.2s infinite;
+      border-radius: 6px;
+      height: 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    @keyframes pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step-box {
+      background: #0b1120;
+      border-left: 4px solid #475569;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+    }
+    .step-box.active { border-left-color: var(--accent); }
+    .step-box.bad { border-left-color: var(--bad); background: rgba(239,68,68,0.1); }
+    .step-box.good { border-left-color: var(--good); background: rgba(34,197,94,0.1); }
+    .action-btn {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a class="back-link" href="index.html">← Back to Slides</a>
+      <h1>Instant, Seamless Navigations: Interactive Walkthrough</h1>
+      <div class="subtitle">Compare Two-Phase View Transitions, Declarative Skeletons, and Progressive Shells while typing during navigation</div>
+    </div>
+    <button class="action-btn" id="replayBtn">▶ Simulate Click + User Typing During 900ms TTFB</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-mode="vt">1. Two-Phase View Transition (<code>deferPageSwap</code>)</button>
+    <button class="tab-btn" data-mode="skeleton">2. Declarative Skeleton (Double-Swap Trap)</button>
+    <button class="tab-btn" data-mode="shell-cold">3. Progressive Shell (0ms Cold Start + Stream)</button>
+    <button class="tab-btn" data-mode="shell-upgrade">4. Progressive Shell (In-Place Navigation Upgrade)</button>
+  </div>
+
+  <div class="stage">
+    <!-- Left: Simulated Browser -->
+    <div class="card">
+      <div class="browser-chrome">
+        <div class="url-bar">
+          <span id="urlText">https://store.example/catalog</span>
+          <span class="doc-badge" id="docBadge">Document #1</span>
+        </div>
+        <div class="viewport" id="viewport">
+          <div class="store-header">
+            <strong>👟 Store Shell</strong>
+            <input class="search-input" id="searchInput" placeholder="Type while loading..." value="">
+          </div>
+          <div id="mainSlot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Step-by-Step Timeline & Diagnosis -->
+    <div class="card">
+      <h2 style="margin:0; font-size:1.05rem;" id="modeTitle">1. Two-Phase View Transition (<code>deferPageSwap</code>)</h2>
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'vt';
+    let timers = [];
+
+    const urlText = document.getElementById('urlText');
+    const docBadge = document.getElementById('docBadge');
+    const searchInput = document.getElementById('searchInput');
+    const mainSlot = document.getElementById('mainSlot');
+    const timeline = document.getElementById('timeline');
+    const modeTitle = document.getElementById('modeTitle');
+
+    function clearTimers() {
+      timers.forEach(clearTimeout);
+      timers = [];
+    }
+
+    function addStep(html, cls = 'active') {
+      const div = document.createElement('div');
+      div.className = 'step-box ' + cls;
+      div.innerHTML = html;
+      timeline.appendChild(div);
+    }
+
+    function runMode(mode) {
+      clearTimers();
+      currentMode = mode;
+      timeline.innerHTML = '';
+      searchInput.classList.remove('wiped');
+      searchInput.value = '';
+      docBadge.className = 'doc-badge';
+
+      if (mode === 'vt') {
+        modeTitle.innerHTML = '1. Two-Phase View Transition (<code>deferPageSwap</code>)';
+        urlText.textContent = 'https://store.example/catalog → /item/42';
+        docBadge.textContent = 'Document #1 (Old Page)';
+        mainSlot.innerHTML = `<div class="skeleton-pulse">Phase 1 VT: Old page morphs into loading state...</div>`;
+        addStep('<strong>0ms (Click):</strong> <code>deferPageSwap</code> keeps <strong>Document #1</strong> on screen and animates to an intermediate loading state while <code>/item/42</code> fetches.');
+
+        timers.push(setTimeout(() => {
+          searchInput.value = 'running sh';
+          searchInput.focus();
+          addStep('<strong>350ms (User interacts while waiting):</strong> User types <code>"running sh"</code> into the search box on Document #1.');
+        }, 450));
+
+        timers.push(setTimeout(() => {
+          urlText.textContent = 'https://store.example/item/42';
+          docBadge.textContent = '💥 Swapped to Document #2!';
+          docBadge.className = 'doc-badge swap-alert';
+          searchInput.value = '';
+          searchInput.classList.add('wiped');
+          searchInput.placeholder = '💥 WIPED BY DOCUMENT SWAP!';
+          mainSlot.innerHTML = `
+            <div class="product-card">
+              <h3 style="margin:0 0 6px">Pro Trail Shoes (#42)</h3>
+              <p style="margin:0; color:#b91c1c; font-weight:600;">❌ Document #2 swapped in at 900ms — wiping the user's typed "running sh" and focus!</p>
+            </div>`;
+          addStep('<strong>900ms (Phase 2 Swap):</strong> Network response arrives and <strong>Document #2 replaces Document #1</strong>. Everything the user typed or focused during the 900ms wait is destroyed!', 'bad');
+        }, 1150));
+      }
+
+      else if (mode === 'skeleton') {
+        modeTitle.innerHTML = '2. Declarative Skeleton Document (The Double-Swap Trap)';
+        urlText.textContent = 'https://store.example/item/42 (Skeleton)';
+        docBadge.textContent = 'Swap #1: Skeleton Document';
+        mainSlot.innerHTML = `<div class="skeleton-pulse">Cached Skeleton Document painted at 0ms...</div>`;
+        addStep('<strong>0ms (Swap #1):</strong> Browser immediately swaps to pre-cached <strong>Skeleton Document</strong>. Cold start looks solved!');
+
+        timers.push(setTimeout(() => {
+          searchInput.value = 'running sh';
+          searchInput.focus();
+          addStep('<strong>350ms (User interacts with Skeleton):</strong> Because the skeleton looks like a real page, the user starts typing <code>"running sh"</code>.');
+        }, 450));
+
+        timers.push(setTimeout(() => {
+          docBadge.textContent = '💥 Swap #2: Real Document!';
+          docBadge.className = 'doc-badge swap-alert';
+          searchInput.value = '';
+          searchInput.classList.add('wiped');
+          searchInput.placeholder = '💥 WIPED BY 2ND SWAP!';
+          mainSlot.innerHTML = `
+            <div class="product-card">
+              <h3 style="margin:0 0 6px">Pro Trail Shoes (#42)</h3>
+              <p style="margin:0; color:#b91c1c; font-weight:600;">❌ Double-Swap Trap: Real Document replaced Skeleton Document and wiped "running sh"!</p>
+            </div>`;
+          addStep('<strong>900ms (Swap #2 — The Double-Swap Trap):</strong> The real network <code>Document</code> swaps out the Skeleton <code>Document</code>, destroying the user\'s in-progress typing, focus, and scroll!', 'bad');
+        }, 1150));
+      }
+
+      else if (mode === 'shell-cold') {
+        modeTitle.innerHTML = '3. Progressive Shell — 0ms Cold Start + In-Place Stream';
+        urlText.textContent = 'https://store.example/item/42';
+        docBadge.textContent = 'Document #1 (Cached Shell)';
+        docBadge.className = 'doc-badge same-doc';
+        mainSlot.innerHTML = `<div class="skeleton-pulse">&lt;?start name="item"&gt; Loading… &lt;?end&gt;</div>`;
+        addStep('<strong>0ms (Instant Shell):</strong> Browser renders cached shell prefix up to <code>&lt;?shellboundary name="store"&gt;</code> as <strong>Document #1</strong>.');
+
+        timers.push(setTimeout(() => {
+          searchInput.value = 'running shoes';
+          searchInput.focus();
+          addStep('<strong>350ms (User types freely):</strong> User types <code>"running shoes"</code> into the live shell.');
+        }, 450));
+
+        timers.push(setTimeout(() => {
+          docBadge.textContent = '✓ Still Document #1 (Zero Swap!)';
+          mainSlot.innerHTML = `
+            <div class="product-card" style="border-color:#22c55e; background:#f0fdf4;">
+              <h3 style="margin:0 0 6px">Pro Trail Shoes (#42)</h3>
+              <p style="margin:0; color:#15803d; font-weight:600;">✓ Streamed via <code>&lt;template for="item"&gt;</code> after <code>&lt;?shellboundary&gt;</code>. Search input <code>"running shoes"</code> &amp; focus stayed 100% intact!</p>
+            </div>`;
+          addStep('<strong>900ms (Post-Boundary Patch):</strong> Network stream skips pre-boundary bytes and applies <code>&lt;template for="item"&gt;</code> into <strong>the exact same Document #1</strong>. Zero state loss!', 'good');
+        }, 1150));
+      }
+
+      else if (mode === 'shell-upgrade') {
+        modeTitle.innerHTML = '4. Progressive Shell — Same-Shell Navigation Upgrade (/item/42 → /item/99)';
+        urlText.textContent = 'https://store.example/item/42 → /item/99';
+        docBadge.textContent = 'Document #1 (Live Upgrade)';
+        docBadge.className = 'doc-badge same-doc';
+        searchInput.value = 'kept across clicks!';
+        mainSlot.innerHTML = `
+          <div class="product-card">
+            <h3 style="margin:0 0 6px">Pro Trail Shoes (#42)</h3>
+            <p style="margin:0; color:#475569;">Navigating to /item/99 (Sec-Active-Shell: name="store", revision="v1")...</p>
+          </div>`;
+        addStep('<strong>0ms (Click /item/99):</strong> Destination matches <code>pattern=/item/:id</code>. Current <strong>Document #1 stays live</strong> (no reload, no JS router).');
+
+        timers.push(setTimeout(() => {
+          urlText.textContent = 'https://store.example/item/99';
+          mainSlot.innerHTML = `
+            <div class="product-card" style="border-color:#22c55e; background:#f0fdf4;">
+              <h3 style="margin:0 0 6px">Carbon Marathon Racer (#99)</h3>
+              <p style="margin:0; color:#15803d; font-weight:600;">✓ Upgraded in-place via <code>&lt;template for="item"&gt;</code>! Search input <code>"kept across clicks!"</code> never flickered.</p>
+            </div>`;
+          addStep('<strong>450ms (In-Place Patch):</strong> Browser skips shell prefix and streams <code>&lt;template for="item"&gt;</code> directly into the slot.', 'good');
+        }, 700));
+      }
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        runMode(btn.dataset.mode);
+      });
+    });
+
+    document.getElementById('replayBtn').addEventListener('click', () => runMode(currentMode));
+
+    // Support deep link hash (#vt, #skeleton, #shell-cold, #shell-upgrade)
+    const hash = location.hash.replace('#', '');
+    if (['vt', 'skeleton', 'shell-cold', 'shell-upgrade'].includes(hash)) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === hash);
+      });
+      runMode(hash);
+    } else {
+      runMode('vt');
+    }
+  </script>
+</body>
+</html>
