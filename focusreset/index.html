@@ -15,7 +15,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>The <code>focusreset</code> Event</h1>
-    <h4>Recovering keyboard focus when the focused element is removed</h4>
+    <h4>Fixing silent focus loss when DOM nodes are removed</h4>
     <address>Noam Rosenthal</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -27,120 +27,98 @@
   </section>
 
   <section class="slide" id="problem">
-    <h2>The Silent Focus Loss Problem</h2>
-    <p>When a focused element (or its ancestor) is removed from the DOM:</p>
+    <h2>Silent Focus Loss</h2>
+    <p>Remove the focused element from the DOM:</p>
     <ul>
-      <li>HTML's <em>node-remove focus fixup rule</em> resets focus to <code>document.body</code></li>
-      <li><strong>No <code>blur</code> or <code>focusout</code> event is fired</strong> per spec</li>
-      <li>Keyboard &amp; assistive tech users silently lose their place; modal focus traps break</li>
+      <li>Focus silently drops to <code>document.body</code></li>
+      <li><strong>Zero events fired</strong> (no <code>blur</code>, no <code>focusout</code>)</li>
+      <li>Users lose their place; modal focus traps break</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Deleting a todo item, closing a popover, or re-rendering a component subtree silently drops focus to document.body. Gecko and WebKit fire nothing; Blink fires a legacy synchronous blur that violates the spec and causes re-entrancy bugs (whatwg/html#12842).</p>
+    <p>Per HTML's node-remove focus fixup rule, removing the focused element resets focus to the viewport without firing blur or focusout. Gecko and WebKit fire nothing; Blink has been stuck with a legacy synchronous blur because libraries have no alternative (whatwg/html#12842).</p>
   </section>
 
   <section class="slide" id="workarounds">
-    <h2>Painful Workarounds Today</h2>
+    <h2>Today's Hacks</h2>
     <div class="columns">
       <div>
-        <h3><code>MutationObserver</code> on <code>body</code></h3>
-        <p>Used by Radix UI &amp; <code>focus-trap</code>.</p>
+        <h3><code>MutationObserver</code></h3>
+        <p>Radix UI, <code>focus-trap</code></p>
         <ul>
-          <li>Fires on <em>every</em> DOM mutation</li>
-          <li>Fails across Shadow DOM</li>
-          <li>Misfires on unrelated edits</li>
+          <li>Runs on <em>every</em> DOM edit</li>
+          <li>Fails in Shadow DOM</li>
         </ul>
       </div>
       <div>
         <h3><code>setInterval</code> Polling</h3>
-        <p>Used by Material UI &amp; Tridactyl.</p>
+        <p>Material UI, Tridactyl</p>
         <ul>
-          <li>Polls <code>activeElement</code> every 200ms</li>
-          <li>Unnecessary CPU wakeups</li>
-          <li>200ms window of escaped focus</li>
+          <li>Polls every 200ms</li>
+          <li>Wastes CPU &amp; lags</li>
         </ul>
       </div>
     </div>
   </section>
 
   <section class="comment">
-    <p>Every major accessible component library has had to invent brittle hacks—either observing the entire document tree for childList mutations or polling document.activeElement on a timer.</p>
+    <p>Major UI libraries either observe every childList mutation on document.body or poll document.activeElement on a 200ms timer just to detect when focus fell back to body.</p>
   </section>
 
   <section class="slide" id="proposal">
     <h2>Proposal: <code>focusreset</code> on <code>Document</code></h2>
     <pre><code>document.addEventListener("focusreset", () =&gt; {
-  if (modal.open &amp;&amp; !modal.contains(document.activeElement)) {
-    modal.querySelector("button")?.focus();
-  }
+  fallbackElement.focus();
 });</code></pre>
     <ul>
-      <li>Dispatched on <code>Document</code> (<code>document.onfocusreset</code>)</li>
-      <li>Plain <code>Event</code> — non-bubbling, non-cancelable, no <code>relatedTarget</code></li>
+      <li>Fires in the <strong>mutation observer microtask</strong> (before paint)</li>
+      <li>Plain <code>Event</code> — no reference to the detached node</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Omitting relatedTarget ensures the removed DOM subtree can be garbage-collected immediately and avoids leaking nodes across closed Shadow DOM boundaries.</p>
+    <p>Fires at Document at the end of the mutation observer microtask (after MutationObserver callbacks and slotchange). Omitting relatedTarget avoids keeping detached DOM subtrees alive and preserves closed Shadow DOM encapsulation.</p>
   </section>
 
-  <section class="slide" id="timing">
-    <h2>Microtask Timing &amp; Auto-Cancellation</h2>
-    <pre><code>deleteButton.remove();
-nextItemButton.focus(); // Explicitly restores focus
-// -&gt; focusreset is automatically cancelled!</code></pre>
+  <section class="slide" id="cancellation">
+    <h2>Smart Auto-Cancellation</h2>
+    <pre><code>item.remove();
+nextItem.focus(); // -&gt; Cancels pending focusreset!</code></pre>
     <ul>
-      <li>Fires at the end of the <strong>mutation observer microtask</strong> (before rendering)</li>
-      <li><strong>Auto-cancelled</strong> if focus is moved before dispatch (<code>.focus()</code>, <code>showModal()</code>, <code>autofocus</code>)</li>
+      <li>Only fires for <strong>unhandled</strong> focus loss</li>
+      <li>Nested <code>&lt;iframe&gt;</code>s: checks <code>hasFocus()</code> on removal &amp; dispatch</li>
+      <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Because components often remove a node and immediately focus its replacement on the next line, queuing focusreset for the microtask checkpoint and cancelling it when focus is restored prevents false alarms. Microtask timing also ensures removals inside rAF or ResizeObserver are caught before the frame paints.</p>
-  </section>
-
-  <section class="slide" id="iframes">
-    <h2>Nested <code>&lt;iframe&gt;</code>s &amp; <code>moveBefore()</code></h2>
-    <pre><code>// Focused button inside an iframe:
-iframeButton.remove();
-iframe.remove();
-// -&gt; Fires focusreset ONLY on the parent Document!</code></pre>
-    <ul>
-      <li>Document focus is checked both on removal and at microtask dispatch</li>
-      <li>State-preserving <code>moveBefore()</code> keeps focus intact → no <code>focusreset</code></li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Using HTML's "has focus steps" at both removal time and microtask dispatch time naturally suppresses redundant events in detached child iframes while notifying the still-focused parent document.</p>
+    <p>If script explicitly moves focus before the microtask runs (via .focus(), showModal(), or autofocus), the pending focusreset is cancelled so fallback handlers don't override it. If both an iframe button and the iframe itself are removed, focusreset only fires on the parent Document.</p>
   </section>
 
   <section class="slide" id="alternatives">
-    <h2>Alternatives Considered</h2>
+    <h2>Why Not…</h2>
     <ul>
-      <li><strong>Synchronous <code>blur</code> on removal</strong> — script re-entrancy hazard mid-DOM-removal</li>
-      <li><strong>Async <code>blur</code> / <code>focusout</code> on ancestor</strong> — semantically wrong &amp; arbitrary under reparenting</li>
-      <li><strong>Rendering-step timing</strong> — misses removals inside <code>requestAnimationFrame</code> / <code>ResizeObserver</code></li>
-      <li><strong>Exposing <code>relatedTarget</code></strong> — retains detached DOM trees &amp; leaks closed Shadow DOM</li>
+      <li><strong>Sync <code>blur</code> on removal?</strong> Re-entrancy hazard mid-removal</li>
+      <li><strong>Async <code>blur</code> on ancestor?</strong> Ancestor was never focused</li>
+      <li><strong>Rendering-step timing?</strong> Too late if removed inside <code>rAF</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>A dedicated event on Document at the microtask checkpoint avoids re-entrancy, avoids overloading blur/focusout semantics, and gives libraries a zero-overhead replacement for polling and MutationObservers.</p>
+    <p>Synchronous events during DOM removal are unsafe. Firing blur on a parent that was never focused is semantically wrong and breaks if ancestors are reparented. Microtask timing catches removals before rendering.</p>
   </section>
 
   <section class="slide final" id="discussion">
     <h2>Status &amp; Discussion</h2>
     <ul>
-      <li>Unblocks cross-browser interop on <code>whatwg/html#12842</code></li>
-      <li>Replaces <code>MutationObserver</code> &amp; timer hacks in UI toolkits</li>
-      <li><strong>Questions &amp; feedback?</strong></li>
+      <li>HTML PR <a href="https://github.com/whatwg/html/pull/13050"><code>#13050</code></a> · DOM PR <a href="https://github.com/whatwg/dom/pull/1512"><code>#1512</code></a> · WPT <a href="https://github.com/web-platform-tests/wpt/pull/63595"><code>#63595</code></a></li>
+      <li>Unblocks interop on <a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Invite feedback from browser implementers, accessibility specialists, and UI library authors on the Document target and microtask timing.</p>
+    <p>Invite feedback on the specification PRs and implementation status.</p>
   </section>
 
 </body>

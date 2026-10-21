@@ -15,7 +15,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>It's Time for Client-Side Includes</h1>
-    <h4>Declarative HTML inclusion with <code>&lt;template src&gt;</code></h4>
+    <h4><code>&lt;template src&gt;</code></h4>
     <address>Noam Rosenthal</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -27,197 +27,158 @@
   </section>
 
   <section class="slide" id="history">
-    <h2>30 Years of Trying to Include HTML</h2>
+    <h2>30 Years of Trying</h2>
     <ul>
-      <li><strong>1995–2001:</strong> SSI (<code>&lt;!--#include --&gt;</code>), PHP, ESI (<code>&lt;esi:include&gt;</code>)</li>
-      <li><strong>2008–2016:</strong> <code>&lt;iframe seamless&gt;</code> — removed (heavy <code>Window</code>/<code>Document</code>, style &amp; security issues)</li>
-      <li><strong>2013–2018:</strong> HTML Imports (<code>&lt;link rel="import"&gt;</code>) — removed (inert doc, required JS to stamp DOM)</li>
-      <li><strong>2017–Today:</strong> <a href="https://github.com/whatwg/html/issues/2791"><code>whatwg/html#2791</code></a> — 280+ comments, 225+ 👍, custom elements (<code>&lt;include-fragment&gt;</code>)</li>
+      <li><strong>1995–2001:</strong> SSI, PHP, ESI — server-only</li>
+      <li><strong>2008–2016:</strong> <code>&lt;iframe seamless&gt;</code> — not really an include</li>
+      <li><strong>2013–2018:</strong> <code>&lt;link rel="import"&gt;</code> — gone</li>
+      <li><strong>2017–Today:</strong> <a href="https://github.com/whatwg/html/issues/2791"><code>whatwg/html#2791</code></a> — 280+ comments, 225+ 👍</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Including one piece of HTML inside another is one of the oldest requests on the web. SSI and PHP were invented for it in 1995. On the client, &lt;iframe seamless&gt; and HTML Imports both tried and failed, while whatwg/html#2791 has been active since 2017 with hundreds of comments and thumbs-ups.</p>
+    <p>Including one piece of HTML inside another is one of the oldest requests on the web. SSI and PHP were invented for it in 1995. On the client, &lt;iframe seamless&gt; had heavy Window/Document overhead and style/security issues, and HTML Imports loaded an inert document that still needed JS to stamp DOM. Meanwhile whatwg/html#2791 has been active since 2017.</p>
   </section>
 
   <section class="slide" id="quotes">
-    <h2>What Developers Have Been Saying</h2>
+    <h2>Developers Still Want This</h2>
     <blockquote>
-      <p>“Re-using blobs of HTML is needed in pretty much every multi-page website. However, to do that today, you need either JS, or build tools… Not everyone was using the same date picker, but almost everyone needed <em>a</em> date picker. I'd argue this falls into that category.”</p>
-      <p class="attribution">— Lea Verou (<a href="https://github.com/whatwg/html/issues/2791"><code>whatwg/html#2791</code></a>)</p>
+      <p>“Not everyone was using the same date picker, but almost everyone needed <em>a</em> date picker. I'd argue this falls into that category.”</p>
+      <p class="attribution">— Lea Verou (<code>whatwg/html#2791</code>)</p>
     </blockquote>
     <blockquote>
-      <p>“A way for DRY HTML authoring without the burden of running code server-side or requiring JS. It's actually what I naively expected HTML imports to do at first.”</p>
-      <p class="attribution">— @brandondees (74 👍 on <code>#2791</code>) · GitHub shipped <code>&lt;include-fragment&gt;</code> for 10+ years (@josh)</p>
+      <p>“It's actually what I naively expected HTML imports to do at first.”</p>
+      <p class="attribution">— @brandondees (74 👍) · GitHub shipped <code>&lt;include-fragment&gt;</code> for 10+ years</p>
     </blockquote>
   </section>
 
   <section class="comment">
-    <p>Developers across the spectrum—from educators and static site authors to large apps like GitHub using &lt;include-fragment&gt;—have repeatedly asked for a native HTML equivalent to CSS @import and JS import.</p>
+    <p>Lea Verou pointed out that reusing blobs of HTML is needed in almost every website, yet requires JS or build tools today. GitHub has used its &lt;include-fragment&gt; custom element in production for over a decade as a client-side &lt;esi:include&gt;.</p>
   </section>
 
   <section class="slide" id="why-rejected">
-    <h2>Why Was It Rejected Until Now?</h2>
+    <h2>Why It Stalled</h2>
     <ul>
-      <li><strong>“Just do it on the server”</strong> — ignored static sites, cached shared chrome, and independent async widgets</li>
-      <li><strong>Sync vs. Async Dilemma:</strong>
-        <ul>
-          <li><em>“Synchronous fetching is a big no-no.”</em> (@annevk) — blocks the parser</li>
-          <li>Naive async fetching caused FOUC and layout shifts</li>
-        </ul>
-      </li>
-      <li><strong>No Built-in Sanitizer:</strong> Injecting external HTML was an XSS hazard without JS sanitizers</li>
+      <li><strong>“Just do it on the server”</strong></li>
+      <li><strong>Sync fetch:</strong> <em>“A big no-no”</em> (@annevk)</li>
+      <li><strong>Async fetch:</strong> FOUC &amp; layout shifts</li>
+      <li><strong>Security:</strong> XSS without a native sanitizer</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why did #2791 stall for 9 years? Synchronous fetching blocks the parser, while naive async fetching caused FOUC and layout shifts. And there was no native HTML sanitizer in the browser to safely include untrusted or external markup.</p>
+    <p>Why was it rejected for so long? First, "do it on the server" ignored static sites, client-cached chrome, and independent async widgets. Second, synchronous fetching blocks the parser, while naive async fetching caused FOUC and layout shifts. Third, there was no built-in HTML sanitizer.</p>
   </section>
 
   <section class="slide" id="why-now">
     <h2>Why <em>Now</em>?</h2>
-    <p>Three new primitives make client-side includes both <strong>more feasible</strong> and <strong>more valuable</strong>:</p>
+    <p>Three new primitives make it <strong>feasible</strong> and <strong>valuable</strong>:</p>
     <ol>
-      <li><strong>Sanitizer API</strong> — safe-by-default HTML parsing built into the browser</li>
-      <li><strong>Render-Blocking (<code>rel="expect"</code>)</strong> — coordinate first paint without sync fetching</li>
-      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — declarative target slots &amp; streaming DOM updates</li>
+      <li><strong>Sanitizer API</strong> — safe by default</li>
+      <li><strong>Render-Blocking (<code>rel="expect"</code>)</strong> — no FOUC or CLS</li>
+      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — declarative slots</li>
     </ol>
   </section>
 
   <section class="comment">
-    <p>We now have the three missing primitives in the platform: native Sanitizer, declarative render-blocking (rel="expect"), and out-of-order streaming (&lt;template for&gt;). Together they make client-side includes both feasible to specify cleanly and much more valuable in practice.</p>
+    <p>We now have theSanitizer API, declarative render-blocking (rel="expect"), and out-of-order streaming (&lt;template for&gt;). Together, those three primitives solve the security, layout shift, and targeting problems that blocked #2791.</p>
   </section>
 
   <section class="slide" id="solution">
     <h2>Proposal: Extend <code>&lt;template&gt;</code></h2>
+    <pre><code>&lt;!-- In-place include --&gt;
+&lt;template src="header.html"&gt;&lt;/template&gt;
+
+&lt;!-- Targeted include --&gt;
+&lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</code></pre>
     <ul>
-      <li><code>for</code> — target a <code>&lt;?start&gt;</code> / <code>&lt;?marker&gt;</code> slot, or render in-place</li>
-      <li><code>src</code> — asynchronously fetch an external HTML fragment</li>
-      <li><code>buffer</code> — parse off-screen, insert atomically when complete</li>
-      <li><code>sanitize</code> — safe by default for external <code>src</code>, opt-in for inline</li>
+      <li>Self-removes when done — <strong>zero DOM footprint</strong></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>A &lt;template&gt; becomes active when it has for, src, or both. Without either, it remains a classic inert template. Standard fetch attributes (nonce, crossorigin, referrerpolicy) are reused; fetches are always non-blocking.</p>
-  </section>
-
-  <section class="slide" id="in-place-and-targeted">
-    <h2>In-Place &amp; Targeted Includes</h2>
-    <pre><code>&lt;!-- In-place include (sanitized by default) --&gt;
-&lt;template src="header.html"&gt;&lt;/template&gt;
-
-&lt;!-- Targeted include with fallback --&gt;
-&lt;main&gt;
-  &lt;?start name="feed"&gt;Loading feed...&lt;?end&gt;
-&lt;/main&gt;
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</code></pre>
-    <p class="note">Once finished, the <code>&lt;template&gt;</code> removes itself — leaving zero DOM footprint.</p>
-  </section>
-
-  <section class="comment">
-    <p>For in-place includes (src without for, or empty for=""), the browser temporarily attaches the &lt;template&gt; at its declared position as the insertion anchor, inserts nodes before it, and removes the &lt;template&gt; on completion. Disconnecting the template mid-fetch aborts the network request immediately.</p>
+    <p>A &lt;template&gt; becomes active when it has for, src, or both. For in-place includes, it acts as a temporary insertion anchor and removes itself on completion. Disconnecting it mid-fetch aborts the network request.</p>
   </section>
 
   <section class="slide" id="buffer">
-    <h2>Streaming vs. Buffered (<code>buffer</code>)</h2>
+    <h2>Streaming vs. <code>buffer</code></h2>
     <div class="columns">
       <div>
         <h3>Streaming (default)</h3>
-        <p>Chunks parse directly into the live DOM as bytes arrive.</p>
         <pre><code>&lt;template
   for="rows"
   src="rows.html"&gt;
 &lt;/template&gt;</code></pre>
+        <p>Streams straight into DOM.</p>
       </div>
       <div>
         <h3>Buffered (<code>buffer</code>)</h3>
-        <p>Parses into <code>template.content</code>; commits atomically on EOF.</p>
         <pre><code>&lt;template
   for="comments"
   src="comments.html"
   buffer&gt;
 &lt;/template&gt;</code></pre>
+        <p>Commits atomically on EOF.</p>
       </div>
     </div>
   </section>
 
   <section class="comment">
-    <p>Streaming is ideal for long feeds or table rows. Buffering avoids half-rendered UI and layout jank for self-contained widgets, modals, or comment sections.</p>
-  </section>
-
-  <section class="slide" id="preloads">
-    <h2>Subresource Gating in <code>buffer</code> Mode</h2>
-    <pre><code>&lt;!-- widget.html --&gt;
-&lt;link rel="preload" href="widget.css" as="style"&gt;
-&lt;link rel="modulepreload" href="widget.js"&gt;
-
-&lt;div class="widget"&gt;
-  &lt;link rel="stylesheet" href="widget.css"&gt;
-  &lt;p&gt;Ready without FOUC&lt;/p&gt;
-&lt;/div&gt;</code></pre>
-    <p>Preloads inside <code>&lt;template buffer&gt;</code> fetch immediately and gate the atomic DOM commit.</p>
-  </section>
-
-  <section class="comment">
-    <p>Normally &lt;link rel="preload"&gt; inside an inert &lt;template&gt; does nothing. In an active buffered template, preloads and modulepreloads start fetching as soon as they are parsed, and the DocumentFragment only commits to the live DOM once those preloads finish (or fail), preventing FOUC without blocking the main parser.</p>
+    <p>Streaming is default. Adding buffer parses off-screen into template.content and inserts atomically on EOF. Preloads (&lt;link rel="preload"&gt;, modulepreload) inside a buffered template fetch immediately and gate the atomic commit so styles are ready without FOUC.</p>
   </section>
 
   <section class="slide" id="cls">
-    <h2>Avoiding Layout Shifts</h2>
+    <h2>Zero Layout Shift with <code>rel="expect"</code></h2>
     <pre><code>&lt;head&gt;
   &lt;link rel="expect" href="#site-header" blocking="render"&gt;
 &lt;/head&gt;
 &lt;body&gt;
   &lt;template src="header.html"&gt;&lt;/template&gt;
-  &lt;main&gt;Main content painted together with #site-header&lt;/main&gt;
+  &lt;main&gt;Painted together with #site-header&lt;/main&gt;
 &lt;/body&gt;</code></pre>
-    <ul>
-      <li><code>rel="expect"</code> stays render-blocking while pending <code>&lt;template src&gt;</code> includes may still provide <code>#site-header</code></li>
-    </ul>
   </section>
 
   <section class="comment">
-    <p>If the main document reaches EOF and #site-header hasn't appeared yet, render-blocking stays active while any &lt;template src&gt; fetches are in flight, unblocking as soon as #site-header finishes parsing.</p>
+    <p>If the main document reaches EOF before #site-header is parsed, render-blocking stays active while pending &lt;template src&gt; fetches are in flight, unblocking as soon as #site-header finishes parsing.</p>
   </section>
 
   <section class="slide" id="security">
-    <h2>Security &amp; Sanitization</h2>
+    <h2>Security</h2>
     <ul>
-      <li><strong>External (<code>src</code>):</strong> Sanitized by default; opt out via <code>sanitize="unsafe"</code></li>
-      <li><strong>Inline (no <code>src</code>):</strong> Unsafe by default; opt in via <code>sanitize</code></li>
-      <li><strong>CSP:</strong> Controlled by <code>fragment-src</code> + standard <code>script-src</code></li>
+      <li><strong><code>&lt;template src&gt;</code>:</strong> Sanitized by default</li>
+      <li><strong>Opt-out:</strong> <code>sanitize="unsafe"</code></li>
+      <li><strong>CSP:</strong> <code>fragment-src</code> + <code>script-src</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>External includes are safe by default via the Sanitizer API. Opting out requires sanitize="unsafe", and even then CSP fragment-src controls allowed origins while script-src (nonces/hashes) still governs any scripts inside the fragment.</p>
+    <p>External includes are sanitized by default using the browser's native Sanitizer API. Opting out requires sanitize="unsafe" and is still governed by CSP fragment-src and script-src.</p>
   </section>
 
   <section class="slide" id="alternatives">
-    <h2>Alternatives Considered</h2>
+    <h2>Why <code>&lt;template&gt;</code>?</h2>
     <ul>
-      <li><strong>New <code>&lt;fragment&gt;</code> element</strong> — <code>&lt;template&gt;</code> already has the “disappear from the DOM” behavior (<code>shadowrootmode</code>, <code>for</code>) and works everywhere in the parser</li>
-      <li><strong><code>&lt;script type="html" src="..."&gt;</code></strong> — parser-blocking legacy defaults; can't hold inline HTML</li>
-      <li><strong>Global <code>buffer</code> / <code>sanitize</code> attributes</strong> — permanent DOM clutter &amp; false security promises for <code>innerHTML</code></li>
+      <li><strong>Why not <code>&lt;fragment&gt;</code>?</strong> <code>&lt;template&gt;</code> already has the “disappear from the DOM” behavior (<code>shadowrootmode</code>, <code>for</code>)</li>
+      <li><strong>Works everywhere in the parser</strong> — including inside <code>&lt;table&gt;</code> &amp; <code>&lt;select&gt;</code></li>
+      <li><strong>Why not <code>&lt;script type="html"&gt;</code>?</strong> Wrong defaults, no inline HTML</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why not a new &lt;fragment&gt; element? &lt;template&gt; already has the "disappear from the DOM" quality in the parser (as seen with shadowrootmode and for) and is already valid inside &lt;table&gt;, &lt;select&gt;, and &lt;head&gt;.</p>
+    <p>A new &lt;fragment&gt; element is rejected because &lt;template&gt; already has the self-consuming "disappear from the DOM" behavior and is valid everywhere in the HTML parser without foster-parenting.</p>
   </section>
 
   <section class="slide final" id="discussion">
-    <h2>Open Questions &amp; Discussion</h2>
+    <h2>Discussion</h2>
     <ul>
-      <li><code>&lt;head&gt;</code> render-blocking syntax: <code>rel="expect"</code> vs. <code>&lt;template blocking="render"&gt;</code>?</li>
-      <li>Alignment with HTML Modules: <code>import frag from "./ui.html" with { type: "fragment" }</code></li>
-      <li>Lifecycle observability via Parser-Aware <code>MutationObserver</code></li>
+      <li>Render-blocking in <code>&lt;head&gt;</code>: <code>rel="expect"</code> vs. <code>&lt;template blocking="render"&gt;</code>?</li>
+      <li>HTML Modules alignment (<code>with { type: "fragment" }</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Invite feedback on the attribute surface on &lt;template&gt;, the rel="expect" extension, and how HTML fragment imports should align with sanitized DocumentFragments.</p>
+    <p>Open the floor for feedback on &lt;template src&gt;, buffer, sanitize, and rel="expect" integration.</p>
   </section>
 
 </body>

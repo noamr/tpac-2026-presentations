@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta content="width=device-width" name="viewport">
-  <title>Progressive Shells &amp; Navigation Upgrades — TPAC 2026</title>
+  <title>Progressive Shells — TPAC 2026</title>
   <link rel="stylesheet" href="../Templates/slides.css">
   <script src="../Templates/b6plus.js"></script>
 </head>
@@ -15,7 +15,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Progressive Shells</h1>
-    <h4>Instant shells &amp; MPA navigation upgrades without a JS router</h4>
+    <h4>Instant shells &amp; SPA-like navigations without a JS router</h4>
     <address>Noam Rosenthal</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -23,17 +23,16 @@
   </section>
 
   <section class="comment">
-    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/progressive-shell-explainer.md. Extra focus on the MPA/SPA problem space and the alternatives considered.</p>
+    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/progressive-shell-explainer.md. Focuses on the MPA vs. SPA problem space and the alternatives considered.</p>
   </section>
 
   <section class="slide" id="dilemma">
-    <h2>The Architectural Dilemma</h2>
+    <h2>The MPA vs. SPA Trade-off</h2>
     <div class="columns">
       <div>
         <h3>MPAs</h3>
         <ul>
-          <li>Simple mental model</li>
-          <li>Zero client router JS</li>
+          <li>Simple, zero router JS</li>
           <li><strong>Frozen screen on click</strong></li>
           <li><strong>Full state loss on swap</strong></li>
         </ul>
@@ -41,8 +40,7 @@
       <div>
         <h3>SPAs</h3>
         <ul>
-          <li>Immediate UI feedback</li>
-          <li>Preserves shell state</li>
+          <li>Instant feedback &amp; state</li>
           <li><strong>Heavy JS bundle tax</strong></li>
           <li><strong>Slow cold starts</strong></li>
         </ul>
@@ -51,46 +49,20 @@
   </section>
 
   <section class="comment">
-    <p>Authors are forced to choose between simple server-rendered MPAs (which suffer from frozen navigations and lost DOM state) and complex JS SPAs (which pay a heavy hydration and bundle cost just to keep a header and sidebar alive).</p>
+    <p>Authors have to choose between simple server-rendered MPAs (which freeze during navigation and wipe DOM state on swap) and heavy JS SPAs (just to keep a header, search input, or sidebar alive across clicks).</p>
   </section>
 
-  <section class="slide" id="problem-frozen-frame">
-    <h2>Problem 1: The MPA "Frozen Frame"</h2>
-    <ul>
-      <li><strong>Paint holding</strong> freezes the old page while waiting for the new response</li>
-      <li>The page <em>looks</em> interactive, but clicks, typing, and scrolling are dead</li>
-      <li>If the network takes &gt;100ms, paint holding expires → white flash or unstyled layout</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>When a user clicks a link in an MPA, the browser holds the old frame on screen until the new document is ready to paint. During TTFB, the old page is a frozen screenshot—users can't type in a search box, scroll a sidebar, or see a loading skeleton in the target area.</p>
-  </section>
-
-  <section class="slide" id="problem-state-loss">
-    <h2>Problem 2: Full-Document Swap Wipes State</h2>
-    <ul>
-      <li><strong>Input &amp; focus lost</strong> — typing in a search/filter box resets mid-keystroke</li>
-      <li><strong>Scroll &amp; media reset</strong> — sidebar scroll position jumps; persistent players stop</li>
-      <li><strong>Redundant work</strong> — identical <code>&lt;head&gt;</code>, navbars, and scripts are torn down and re-parsed</li>
-    </ul>
+  <section class="slide" id="problems">
+    <h2>Three Broken Moments in MPAs</h2>
+    <ol>
+      <li><strong>Frozen Frame</strong> — paint holding freezes the old page until TTFB</li>
+      <li><strong>State Loss</strong> — full-document swap wipes focus, inputs, and scroll</li>
+      <li><strong>Prerender Limits</strong> — you can't prerender 50 product links on a grid</li>
+    </ol>
   </section>
 
   <section class="comment">
-    <p>Even with cross-document View Transitions, a full MPA navigation replaces the entire Window and Document. Any uncommitted input state, keyboard focus, or scroll position in shared layout chrome is destroyed.</p>
-  </section>
-
-  <section class="slide" id="problem-cold-start">
-    <h2>Problem 3: Cold Starts &amp; Prerender Limits</h2>
-    <ul>
-      <li><strong>Cold starts</strong> (bookmarks, omnibox, chat links) have no SPA router in memory</li>
-      <li><strong>Full-page prerendering</strong> (Speculation Rules) is too heavy to run on every link</li>
-      <li>Prerendering <code>/item/1</code> doesn't help when the user clicks <code>/item/2</code></li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Speculative prerendering works well for high-probability next pages, but you can't prerender 50 product links on a grid. What those 50 links share is a common shell (/item/:id) that could be cached once and reused instantly.</p>
+    <p>1. Paint holding makes the old page look interactive while ignoring typing and scrolling. 2. When the swap happens, any active input or sidebar state is destroyed. 3. Speculation Rules can't prerender dozens of item links, even though they all share the exact same shell.</p>
   </section>
 
   <section class="slide" id="proposal">
@@ -101,113 +73,81 @@
 &lt;/head&gt;
 &lt;body&gt;
   &lt;header&gt;&lt;input type="search"&gt;&lt;/header&gt;
-  &lt;main&gt;&lt;?start name="item"&gt;Loading item...&lt;?end&gt;&lt;/main&gt;
+  &lt;main&gt;&lt;?start name="item"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
   &lt;?shellboundary name="store"&gt;
   &lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;
 &lt;/body&gt;</code></pre>
   </section>
 
   <section class="comment">
-    <p>A single HTML document declares its shell metadata in &lt;head&gt;, marks dynamic slots with &lt;?start&gt;/&lt;?end&gt;, places &lt;?shellboundary&gt; at the end of the shell, and streams &lt;template for&gt; patches after the boundary.</p>
+    <p>A single HTML file declares its shell metadata in &lt;head&gt;, marks dynamic slots with &lt;?start&gt;/&lt;?end&gt;, places &lt;?shellboundary&gt; at the end of the shell, and streams &lt;template for&gt; patches after the boundary.</p>
   </section>
 
   <section class="slide" id="two-modes">
-    <h2>One HTML File, Two Superpowers</h2>
+    <h2>One File, Two Superpowers</h2>
     <div class="columns">
       <div>
         <h3>1. Instant Cold Start</h3>
-        <p>Browser paints cached shell for <code>/item/:id</code> at <strong>0ms</strong>, then streams patches after <code>&lt;?shellboundary&gt;</code>.</p>
+        <p>Paint cached shell at <strong>0ms</strong> → stream patches after <code>&lt;?shellboundary&gt;</code>.</p>
       </div>
       <div>
         <h3>2. Navigation Upgrade</h3>
-        <p>Current page stays <strong>live</strong>; browser skips pre-boundary bytes and streams patches in place.</p>
+        <p>Keep current page <strong>live</strong> → skip pre-boundary bytes &amp; patch in place.</p>
       </div>
     </div>
-    <p class="note">Request header: <code>Sec-Active-Shell: name="store"; rev="v1"</code></p>
   </section>
 
   <section class="comment">
-    <p>Static servers and CDNs can serve the exact same full HTML file—the browser automatically skips bytes before &lt;?shellboundary&gt; when upgrading or using a cached shell. Dynamic servers can inspect Sec-Active-Shell and omit the shell bytes to save bandwidth.</p>
+    <p>Static hosts can serve the exact same full HTML file; the browser skips bytes before &lt;?shellboundary&gt; when upgrading or using a cached shell. Dynamic servers can inspect Sec-Active-Shell and omit the shell prefix to save bandwidth.</p>
   </section>
 
-  <section class="slide" id="alt-defer-swap">
-    <h2>Alt 1: Two-Phase View Transitions (<code>deferPageSwap</code>)</h2>
+  <section class="slide" id="alternatives-1">
+    <h2>Alternatives Considered (1/2)</h2>
     <ul>
-      <li>Keeps the old page interactive while the new page loads in the background</li>
-      <li><strong>Still swaps the Document</strong> — wipes input text, focus, and sidebar state</li>
-      <li>Old page must <strong>guess</strong> what loading UI the destination URL needs</li>
-      <li>Does not help <strong>cold starts</strong> from omnibox or external links</li>
+      <li><strong>Two-Phase View Transitions (<code>deferPageSwap</code>)</strong>
+        <ul><li>Still swaps the <code>Document</code> → wipes input, focus, and state</li></ul>
+      </li>
+      <li><strong>Pre-rendered Skeleton Documents</strong>
+        <ul><li><strong>Double-swap trap:</strong> typing in the skeleton is wiped when the real Document swaps in</li></ul>
+      </li>
+      <li><strong>DOM <code>preserve</code> / Morphing</strong>
+        <ul><li>Re-downloads, re-parses, and diffs the entire shell on every click</li></ul>
+      </li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Two-phase view transitions (deferPageSwap) delay the swap so the old page can show a spinner, but when the swap finally happens it still destroys the DOM (breaking active typing/focus), and the source page has to know how to render the destination's loading skeleton.</p>
+    <p>deferPageSwap and pre-rendered skeleton Documents both suffer from a fatal flaw: they still perform a full Document swap when the network response arrives, destroying any typing or scrolling the user did while waiting. Progressive Shells patch into the same live Document.</p>
   </section>
 
-  <section class="slide" id="alt-skeletons">
-    <h2>Alt 2: Pre-rendered Skeleton Documents</h2>
+  <section class="slide" id="alternatives-2">
+    <h2>Alternatives Considered (2/2)</h2>
     <ul>
-      <li>Idea: prerender a lightweight skeleton Document, then swap in the real Document</li>
-      <li><strong>The double-swap trap:</strong> if the user types or scrolls while the skeleton is visible, swapping the real Document wipes their interaction!</li>
-      <li>Progressive shells <strong>patch into the same Document</strong> — state is never lost</li>
+      <li><strong>HTTP Content Negotiation (<code>Accept: text/html+fragment</code>)</strong>
+        <ul><li>Breaks static hosts; fragile CDN <code>Vary</code> caching</li></ul>
+      </li>
+      <li><strong>Service Worker Stream Stitching</strong>
+        <ul><li>Requires JS SW boot; link clicks still do a full MPA reload</li></ul>
+      </li>
+    </ul>
+    <p class="note">In-band <code>&lt;?shellboundary&gt;</code> works on any static host and upgrades gracefully.</p>
+  </section>
+
+  <section class="comment">
+    <p>Relying purely on HTTP headers breaks static file servers and risks CDN cache poisoning if Vary is misconfigured. Service Worker stitching still triggers full MPA page reloads on navigation. In-band &lt;?shellboundary&gt; works everywhere.</p>
+  </section>
+
+  <section class="slide final" id="discussion">
+    <h2>Security &amp; Discussion</h2>
+    <ul>
+      <li>Path-prefix scoping + strict CSP / COOP / COEP match</li>
+      <li>Mismatch → clean fallback to normal MPA navigation</li>
+      <li><strong>Discussion:</strong> Navigation API &amp; View Transitions integration</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>If a cached skeleton is a separate Document from the network response, any user interaction during the skeleton phase (typing into the search bar, scrolling) is lost when the network Document replaces it. Because Progressive Shells stream patches into the already-live shell Document, state is preserved seamlessly.</p>
-  </section>
-
-  <section class="slide" id="alt-http-negotiation">
-    <h2>Alt 3: HTTP Content Negotiation vs. <code>&lt;?shellboundary&gt;</code></h2>
-    <ul>
-      <li>Why not rely purely on <code>Accept: text/html+fragment</code> / <code>Vary</code> headers?</li>
-      <li><strong>CDN &amp; static host fragility</strong> — misconfigured caches serve raw fragments as full pages</li>
-      <li>In-band <code>&lt;?shellboundary&gt;</code> lets <strong>one static HTML file</strong> serve cold loads, shell caching, and navigation upgrades</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>In-band &lt;?shellboundary&gt; means static sites and CDN-cached pages work out of the box without Vary header cache fragmentation, while dynamic servers can still optionally strip the shell prefix when Sec-Active-Shell matches.</p>
-  </section>
-
-  <section class="slide" id="alt-dom-merge">
-    <h2>Alt 4: DOM Preserve / Morphing (<code>&lt;header preserve&gt;</code>)</h2>
-    <ul>
-      <li>Idea: send full HTML on every navigation and keep elements marked <code>preserve</code></li>
-      <li>Forces browser to <strong>re-download, re-parse, and diff</strong> the entire shell every time</li>
-      <li>Complex edge cases when <code>&lt;head&gt;</code>, stylesheets, or scripts differ</li>
-      <li>Explicit <code>name</code> + <code>revision</code> + <code>&lt;?shellboundary&gt;</code> is deterministic and fast</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>DOM morphing or preserve attributes require parsing the whole document and reconciling trees. With an explicit shell revision and boundary, the browser verifies compatibility in &lt;head&gt; and jumps straight to the streaming patches.</p>
-  </section>
-
-  <section class="slide" id="alt-sw">
-    <h2>Alt 5: Service Worker HTML Stitching</h2>
-    <ul>
-      <li>Service Workers can concatenate a cached shell stream + network body stream</li>
-      <li><strong>Still triggers a full MPA reload</strong> on navigation — no in-place SPA upgrade</li>
-      <li>Requires JS Service Worker registration, lifecycle management, and boot latency</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Service Worker stream stitching helped cold loads in PWAs, but every link click was still a full browser navigation that destroyed DOM state. Native progressive shells handle both cached cold starts and in-place navigation upgrades declaratively.</p>
-  </section>
-
-  <section class="slide final" id="security-and-questions">
-    <h2>Security &amp; Open Questions</h2>
-    <ul>
-      <li><strong>Path-prefix scoping</strong> (like Service Workers) + strict CSP / COOP / COEP match</li>
-      <li>Any revision or policy mismatch falls back cleanly to a normal MPA load</li>
-      <li><strong>Discussion:</strong> <code>Navigation API</code> integration, script deferral, and cache lifetime</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Invite feedback on the &lt;meta name="shell"&gt; syntax, URLPattern scoping rules, and how navigation upgrades should interact with the Navigation API (NavigateEvent) and View Transitions.</p>
+    <p>Invite feedback on &lt;meta name="shell"&gt;, URLPattern scoping, and Navigation API integration.</p>
   </section>
 
 </body>

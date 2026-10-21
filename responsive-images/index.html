@@ -15,7 +15,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Better Responsive Image Knobs</h1>
-    <h4>Moving sharpness vs. bandwidth control from the browser to the website</h4>
+    <h4>Moving sharpness vs. bandwidth control to the website</h4>
     <address>Noam Rosenthal</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -27,192 +27,132 @@
   </section>
 
   <section class="slide" id="user-problem">
-    <h2>The User-Facing Problem</h2>
-    <p>Every responsive image trades off <strong>sharpness</strong> against <strong>bandwidth</strong>.</p>
+    <h2>Blurry Images vs. Wasted Bandwidth</h2>
     <div class="columns">
       <div>
         <h3>Wasted Bandwidth</h3>
         <ul>
-          <li><code>3x</code> bitmaps fetched for secondary thumbnail grids</li>
-          <li><strong>10× over-fetch</strong> on letterboxed <code>object-fit: contain</code></li>
-          <li>Slower LCP &amp; excess data usage</li>
+          <li><code>3x</code> bitmaps on tiny thumbnails</li>
+          <li><strong>10× over-fetch</strong> on <code>object-fit: contain</code></li>
         </ul>
       </div>
       <div>
         <h3>Blurry Images</h3>
         <ul>
-          <li><strong>33–78% under-fetch</strong> on cropped <code>object-fit: cover</code> cards</li>
-          <li><code>object-fit: scale-down</code> / <code>none</code> unexpectedly upscales small images</li>
-          <li>No way to request extra density for zoomable heroes</li>
+          <li><strong>33–78% under-fetch</strong> on <code>object-fit: cover</code></li>
+          <li><code>scale-down</code> &amp; <code>none</code> upscale small images</li>
+          <li>Soft zoomable heroes</li>
         </ul>
       </div>
     </div>
   </section>
 
   <section class="comment">
-    <p>Users and site owners constantly hit two failure modes: either pages waste megabytes downloading excessive resolution for secondary thumbnails and letterboxed banners, or users see blurry images on square object-fit: cover cards, upscaled scale-down images, and zoomable product photos.</p>
-  </section>
-
-  <section class="slide" id="wrong-party">
-    <h2>Evolving the 2014 Model</h2>
-    <ul>
-      <li>2014 spec left selection <em>"implementation-defined"</em> so UAs could experiment with heuristics</li>
-      <li><strong>UAs are designed for interop; websites know the business trade-offs</strong></li>
-      <li>A browser can't tell a conversion-critical hero photo from the 40th feed thumbnail</li>
-      <li>Meanwhile, useful UA optimizations (like keeping an already-loaded higher-res image) can be standardized!</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>In 2014, leaving selection implementation-defined made sense for experimentation. Over time we learned that UAs are best at interoperable baseline behavior and cache/loaded-image reuse, while websites are the ones positioned to measure context-specific quality vs. bandwidth trade-offs.</p>
+    <p>Every responsive image trades off sharpness against bandwidth. Today users regularly get the worst of both worlds: wasted megabytes on secondary thumbnails and letterboxed banners, and blurry images on square object-fit: cover cards, upscaled scale-down icons, and zoomable hero photos.</p>
   </section>
 
   <section class="slide" id="theme">
-    <h2>The Theme: Standard Baseline, Website Knobs</h2>
-    <div class="columns">
-      <div>
-        <h3>Browser: Interop</h3>
-        <ul>
-          <li>Normative selection + loaded higher-res reuse (<code>#13077</code>)</li>
-          <li>Loop-free 2D &amp; <code>scale-down</code> sizing (<code>#12248</code>, <code>#11428</code>)</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Website: Control</h3>
-        <ul>
-          <li>Density multiplier knob (<code>#13069</code>)</li>
-          <li>2D <code>object-fit</code> &amp; <code>h</code> descriptors (<code>#12248</code>)</li>
-          <li>True pixel inspection (<code>#12565</code>)</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="comment">
-    <p>Our goal is to standardize the browser's selection baseline and move the content-specific knobs to the website—giving site owners clean declarative tools to optimize and measure sharpness vs. bandwidth.</p>
-  </section>
-
-  <section class="slide" id="issue-13077">
-    <h2>1. Normative Source Selection (<code>#13077</code>)</h2>
+    <h2>Who Should Hold the Knobs?</h2>
     <ul>
-      <li>All three engines now share the same baseline density rule:
-        <ul>
-          <li>Sort ascending by density → pick <strong>first candidate <code>&gt;= targetDensity</code></strong></li>
-        </ul>
-      </li>
-      <li>Chrome also avoids fetching a lower-res source when a higher-res candidate is already loaded</li>
-      <li><strong>Proposal:</strong> Standardize both the baseline rule and higher-res reuse normatively</li>
+      <li><strong>Browsers</strong> are built for <strong>interoperability</strong></li>
+      <li><strong>Websites</strong> know the <strong>business trade-offs</strong> (hero vs. 40th thumbnail)</li>
+      <li><strong>Goal:</strong> Standardize the browser baseline; give the tuning knobs to the website</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Now that Chrome retired geometric-mean density rounding in late 2024, all engines use the same density threshold, and Chrome's optimization to keep an already-loaded higher-res image can be standardized rather than left implementation-defined. This unlocks WPT testing and predictable behavior.</p>
+    <p>In 2014 the spec left source selection "implementation-defined" so UAs could guess bandwidth heuristics. Over a decade we learned UAs are built for interop—they can't know if an image is a conversion-critical product photo or a secondary thumbnail. Moving the knobs to the website empowers the party that can actually A/B test business impact.</p>
+  </section>
+
+  <section class="slide" id="issue-13077">
+    <h2>1. Standardize Selection (<code>#13077</code>)</h2>
+    <ul>
+      <li>All engines now use the same baseline: <strong>first candidate <code>&gt;= targetDensity</code></strong></li>
+      <li>Chrome also avoids downloading a lower-res source when a higher-res one is already loaded</li>
+      <li><strong>Proposal:</strong> Spec both normatively</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Since late 2024, WebKit, Gecko, and Blink all use the same density threshold, and Chrome's optimization to reuse an already-loaded higher-res image can be standardized rather than left implementation-defined. This unlocks WPT tests and deterministic knobs.</p>
   </section>
 
   <section class="slide" id="issue-13069">
     <h2>2. Target Density Knob (<code>#13069</code>)</h2>
-    <pre><code>&lt;!-- Save ~44% pixels on below-the-fold thumbnails --&gt;
-&lt;img srcset="t-400.jpg 400w, t-800.jpg 800w"
-     sizes="auto" densityscale="0.75" loading="lazy"&gt;
+    <pre><code>&lt;!-- Save ~44% pixels below the fold --&gt;
+&lt;img srcset="..." sizes="auto" densityscale="0.75" loading="lazy"&gt;
 
-&lt;!-- Extra headroom for a zoomable product hero --&gt;
-&lt;img srcset="p-600.jpg 600w, p-900.jpg 900w"
-     sizes="auto" densityscale="1.5" loading="lazy"&gt;</code></pre>
+&lt;!-- Extra sharpness for zoomable hero --&gt;
+&lt;img srcset="..." sizes="auto" densityscale="1.5" loading="lazy"&gt;</code></pre>
     <ul>
-      <li>Stops sites from <strong>lying in <code>sizes</code></strong> (breaks <code>sizes="auto"</code>) or <strong>lying in <code>w</code> descriptors</strong> (<code>img?w=720 800w</code>)</li>
-      <li>Lets sites A/B test density per component to optimize LCP vs. conversion</li>
+      <li>No more lying in <code>sizes</code> or lying in <code>w</code> descriptors (<code>img?w=720 800w</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Today, because lying in sizes doesn't work with sizes="auto", production sites like Airbnb literally lie in their w descriptors (writing 800w for a 720px file), which breaks CDN caching and 2D aspect ratios. A dedicated densityscale attribute (or resolutionpriority / CSS property) gives sites direct, honest control.</p>
+    <p>Because lying in sizes breaks sizes="auto", production sites like Airbnb literally lie in their w descriptors (writing 800w for a 720px file), which breaks CDN cache sharing and 2D aspect ratios. A densityscale (or resolutionpriority) knob gives sites direct control.</p>
   </section>
 
   <section class="slide" id="issue-12248">
-    <h2>3. 2D <code>sizes</code> &amp; <code>object-fit</code> (<code>#12248</code> / <code>#13053</code>)</h2>
+    <h2>3. 2D <code>sizes</code> &amp; <code>object-fit</code> (<code>#12248</code>)</h2>
     <pre><code>&lt;img loading="lazy" sizes="auto"
      style="width: 400px; height: 400px; object-fit: cover"
-     srcset="sm.jpg 400w 300h, md.jpg 800w 600h, lg.jpg 1200w 900h"&gt;</code></pre>
+     srcset="sm.jpg 400w 300h, md.jpg 800w 600h"&gt;</code></pre>
     <ul>
-      <li><strong>Fixes blurry <code>cover</code> cards:</strong> uses <code>max(W, H·r)</code> instead of 1D width</li>
-      <li><strong>Fixes bloated <code>contain</code> banners:</strong> uses <code>min(W, H·r)</code> (up to 10× savings)</li>
-      <li><strong>Fixes spec bug:</strong> pre-fetch <code>w</code>/<code>h</code> aspect ratio prevents infinite download loops</li>
+      <li><strong><code>cover</code>:</strong> <code>max(W, H·r)</code> → fixes blurry cards</li>
+      <li><strong><code>contain</code>:</strong> <code>min(W, H·r)</code> → fixes 10× over-fetching</li>
+      <li><strong><code>h</code> descriptor:</strong> pre-fetch aspect ratio, zero infinite loops</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>A 4:3 photo in a 400x400 object-fit: cover card is drawn at 533px wide, so 1D sizes under-fetches by 33%. Conversely, a portrait image in a wide object-fit: contain box over-fetches by up to 10x. Reviving the h descriptor in srcset gives the pre-fetch aspect ratio and eliminates the concrete-object-size oscillation loop.</p>
+    <p>PR #13053 revives the h descriptor in srcset as a pre-fetch aspect-ratio hint and makes sizes="auto" 2D and object-fit aware. Because the pre-fetch hint remains authoritative after load, it also fixes the spec's concrete-object-size infinite download loop.</p>
   </section>
 
   <section class="slide" id="issue-11428">
-    <h2>4. Blurry Upscaling with <code>scale-down</code> &amp; <code>none</code> (<code>#11428</code>)</h2>
+    <h2>4. Fix <code>scale-down</code> &amp; <code>none</code> Upscaling (<code>#11428</code>)</h2>
     <pre><code>&lt;div style="width: 800px; height: 600px"&gt;
   &lt;img srcset="logo-200.png 200w" sizes="auto" loading="lazy"
        style="width: 100%; height: 100%; object-fit: scale-down"&gt;
 &lt;/div&gt;</code></pre>
     <ul>
-      <li>Authors use <code>scale-down</code> / <code>none</code> so small images <strong>don't upscale and blur</strong></li>
-      <li>But <code>sizes="800px"</code> sets <code>density = 200/800 = 0.25x</code> → <code>naturalWidth = 800px</code>!</li>
-      <li><strong>Result:</strong> <code>scale-down</code> and <code>none</code> upscale the <code>200px</code> image to <code>800px</code></li>
+      <li>Today: <code>density = 200/800 = 0.25x</code> → <code>naturalWidth = 800px</code>!</li>
+      <li><code>scale-down</code> upscales the <code>200px</code> logo to <code>800px</code> blurry</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>In #11428, when an author puts a 200w image inside an 800px container with object-fit: scale-down or none, they specifically want it not to upscale past 200px. Because w descriptors derive naturalWidth from sizes (200 / 0.25 = 800px), scale-down and none upscale the 200px image to 800px anyway! We need to avoid inflating naturalWidth past native 1x/DPR bounds for scale-down and none.</p>
+    <p>Authors use object-fit: scale-down or none specifically so a small 200px image won't upscale to 800px. But because w descriptors derive naturalWidth from sizes (200 / 0.25 = 800px), scale-down upscales it to 800px anyway! We should not inflate naturalWidth past native 1x/DPR bounds for scale-down and none.</p>
   </section>
 
   <section class="slide" id="issue-12565">
-    <h2>5. True Pixel Dimensions for RUM &amp; Zoom (<code>#12565</code>)</h2>
-    <pre><code>// 800×600 file (800w) rendered in a 400px box with sizes="auto":
-img.naturalWidth;   // 400 (always equals sourceSize / clientWidth!)
-img.resourceWidth;  // 800 (true pixel width of the loaded file)
-img.resourceHeight; // 600 (true pixel height of the loaded file)</code></pre>
+    <h2>5. Expose True File Pixels (<code>#12565</code>)</h2>
+    <pre><code>// 800×600 file rendered in a 400px sizes="auto" box:
+img.naturalWidth;   // 400 (just echoes layout width!)
+img.resourceWidth;  // 800 (true file pixels)
+img.resourceHeight; // 600</code></pre>
     <ul>
-      <li>With <code>w</code> descriptors (and PR <code>#13046</code>), <code>naturalWidth</code> always equals <code>sourceSize</code></li>
-      <li>Exposing <code>resourceWidth</code> / <code>resourceHeight</code> lets sites measure pixel waste in RUM &amp; cap zoom UIs</li>
+      <li>Lets sites measure bandwidth waste in RUM &amp; cap zoom UIs</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>You can't optimize what you can't measure. With w descriptors (and especially PR #13046), naturalWidth is always equal to the resolved sizes width—so under sizes="auto", naturalWidth just echoes clientWidth. Exposing resourceWidth and resourceHeight (or currentPixelDensity) lets RUM scripts measure over/under-fetching and lets lightboxes check real pixel headroom without creating an offscreen new Image().</p>
+    <p>With w descriptors (and PR #13046), naturalWidth always equals sourceSize—so under sizes="auto", naturalWidth just echoes clientWidth. Exposing resourceWidth and resourceHeight lets RUM telemetry measure over/under-fetching and lets lightboxes check real pixel headroom.</p>
   </section>
 
   <section class="slide final" id="summary">
-    <h2>Summary: Putting Websites in Control</h2>
-    <table class="striped">
-      <thead>
-        <tr>
-          <th>Issue</th>
-          <th>Website Control / Interop Fix</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>#13077</code></td>
-          <td>Normative <code>&gt;= targetDensity</code> baseline + higher-res cache reuse</td>
-        </tr>
-        <tr>
-          <td><code>#13069</code></td>
-          <td>Per-image density knob (<code>densityscale</code> / <code>resolutionpriority</code>)</td>
-        </tr>
-        <tr>
-          <td><code>#12248</code></td>
-          <td>2D <code>sizes</code> + <code>h</code> descriptor for <code>object-fit: cover</code> &amp; <code>contain</code> (PR <code>#13053</code>)</td>
-        </tr>
-        <tr>
-          <td><code>#11428</code></td>
-          <td>Stop <code>w</code> descriptors from upscaling <code>object-fit: scale-down</code> &amp; <code>none</code></td>
-        </tr>
-        <tr>
-          <td><code>#12565</code></td>
-          <td>Expose true file pixel dimensions (<code>resourceWidth</code> / <code>resourceHeight</code>)</td>
-        </tr>
-      </tbody>
-    </table>
+    <h2>Summary</h2>
+    <ul>
+      <li><strong><code>#13077</code>:</strong> Normative selection + higher-res cache reuse</li>
+      <li><strong><code>#13069</code>:</strong> Density knob (<code>densityscale</code>)</li>
+      <li><strong><code>#12248</code>:</strong> 2D <code>sizes</code> + <code>h</code> descriptor for <code>cover</code> / <code>contain</code></li>
+      <li><strong><code>#11428</code>:</strong> Don't upscale <code>scale-down</code> / <code>none</code></li>
+      <li><strong><code>#12565</code>:</strong> True pixel dimensions (<code>resourceWidth</code>)</li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>Together, these five issues standardize the browser's baseline behavior and give websites honest, declarative knobs to avoid both wasted bandwidth and blurry images.</p>
+    <p>Together, these five issues standardize the browser baseline and give websites the knobs they need to eliminate both blurry images and wasted bandwidth.</p>
   </section>
 
 </body>
