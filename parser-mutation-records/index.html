@@ -30,8 +30,8 @@
     <h2>What the Parser Knows (and the DOM Forgets)</h2>
     <ul>
       <li><strong>Is this element finished parsing?</strong> (open vs. closed tag)</li>
-      <li><strong>Did a <code>&lt;template&gt;</code> just run?</strong> (<code>shadowrootmode</code>, <code>for</code>, <code>src</code>)</li>
-      <li><strong>Which container triggered this parse?</strong> (<code>innerHTML</code>, patch, stream)</li>
+      <li><strong>Did a <code>&lt;template&gt;</code> just run?</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
+      <li><strong>Which container triggered this parse?</strong> (<code>innerHTML</code>, <code>setHTML</code>, patch)</li>
     </ul>
   </section>
 
@@ -98,7 +98,7 @@ myCard.isParsing; // false</code></pre>
   </section>
 
   <section class="comment">
-    <p>Tracks both &lt;template shadowrootmode&gt; and &lt;template for/src&gt;. templateAttributes is a read-only NamedNodeMap that preserves object identity across all chunks of a single template without retaining a detached DOM tree.</p>
+    <p>Tracks both &lt;template shadowrootmode&gt; and &lt;template for&gt;. templateAttributes is a read-only NamedNodeMap that preserves object identity across all chunks of a single template without retaining a detached DOM tree.</p>
   </section>
 
   <section class="slide" id="alternatives">
