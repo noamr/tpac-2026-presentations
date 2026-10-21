@@ -42,14 +42,14 @@
   <section class="slide" id="pain-points">
     <h2>Why It Hurts Today</h2>
     <ul>
-      <li><code>addedNodes</code> fires on the <strong>start tag</strong> — children may not exist yet</li>
-      <li>Declarative Shadow Roots attach <strong>silently</strong></li>
-      <li>Streaming <code>&lt;template for&gt;</code> patches &amp; <code>streamHTML</code> lack completion boundaries</li>
+      <li><strong>SSR &amp; Hydration:</strong> <code>addedNodes</code> fires on the <strong>start tag</strong> — components hydrate before their children arrive</li>
+      <li><strong>Declarative Shadow DOM:</strong> Shadow roots attach <strong>silently</strong></li>
+      <li><strong>Streaming updates:</strong> <code>&lt;template for&gt;</code> &amp; <code>streamHTML</code> lack completion boundaries</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Custom elements and hydration libraries cannot tell if an element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809); nextSibling hacks add 100ms+ latency and fail on last children. And DSD / streaming patches emit zero lifecycle records.</p>
+    <p>SSR frameworks, custom elements, and hydration libraries cannot tell when a server-streamed element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809); nextSibling hacks add 100ms+ latency and fail on last children. And DSD / streaming patches emit zero lifecycle records.</p>
   </section>
 
   <section class="slide" id="objection">
@@ -59,7 +59,7 @@
     </blockquote>
     <ul>
       <li><strong>True for isolated lifecycle callbacks</strong> (<code>parsedCallback</code> alone)</li>
-      <li><strong>Our goal:</strong> Find the sweet spot — reflect the flow of HTML/server-driven UI while keeping developers aware that <strong>HTML parsing is not the whole story</strong></li>
+      <li><strong>Our goal:</strong> Find the sweet spot — support <strong>SSR frameworks &amp; HTML-driven UI</strong> while keeping developers aware that <strong>HTML parsing is not the whole story</strong></li>
     </ul>
   </section>
 
@@ -132,7 +132,7 @@ myCard.isParsing; // false</code></pre>
   <section class="slide final" id="discussion">
     <h2>Discussion: Finding the Sweet Spot</h2>
     <ul>
-      <li>How do we best support <strong>HTML / server-driven UI</strong> (streaming, <code>streamHTML</code>, patches) without encouraging code that ignores dynamic DOM updates?</li>
+      <li>How do we best support <strong>SSR frameworks &amp; HTML-driven UI</strong> (initial streaming HTML, <code>streamHTML</code>, <code>&lt;template for&gt;</code>) without encouraging code that ignores dynamic DOM updates?</li>
       <li>Is <code>MutationObserver({ parser: true })</code> + <code>node.isParsing</code> the right primitive layer?</li>
     </ul>
   </section>
