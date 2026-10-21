@@ -6,6 +6,7 @@
   <title>It's Time for Client-Side Includes — TPAC 2026</title>
   <link rel="stylesheet" href="../Templates/slides.css">
   <script src="../Templates/b6plus.js"></script>
+  <script src="../Templates/syntax-highlight.js"></script>
 </head>
 <body class="shower fade-in duration=15 hidemouse">
 
@@ -86,12 +87,12 @@
 
   <section class="slide" id="solution">
     <h2>Proposal: Extend <code>&lt;template&gt;</code></h2>
-    <pre><code>&lt;!-- In-place include --&gt;
+    <syntax-highlight language="html">&lt;!-- In-place include --&gt;
 &lt;template src="header.html"&gt;&lt;/template&gt;
 
 &lt;!-- Targeted include --&gt;
 &lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</code></pre>
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
       <li>Self-removes when done — <strong>zero DOM footprint</strong></li>
     </ul>
@@ -106,19 +107,19 @@
     <div class="columns">
       <div>
         <h3>Streaming (default)</h3>
-        <pre><code>&lt;template
+        <syntax-highlight language="html">&lt;template
   for="rows"
   src="rows.html"&gt;
-&lt;/template&gt;</code></pre>
+&lt;/template&gt;</syntax-highlight>
         <p>Streams straight into DOM.</p>
       </div>
       <div>
         <h3>Buffered (<code>buffer</code>)</h3>
-        <pre><code>&lt;template
+        <syntax-highlight language="html">&lt;template
   for="comments"
   src="comments.html"
   buffer&gt;
-&lt;/template&gt;</code></pre>
+&lt;/template&gt;</syntax-highlight>
         <p>Commits atomically on EOF.</p>
       </div>
     </div>
@@ -130,13 +131,13 @@
 
   <section class="slide" id="cls">
     <h2>Zero Layout Shift with <code>rel="expect"</code></h2>
-    <pre><code>&lt;head&gt;
+    <syntax-highlight language="html">&lt;head&gt;
   &lt;link rel="expect" href="#site-header" blocking="render"&gt;
 &lt;/head&gt;
 &lt;body&gt;
   &lt;template src="header.html"&gt;&lt;/template&gt;
   &lt;main&gt;Painted together with #site-header&lt;/main&gt;
-&lt;/body&gt;</code></pre>
+&lt;/body&gt;</syntax-highlight>
   </section>
 
   <section class="comment">

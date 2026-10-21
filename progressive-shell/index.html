@@ -6,6 +6,7 @@
   <title>Progressive Shells — TPAC 2026</title>
   <link rel="stylesheet" href="../Templates/slides.css">
   <script src="../Templates/b6plus.js"></script>
+  <script src="../Templates/syntax-highlight.js"></script>
 </head>
 <body class="shower fade-in duration=15 hidemouse">
 
@@ -85,16 +86,16 @@
 
   <section class="slide" id="proposal">
     <h2>Proposal: Progressive Shells</h2>
-    <pre><code>&lt;head&gt;
+    <syntax-highlight language="html">&lt;head&gt;
   &lt;meta name="shell" content="name=store, revision=v1,
-                              pattern=/item/:id, upgrade=always"&gt;
+    pattern=/item/:id, upgrade=always"&gt;
 &lt;/head&gt;
 &lt;body&gt;
   &lt;header&gt;&lt;input type="search"&gt;&lt;/header&gt;
   &lt;main&gt;&lt;?start name="item"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
   &lt;?shellboundary name="store"&gt;
   &lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;
-&lt;/body&gt;</code></pre>
+&lt;/body&gt;</syntax-highlight>
   </section>
 
   <section class="comment">

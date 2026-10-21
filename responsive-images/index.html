@@ -6,6 +6,7 @@
   <title>Better Responsive Image Knobs — TPAC 2026</title>
   <link rel="stylesheet" href="../Templates/slides.css">
   <script src="../Templates/b6plus.js"></script>
+  <script src="../Templates/syntax-highlight.js"></script>
 </head>
 <body class="shower fade-in duration=15 hidemouse">
 
@@ -79,11 +80,11 @@
 
   <section class="slide" id="issue-13069">
     <h2>2. Target Density Knob (<code>#13069</code>)</h2>
-    <pre><code>&lt;!-- Save ~44% pixels below the fold --&gt;
-&lt;img srcset="..." sizes="auto" densityscale="0.75" loading="lazy"&gt;
+    <syntax-highlight language="html">&lt;!-- Save ~44% pixels below the fold --&gt;
+&lt;img srcset="..." sizes="auto" densityscale="0.75"&gt;
 
 &lt;!-- Extra sharpness for zoomable hero --&gt;
-&lt;img srcset="..." sizes="auto" densityscale="1.5" loading="lazy"&gt;</code></pre>
+&lt;img srcset="..." sizes="auto" densityscale="1.5"&gt;</syntax-highlight>
     <ul>
       <li>No more lying in <code>sizes</code> or lying in <code>w</code> descriptors (<code>img?w=720 800w</code>)</li>
     </ul>
@@ -95,9 +96,9 @@
 
   <section class="slide" id="issue-12248">
     <h2>3. 2D <code>sizes</code> &amp; <code>object-fit</code> (<code>#12248</code>)</h2>
-    <pre><code>&lt;img loading="lazy" sizes="auto"
-     style="width: 400px; height: 400px; object-fit: cover"
-     srcset="sm.jpg 400w 300h, md.jpg 800w 600h"&gt;</code></pre>
+    <syntax-highlight language="html">&lt;img loading="lazy" sizes="auto"
+  style="width: 400px; height: 400px; object-fit: cover"
+  srcset="sm.jpg 400w 300h, md.jpg 800w 600h"&gt;</syntax-highlight>
     <ul>
       <li><strong><code>cover</code>:</strong> <code>max(W, H·r)</code> → fixes blurry cards</li>
       <li><strong><code>contain</code>:</strong> <code>min(W, H·r)</code> → fixes 10× over-fetching</li>
@@ -110,11 +111,11 @@
   </section>
 
   <section class="slide" id="issue-11428">
-    <h2>4. Fix <code>scale-down</code> &amp; <code>none</code> Upscaling (<code>#11428</code>)</h2>
-    <pre><code>&lt;div style="width: 800px; height: 600px"&gt;
-  &lt;img srcset="logo-200.png 200w" sizes="auto" loading="lazy"
-       style="width: 100%; height: 100%; object-fit: scale-down"&gt;
-&lt;/div&gt;</code></pre>
+    <h2>4. Fix <code>scale-down</code> Upscaling (<code>#11428</code>)</h2>
+    <syntax-highlight language="html">&lt;div style="width: 800px; height: 600px"&gt;
+  &lt;img srcset="logo.png 200w" sizes="auto" loading="lazy"
+    style="width: 100%; object-fit: scale-down"&gt;
+&lt;/div&gt;</syntax-highlight>
     <ul>
       <li>Today: <code>density = 200/800 = 0.25x</code> → <code>naturalWidth = 800px</code>!</li>
       <li><code>scale-down</code> upscales the <code>200px</code> logo to <code>800px</code> blurry</li>
@@ -127,10 +128,10 @@
 
   <section class="slide" id="issue-12565">
     <h2>5. Expose True File Pixels (<code>#12565</code>)</h2>
-    <pre><code>// 800×600 file rendered in a 400px sizes="auto" box:
+    <syntax-highlight language="js">// 800×600 file rendered in a 400px sizes="auto" box:
 img.naturalWidth;   // 400 (just echoes layout width!)
 img.resourceWidth;  // 800 (true file pixels)
-img.resourceHeight; // 600</code></pre>
+img.resourceHeight; // 600</syntax-highlight>
     <ul>
       <li>Lets sites measure bandwidth waste in RUM &amp; cap zoom UIs</li>
     </ul>

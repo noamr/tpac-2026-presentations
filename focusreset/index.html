@@ -6,6 +6,7 @@
   <title>The focusreset Event — TPAC 2026</title>
   <link rel="stylesheet" href="../Templates/slides.css">
   <script src="../Templates/b6plus.js"></script>
+  <script src="../Templates/syntax-highlight.js"></script>
 </head>
 <body class="shower fade-in duration=15 hidemouse">
 
@@ -68,9 +69,9 @@
 
   <section class="slide" id="proposal">
     <h2>Proposal: <code>focusreset</code> on <code>Document</code></h2>
-    <pre><code>document.addEventListener("focusreset", () =&gt; {
+    <syntax-highlight language="js">document.addEventListener("focusreset", () =&gt; {
   fallbackElement.focus();
-});</code></pre>
+});</syntax-highlight>
     <ul>
       <li>Fires in the <strong>mutation observer microtask</strong> (before paint)</li>
       <li>Plain <code>Event</code> — no reference to the detached node</li>
@@ -83,8 +84,8 @@
 
   <section class="slide" id="cancellation">
     <h2>Smart Auto-Cancellation</h2>
-    <pre><code>item.remove();
-nextItem.focus(); // -&gt; Cancels pending focusreset!</code></pre>
+    <syntax-highlight language="js">item.remove();
+nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
     <ul>
       <li>Only fires for <strong>unhandled</strong> focus loss</li>
       <li>Nested <code>&lt;iframe&gt;</code>s: checks <code>hasFocus()</code> on removal &amp; dispatch</li>
