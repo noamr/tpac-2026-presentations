@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width" name="viewport">
+  <title>Parser-Aware MutationObserver — TPAC 2026</title>
+  <link rel="stylesheet" href="../Templates/slides.css">
+  <script src="../Templates/b6plus.js"></script>
+</head>
+<body class="shower fade-in duration=15 hidemouse">
+
+  <div class="progress"></div>
+  <div class="clock"></div>
+  <div role="region" aria-live="assertive">Leaving slide mode.</div>
+
+  <section class="slide cover clear" id="cover">
+    <h1>Parser-Aware <code>MutationObserver</code></h1>
+    <h4>Exposing HTML parser state on <code>MutationRecord</code></h4>
+    <address>Noam Rosenthal</address>
+    <p class="event">TPAC 2026<br>
+      Dublin, Ireland &amp; online<br>
+      26–30 October 2026</p>
+  </section>
+
+  <section class="comment">
+    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Proposes extending MutationObserver with { parser: true } and Node/ShadowRoot with isParsing.</p>
+  </section>
+
+  <section class="slide" id="problem">
+    <h2>The Parser–DOM Gap</h2>
+    <p>The HTML parser tracks state that vanishes before reaching the DOM:</p>
+    <ul>
+      <li><strong>Open-element stack</strong> — is an element still receiving children, or closed (<code>&lt;/el&gt;</code>)?</li>
+      <li><strong>Consumed <code>&lt;template&gt;</code>s</strong> — <code>shadowrootmode</code> &amp; <code>for</code> never enter the tree</li>
+      <li><strong>Fragment context</strong> — which root triggered <code>innerHTML</code>, <code>streamHTML*</code>, or a patch?</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>As HTML gains more streaming and declarative primitives (Declarative Shadow DOM, &lt;template for&gt;, element.streamHTMLUnsafe), the gap between what the parser is doing and what MutationObserver reports has become a major pain point.</p>
+  </section>
+
+  <section class="slide" id="pain-points">
+    <h2>Why It Hurts Today</h2>
+    <ul>
+      <li><code>addedNodes</code> fires on <strong>start tags</strong> — children may arrive in later network chunks</li>
+      <li><code>nextSibling</code> workarounds cost <strong>100ms+</strong> and fail on last-child elements</li>
+      <li>Declarative Shadow Roots attach <strong>silently</strong> (zero <code>MutationRecord</code>s)</li>
+      <li>Streaming <code>&lt;template for&gt;</code> patches look identical to ordinary DOM mutations</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Custom elements and hydration libraries cannot tell if an element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809). Polyfills and DevTools cannot detect when a declarative shadow root is attached or when a streaming patch starts, updates, or aborts.</p>
+  </section>
+
+  <section class="slide" id="proposal">
+    <h2>Proposal: <code>{ parser: true }</code></h2>
+    <pre><code>observer.observe(document, {
+  childList: true,
+  subtree: true,
+  parser: true
+});</code></pre>
+    <ul>
+      <li><code>element.isParsing</code> / <code>shadowRoot.isParsing</code> getter</li>
+      <li><code>record.parsedElements</code> (<code>NodeList</code>)</li>
+      <li><code>record.templateStatus</code> &amp; <code>record.templateAttributes</code></li>
+      <li><code>record.parserContextElement</code></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>All parser metadata is opt-in via parser: true on MutationObserverInit, keeping existing observers 100% backward compatible with zero extra overhead.</p>
+  </section>
+
+  <section class="slide" id="parsed-elements">
+    <h2><code>isParsing</code> &amp; <code>parsedElements</code></h2>
+    <pre><code>// Chunk 1: "&lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;"
+//   addedNodes: [my-card], parsedElements: []
+//   myCard.isParsing === true
+
+// Chunk 2: "&lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;"
+//   target: my-card, addedNodes: [p], parsedElements: [p, my-card]
+//   myCard.isParsing === false</code></pre>
+    <p class="note">Coalesced onto existing <code>childList</code> records whenever possible — no extra records.</p>
+  </section>
+
+  <section class="comment">
+    <p>When an element opens and closes in the same chunk, it appears in both addedNodes and parsedElements of the same MutationRecord. If split across network chunks, parsedElements is attached to the last child record or a standalone record on close.</p>
+  </section>
+
+  <section class="slide" id="template-lifecycle">
+    <h2>Observing Consumed <code>&lt;template&gt;</code>s</h2>
+    <p>Tracks <code>&lt;template shadowrootmode&gt;</code> and <code>&lt;template for&gt;</code> / <code>&lt;template src&gt;</code>:</p>
+    <ul>
+      <li><code>templateStatus</code>: <code>"start"</code> → <code>"update"</code> → <code>"end"</code> (or <code>"abort"</code>)</li>
+      <li><code>templateAttributes</code>: read-only <code>NamedNodeMap</code> of the consumed <code>&lt;template&gt;</code></li>
+      <li>Same <code>templateAttributes</code> object identity across all chunks of one template</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Because parser-consumed templates are never inserted into the DOM, exposing their attributes via a read-only NamedNodeMap avoids retaining detached DOM trees while still letting observers read for, src, shadowrootmode, or custom data-* attributes.</p>
+  </section>
+
+  <section class="slide" id="example">
+    <h2>Example: DSD &amp; Streaming Patches</h2>
+    <pre><code>for (const r of records) {
+  if (r.templateStatus === "start" &amp;&amp;
+      r.templateAttributes.getNamedItem("shadowrootmode")) {
+    observeShadowRoot(r.target.shadowRoot);
+  }
+  if (r.templateStatus === "end" &amp;&amp;
+      r.templateAttributes.getNamedItem("for")) {
+    finalizePatch(r.parserContextElement, r.templateAttributes);
+  }
+}</code></pre>
+  </section>
+
+  <section class="comment">
+    <p>A single observer can now discover Declarative Shadow Roots the moment they attach (even if empty) and track the exact start, chunked updates, and completion of streaming HTML patches.</p>
+  </section>
+
+  <section class="slide" id="context-element">
+    <h2><code>parserContextElement</code></h2>
+    <ul>
+      <li>Points to the fragment root for <code>innerHTML</code>, <code>setHTML</code>, <code>streamHTML*</code>, or <code>&lt;template for&gt;</code></li>
+      <li><code>null</code> for the main document parser or imperative DOM calls (<code>appendChild</code>)</li>
+      <li>Lets a single document-wide observer attribute mutations to the container being updated</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>When a subtree observer sits on document.body, mutations deep inside a patched container have r.target set to the immediate parent. parserContextElement tells the observer which container initiated the fragment parse.</p>
+  </section>
+
+  <section class="slide" id="alternatives">
+    <h2>Alternatives Considered</h2>
+    <ul>
+      <li><strong>New <code>MutationRecord.type</code> (<code>"parsedElement"</code>)</strong> — doubles record allocations during initial page parse</li>
+      <li><strong>DOM events (<code>parseend</code>, <code>patchstart</code>)</strong> — repeats <code>MutationEvent</code> per-node dispatch overhead</li>
+      <li><strong>Separate <code>PatchObserver</code></strong> — splits ordering between DOM insertions and parser boundaries</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Piggybacking on MutationObserver's existing microtask batching and coalescing parsedElements onto childList records keeps memory and CPU overhead near zero.</p>
+  </section>
+
+  <section class="slide final" id="discussion">
+    <h2>Open Questions &amp; Discussion</h2>
+    <ul>
+      <li>Custom Element ergonomics: add <code>parsedCallback()</code> &amp; <code>shadowRootAttachedCallback()</code>?</li>
+      <li>Should DSD <code>"start"</code> include <code>[shadowRoot]</code> in <code>addedNodes</code>?</li>
+      <li>Feedback on <code>{ parser: true }</code> shape and attribute map ergonomics</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>If we add parsedCallback() on Custom Elements, its semantics can be defined directly on top of isParsing (firing once per connection after isParsing becomes false), while MutationObserver handles general subtree observation.</p>
+  </section>
+
+</body>
+</html>
