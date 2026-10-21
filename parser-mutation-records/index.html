@@ -31,12 +31,12 @@
     <ul>
       <li><strong>Is this element finished parsing?</strong> (open vs. closed tag)</li>
       <li><strong>Did a <code>&lt;template&gt;</code> just run?</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
-      <li><strong>Which container triggered this parse?</strong> (<code>innerHTML</code>, <code>setHTML</code>, patch)</li>
+      <li><strong>Which container triggered this parse?</strong> (<code>innerHTML</code>, <code>setHTML</code>, <code>streamHTML</code>, patch)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>The HTML parser tracks the stack of open elements, consumes special &lt;template&gt; directives (Declarative Shadow DOM and &lt;template for&gt;), and knows the fragment context root—none of which is visible to MutationObserver today.</p>
+    <p>The HTML parser tracks the stack of open elements, consumes special &lt;template&gt; directives (Declarative Shadow DOM and &lt;template for&gt;), and knows the fragment context root for innerHTML, setHTML, streamHTML, and patches—none of which is visible to MutationObserver today.</p>
   </section>
 
   <section class="slide" id="pain-points">
@@ -44,12 +44,27 @@
     <ul>
       <li><code>addedNodes</code> fires on the <strong>start tag</strong> — children may not exist yet</li>
       <li>Declarative Shadow Roots attach <strong>silently</strong></li>
-      <li>Streaming <code>&lt;template for&gt;</code> patches are invisible to observers</li>
+      <li>Streaming <code>&lt;template for&gt;</code> patches &amp; <code>streamHTML</code> lack completion boundaries</li>
     </ul>
   </section>
 
   <section class="comment">
     <p>Custom elements and hydration libraries cannot tell if an element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809); nextSibling hacks add 100ms+ latency and fail on last children. And DSD / streaming patches emit zero lifecycle records.</p>
+  </section>
+
+  <section class="slide" id="objection">
+    <h2>The Classic Objection</h2>
+    <blockquote>
+      <p>“If we expose a parser-completion hook, developers will rely on it and forget to handle dynamic DOM updates.”</p>
+    </blockquote>
+    <ul>
+      <li><strong>True for isolated lifecycle callbacks</strong> (<code>parsedCallback</code> alone)</li>
+      <li><strong>Our goal:</strong> Find the sweet spot — reflect the flow of HTML/server-driven UI while keeping developers aware that <strong>HTML parsing is not the whole story</strong></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>In past discussions around parsedCallback (w3c/webcomponents#809), a valid concern was that authors would write components that only work when parsed from HTML and break when children are appended dynamically via JS. Putting parser state directly on MutationRecord—alongside addedNodes and removedNodes—keeps parser boundaries inside the unified DOM mutation pipeline rather than pretending parsing is the only way DOM changes happen.</p>
   </section>
 
   <section class="slide" id="proposal">
@@ -67,7 +82,7 @@
   </section>
 
   <section class="comment">
-    <p>Opt-in via parser: true on MutationObserverInit. Existing observers pay zero overhead.</p>
+    <p>Opt-in via parser: true on MutationObserverInit. Parser state arrives in the exact same MutationRecords as childList mutations, so observers naturally handle both dynamic DOM updates and chunked HTML parsing together.</p>
   </section>
 
   <section class="slide" id="parsed-elements">
@@ -106,24 +121,24 @@ myCard.isParsing; // false</code></pre>
     <ul>
       <li><strong>New record type (<code>"parsedElement"</code>)</strong> — 2× record allocations</li>
       <li><strong>DOM events (<code>parseend</code>)</strong> — <code>MutationEvent</code> storm</li>
-      <li><strong>Separate <code>PatchObserver</code></strong> — loses ordering with DOM mutations</li>
+      <li><strong>Separate <code>PatchObserver</code></strong> — splits parser flow from dynamic DOM mutations</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Piggybacking on MutationObserver's existing microtask batching and coalescing onto childList records keeps memory and CPU overhead near zero.</p>
+    <p>A separate PatchObserver or standalone event would isolate parser events from ordinary DOM mutations. Coalescing onto childList MutationRecords keeps zero extra allocation overhead and unifies parser + dynamic DOM observation.</p>
   </section>
 
   <section class="slide final" id="discussion">
-    <h2>Discussion</h2>
+    <h2>Discussion: Finding the Sweet Spot</h2>
     <ul>
-      <li>Add Custom Element <code>parsedCallback()</code> on top of <code>isParsing</code>?</li>
-      <li>Feedback on <code>{ parser: true }</code> shape?</li>
+      <li>How do we best support <strong>HTML / server-driven UI</strong> (streaming, <code>streamHTML</code>, patches) without encouraging code that ignores dynamic DOM updates?</li>
+      <li>Is <code>MutationObserver({ parser: true })</code> + <code>node.isParsing</code> the right primitive layer?</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>If we add parsedCallback() on Custom Elements, its semantics can be defined directly on top of isParsing, while MutationObserver handles general subtree observation.</p>
+    <p>Open discussion on how { parser: true } and node.isParsing hit the balance between ergonomic server-driven/streaming HTML observation and reminding developers that DOM trees also mutate dynamically after parsing.</p>
   </section>
 
 </body>
