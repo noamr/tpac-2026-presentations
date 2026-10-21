@@ -30,26 +30,26 @@
     <h2>What the Parser Knows (and the DOM Forgets)</h2>
     <ul>
       <li><strong>Is this element finished parsing?</strong> (open vs. closed tag)</li>
-      <li><strong>Did a <code>&lt;template&gt;</code> just run?</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
+      <li><strong><code>&lt;template&gt;</code>s that don't attach to the DOM</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
       <li><strong>Which container triggered this parse?</strong> (<code>innerHTML</code>, <code>setHTML</code>, <code>streamHTML</code>, patch)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>The HTML parser tracks the stack of open elements, consumes special &lt;template&gt; directives (Declarative Shadow DOM and &lt;template for&gt;), and knows the fragment context root for innerHTML, setHTML, streamHTML, and patches—none of which is visible to MutationObserver today.</p>
+    <p>The HTML parser tracks the stack of open elements, processes special &lt;template&gt; elements that are consumed by the parser without ever attaching to the DOM (Declarative Shadow DOM and &lt;template for&gt;), and knows the fragment context root—none of which is visible to MutationObserver today.</p>
   </section>
 
   <section class="slide" id="pain-points">
     <h2>Why It Hurts Today</h2>
     <ul>
       <li><strong>SSR &amp; Hydration:</strong> <code>addedNodes</code> fires on the <strong>start tag</strong> — components hydrate before their children arrive</li>
-      <li><strong>Declarative Shadow DOM:</strong> Shadow roots attach <strong>silently</strong></li>
-      <li><strong>Streaming updates:</strong> <code>&lt;template for&gt;</code> &amp; <code>streamHTML</code> lack completion boundaries</li>
+      <li><strong>Declarative Shadow DOM:</strong> <code>&lt;template shadowrootmode&gt;</code> never attaches to the DOM — shadow roots appear <strong>silently</strong></li>
+      <li><strong>Declarative patches (<code>&lt;template for&gt;</code>):</strong> Never attach to the DOM — no patch attribution, completion boundary, or missing-target signal</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>SSR frameworks, custom elements, and hydration libraries cannot tell when a server-streamed element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809); nextSibling hacks add 100ms+ latency and fail on last children. And DSD / streaming patches emit zero lifecycle records.</p>
+    <p>SSR frameworks, custom elements, and hydration libraries cannot tell when a server-streamed element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809). And non-attaching &lt;template&gt; elements (&lt;template shadowrootmode&gt; and &lt;template for&gt;) never enter addedNodes, so observers can't attribute mutations to a patch, know when a patch finishes, or detect when a patch's target was missing.</p>
   </section>
 
   <section class="slide" id="quotes">
@@ -117,7 +117,7 @@ myCard.isParsing; // false</code></pre>
   </section>
 
   <section class="slide" id="template-lifecycle">
-    <h2>Observing Consumed <code>&lt;template&gt;</code>s</h2>
+    <h2>Observing Non-Attaching <code>&lt;template&gt;</code>s</h2>
     <pre><code>for (const r of records) {
   if (r.templateStatus === "start") {
     // DSD attached or &lt;template for&gt; patch started!
