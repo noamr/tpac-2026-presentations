@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width" name="viewport">
+  <title>Connection Allowlists — TPAC 2026</title>
+  <link rel="stylesheet" href="../Templates/slides.css">
+  <script src="../Templates/b6plus.js"></script>
+  <script src="../Templates/syntax-highlight.js"></script>
+</head>
+<body class="shower fade-in duration=15 hidemouse">
+
+  <div class="progress"></div>
+  <div class="clock"></div>
+  <div role="region" aria-live="assertive">Leaving slide mode.</div>
+
+  <section class="slide cover clear" id="cover">
+    <h1>Connection Allowlists</h1>
+    <h4>Status update, embedded enforcement &amp; path to W3C</h4>
+    <address>Noam Rosenthal &amp; Mike West</address>
+    <p class="event">TPAC 2026<br>
+      Dublin, Ireland &amp; online<br>
+      26–30 October 2026</p>
+  </section>
+
+  <section class="comment">
+    <p>Spec &amp; Explainer: https://github.com/WICG/connection-allowlists and https://github.com/WICG/connection-allowlists/blob/main/iframe-embedded-enforcement-explainer.md. Session: Tuesday, Oct 27, 13:45–14:15 GMT in WebAppSec WG.</p>
+  </section>
+
+  <section class="slide" id="recap">
+    <h2>Recap: One Job, Done Simply</h2>
+    <syntax-highlight language="js">// Structured Field HTTP response header:
+Connection-Allowlist: (response-origin "https://*.site.example"
+  "https://cdn.example"); report-to=endpoint</syntax-highlight>
+    <ul>
+      <li><strong>Why not CSP?</strong> CSP mixes XSS, framing, and subresource rules in a complex grammar</li>
+      <li><strong>One job:</strong> Block any outbound connection not matching the allowlist (<code>URLPattern</code>s + <code>response-origin</code>)</li>
+      <li>Covers <strong>Fetch, navigations, WebSockets, WebTransport, WebRTC, <code>dns-prefetch</code>, <code>preconnect</code></strong></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Sometimes the best way to design a security primitive is to do one thing clearly. Content Security Policy tries to solve content injection, framing, and network restrictions all at once. Connection Allowlists focuses purely on exfiltration defense-in-depth: a single Structured Field header using URLPattern syntax that blocks unauthorized connections before they are made across Fetch, navigations, WebRTC, WebTransport, and preconnect/dns-prefetch.</p>
+  </section>
+
+  <section class="slide" id="status">
+    <h2>Status Update</h2>
+    <ul>
+      <li><strong>Spec &amp; prototypes</strong> in <a href="https://github.com/WICG/connection-allowlists"><code>WICG/connection-allowlists</code></a> (Chromium &amp; Edge)</li>
+      <li><strong>Workers:</strong> Service/Shared Worker inheritance + <code>navigate()</code> / <code>openWindow()</code> (<a href="https://github.com/WICG/connection-allowlists/pull/26"><code>#26</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/39"><code>#39</code></a>)</li>
+      <li><strong>Pre-request plumbing:</strong> Early Hints (<code>103</code>), <code>dns-prefetch</code>, <code>preconnect</code> (<a href="https://github.com/WICG/connection-allowlists/pull/30"><code>#30</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/33"><code>#33</code></a>)</li>
+      <li><strong>Embedded Enforcement:</strong> <code>&lt;iframe connectionAllowlist&gt;</code> (<a href="https://github.com/WICG/connection-allowlists/pull/29"><code>#29</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/35"><code>#35</code></a> w/ Brandon Maslen)</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Over the past few months we've closed the big gaps in the WICG spec: Service Worker and Shared Worker integration, 103 Early Hints, dns-prefetch and preconnect environment plumbing, local schemes, and—thanks to Brandon Maslen from Edge—Embedded Enforcement for iframes.</p>
+  </section>
+
+  <section class="slide" id="embedded-problem">
+    <h2>Why Embedded Enforcement?</h2>
+    <svg class="chart" viewBox="0 0 680 125" aria-label="Cross-origin iframe bypass without embedded enforcement vs constrained subtree with embedded enforcement">
+      <rect x="10" y="10" width="320" height="105" rx="6" fill="#f85149" fill-opacity="0.12" stroke="#f85149" stroke-width="1.5"/>
+      <text x="170" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Without Embedded Enforcement ❌</text>
+      <text x="170" y="54" text-anchor="middle" font-size="11" fill="currentColor">Parent: Connection-Allowlist: (response-origin)</text>
+      <text x="170" y="73" text-anchor="middle" font-size="11" fill="currentColor">↳ embeds &lt;iframe src="https://widget.example"&gt;</text>
+      <text x="170" y="94" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">Widget has its own policy → fetches evil.example!</text>
+
+      <rect x="350" y="10" width="320" height="105" rx="6" fill="#2ea043" fill-opacity="0.12" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="510" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">With &lt;iframe connectionAllowlist&gt; ✔</text>
+      <text x="510" y="54" text-anchor="middle" font-size="11" fill="currentColor">Parent requires (response-origin) on iframe</text>
+      <text x="510" y="73" text-anchor="middle" font-size="11" fill="currentColor">↳ Widget opts in (or is blocked from loading)</text>
+      <text x="510" y="94" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ea043">Widget + nested frames/workers are capped ✔</text>
+    </svg>
+    <ul>
+      <li>Cross-origin iframes bring their own policy container</li>
+      <li>Your exfiltration defense is only as strong as your most permissive child frame</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>A document's Connection-Allowlist only governs its own connections. But real pages embed cross-origin widgets, players, and subframes. Because a cross-origin iframe gets its own policy container from its own response, data the parent can't exfiltrate directly could be handed to a permissive child frame. Embedded enforcement lets the embedder extend its guarantee across the entire embedded subtree.</p>
+  </section>
+
+  <section class="slide" id="embedded-how">
+    <h2>How Embedded Enforcement Works</h2>
+    <syntax-highlight language="html">&lt;iframe connectionAllowlist='("https://api.example" response-origin)'
+        src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
+    <ul>
+      <li><strong>Request:</strong> Sends <code>Sec-Required-Connection-Allowlist</code> header</li>
+      <li><strong>Mandatory Opt-In:</strong> Child must assert a <strong>subset <code>Connection-Allowlist</code></strong>, return <code>Allow-Connection-Allowlist-From</code>, or use a local scheme (<code>srcdoc</code> / <code>data:</code>)</li>
+      <li><strong>No Escape by Nesting:</strong> Inherited by subframes &amp; workers (can only tighten)</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Modeled directly on CSP Embedded Enforcement: the embedder sets connectionAllowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by already serving a subset Connection-Allowlist or by returning Allow-Connection-Allowlist-From. The unresolved requirement is inherited down the frame tree, and response-origin re-resolves to each frame's own origin.</p>
+  </section>
+
+  <section class="slide" id="upstreaming">
+    <h2>Path to W3C &amp; Upstreaming</h2>
+    <ul>
+      <li><strong>1. Graduate from WICG → W3C WebAppSec WG</strong></li>
+      <li><strong>2. Upstream Fetch monkey-patches:</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> &amp; <em>obtain a connection</em> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
+      <li><strong>3. Upstream HTML monkey-patches:</strong> Policy container fields, <code>&lt;iframe connectionAllowlist&gt;</code>, <code>dns-prefetch</code> &amp; <code>preconnect</code></li>
+      <li><strong>4. WebRTC &amp; Service Workers:</strong> Candidate check + <code>navigate()</code> / <code>openWindow()</code></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Our goal is to move Connection Allowlists from WICG into the W3C WebAppSec Working Group and upstream the monkey-patches into Fetch, HTML, WebRTC, and Service Workers. In particular, Fetch's low-level "resolve an origin" and "obtain a connection" algorithms need an environment parameter so lower-level connections like WebTransport, preconnect, and dns-prefetch are centrally checked.</p>
+  </section>
+
+  <section class="slide final" id="discussion">
+    <h2>Discussion &amp; Open Questions</h2>
+    <ul>
+      <li><strong>Moving to W3C WebAppSec WG</strong> — ready for adoption?</li>
+      <li><strong>Upstreaming to Fetch &amp; HTML:</strong> Central check in <em>resolve an origin</em> / <em>obtain a connection</em> vs. per-callsite? Sharing embedded-enforcement scaffolding with CSP-EE?</li>
+      <li><strong>Edge cases:</strong> Custom URL schemes (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>) &amp; dynamic attribute updates on originless iframes (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>)</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Open the floor for WebAppSec WG adoption, feedback on upstreaming the Fetch and HTML monkey-patches (including sharing the embedded enforcement plumbing with CSP-EE), and edge cases like custom scheme navigations (#40) and dynamic connectionAllowlist updates on about:blank/srcdoc iframes (#37).</p>
+  </section>
+
+</body>
+</html>
