@@ -59,14 +59,14 @@
   </section>
 
   <section class="slide" id="workarounds">
-    <h2>Today's Hacks</h2>
+    <h2>Bent-Backwards Workarounds Today</h2>
     <div class="columns">
       <div>
         <h3><code>MutationObserver</code></h3>
         <p>Radix UI, <code>focus-trap</code></p>
         <ul>
           <li>Runs on <em>every</em> DOM edit</li>
-          <li>Fails in Shadow DOM</li>
+          <li>Breaks in Shadow DOM</li>
         </ul>
       </div>
       <div>
@@ -81,7 +81,7 @@
   </section>
 
   <section class="comment">
-    <p>Major UI libraries either observe every childList mutation on document.body or poll document.activeElement on a 200ms timer just to detect when focus fell back to body.</p>
+    <p>When a simple signal is missing from the platform, libraries end up inventing bent-backwards workarounds: either observing every single childList mutation on document.body or polling document.activeElement on a 200ms timer just to notice that focus silently dropped to body.</p>
   </section>
 
   <section class="slide" id="proposal">

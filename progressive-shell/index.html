@@ -28,18 +28,18 @@
   </section>
 
   <section class="slide" id="goal">
-    <h2>The Goal: Instant, Seamless Navigations</h2>
-    <p>Whether MPA or SPA, every navigation should:</p>
+    <h2>Speed vs. Smoothness in Navigation</h2>
+    <p>Art-directing a seamless navigation without “everything is JS”:</p>
     <ol>
-      <li><strong>Respond at 0ms</strong> — instant shell / skeleton on click or cold start</li>
-      <li><strong>Stay interactive</strong> — no “frozen frame” while waiting for TTFB</li>
-      <li><strong>Preserve state</strong> — never wipe active typing, focus, or scroll</li>
+      <li><strong>Respond at 0ms</strong> — instant shell on click or cold start</li>
+      <li><strong>Stay interactive</strong> — no long frozen frame while waiting for TTFB</li>
+      <li><strong>Keep user state</strong> — never wipe active typing, focus, or scroll</li>
     </ol>
-    <p class="note">And you can't full-prerender 50 product links on a grid.</p>
+    <p class="note">And we can't full-prerender 50 product links on a grid.</p>
   </section>
 
   <section class="comment">
-    <p>Today MPAs freeze the screen (paint holding) until TTFB and then wipe all DOM state on swap. SPAs pay a heavy JS router/hydration tax and still have slow cold starts. Full-page Speculation Rules can't prerender 50 links on a page. How do we make every navigation instant and seamless?</p>
+    <p>For better and for worse, many sites adopt an SPA architecture just to control their loading sequence and avoid a flash or frozen screen between pages. How do we let developers balance speed and smoothness—without forcing them into "everything is JS" or prerendering 50 full pages?</p>
   </section>
 
   <section class="slide" id="attempt-1">
@@ -149,7 +149,7 @@
   </section>
 
   <section class="slide" id="two-modes">
-    <h2>One File, Both MPA &amp; SPA Superpowers</h2>
+    <h2>One HTML File, Two Ways to Navigate</h2>
     <div class="columns">
       <div>
         <h3>1. Instant Shell (Cold / Cross-Shell)</h3>
@@ -171,7 +171,7 @@
     <ul>
       <li><strong>vs. HTTP Content Negotiation (<code>Vary</code>):</strong> Works on static hosts &amp; CDNs without cache fragmentation</li>
       <li><strong>vs. DOM Morphing (<code>preserve</code>):</strong> Doesn't re-parse and diff the whole shell on every click</li>
-      <li><strong>vs. Service Worker Stitching:</strong> Zero JS boot tax; supports in-place navigation upgrades</li>
+      <li><strong>vs. Service Worker Stitching:</strong> Simpler &amp; works before a SW is active; supports in-place upgrades</li>
     </ul>
   </section>
 

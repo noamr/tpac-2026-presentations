@@ -56,13 +56,13 @@
     <h2>Who Should Hold the Knobs?</h2>
     <ul>
       <li><strong>Browsers</strong> are built for <strong>interoperability</strong></li>
-      <li><strong>Websites</strong> know the <strong>business trade-offs</strong> (hero vs. 40th thumbnail)</li>
-      <li><strong>Goal:</strong> Standardize the browser baseline; give the tuning knobs to the website</li>
+      <li><strong>Websites</strong> know the <strong>UX &amp; business trade-offs</strong> (hero vs. 40th thumbnail)</li>
+      <li>When a knob is missing, developers bend the existing ones backwards (e.g. lying in <code>srcset</code>: <code>img?w=720 800w</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>In 2014 the spec left source selection "implementation-defined" so UAs could guess bandwidth heuristics. Over a decade we learned UAs are built for interop—they can't know if an image is a conversion-critical product photo or a secondary thumbnail. Moving the knobs to the website empowers the party that can actually A/B test business impact.</p>
+    <p>In 2014 the spec left source selection "implementation-defined" so UAs could guess bandwidth heuristics. Over a decade we learned UAs are built for interop—they can't know if an image is a conversion-critical product photo or a secondary thumbnail. And when a direct knob is missing, developers bend existing attributes backwards (like lying in w descriptors), creating subtle footguns.</p>
   </section>
 
   <section class="slide" id="issue-13077">

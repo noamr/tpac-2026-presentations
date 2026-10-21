@@ -72,17 +72,17 @@
   </section>
 
   <section class="slide" id="why-now">
-    <h2>Why <em>Now</em>?</h2>
-    <p>Three new primitives make it <strong>feasible</strong> and <strong>valuable</strong>:</p>
+    <h2>What Changed?</h2>
+    <p>We finally have the building blocks to do this simply and safely:</p>
     <ol>
       <li><strong>Sanitizer API</strong> — safe by default</li>
-      <li><strong>Render-Blocking (<code>rel="expect"</code>)</strong> — no FOUC or CLS</li>
+      <li><strong>Render-Blocking (<code>rel="expect"</code>)</strong> — balance speed &amp; smoothness (zero CLS)</li>
       <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — declarative slots</li>
     </ol>
   </section>
 
   <section class="comment">
-    <p>We now have theSanitizer API, declarative render-blocking (rel="expect"), and out-of-order streaming (&lt;template for&gt;). Together, those three primitives solve the security, layout shift, and targeting problems that blocked #2791.</p>
+    <p>For years, fear of footguns (FOUC, layout shifts, XSS) kept client-side includes out of the platform, pushing developers into heavy JS or server-only setups. Now we have the Sanitizer API, rel="expect" to balance speed and smoothness, and &lt;template for&gt;—so we can make the simple thing safe.</p>
   </section>
 
   <section class="slide" id="solution">
