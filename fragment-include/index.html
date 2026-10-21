@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta content="width=device-width" name="viewport">
-  <title>Fragment Includes — TPAC 2026</title>
+  <title>It's Time for Client-Side Includes — TPAC 2026</title>
   <link rel="stylesheet" href="../Templates/slides.css">
   <script src="../Templates/b6plus.js"></script>
 </head>
@@ -14,8 +14,8 @@
   <div role="region" aria-live="assertive">Leaving slide mode.</div>
 
   <section class="slide cover clear" id="cover">
-    <h1>Fragment Includes</h1>
-    <h4>Declarative client-side HTML inclusion with <code>&lt;template src&gt;</code></h4>
+    <h1>It's Time for Client-Side Includes</h1>
+    <h4>Declarative HTML inclusion with <code>&lt;template src&gt;</code></h4>
     <address>Noam Rosenthal</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -29,7 +29,7 @@
   <section class="slide" id="history">
     <h2>30 Years of Trying to Include HTML</h2>
     <ul>
-      <li><strong>1995–2001:</strong> Server-Side Includes (<code>&lt;!--#include --&gt;</code>), PHP, Edge-Side Includes (<code>&lt;esi:include&gt;</code>)</li>
+      <li><strong>1995–2001:</strong> SSI (<code>&lt;!--#include --&gt;</code>), PHP, ESI (<code>&lt;esi:include&gt;</code>)</li>
       <li><strong>2008–2016:</strong> <code>&lt;iframe seamless&gt;</code> — removed (heavy <code>Window</code>/<code>Document</code>, style &amp; security issues)</li>
       <li><strong>2013–2018:</strong> HTML Imports (<code>&lt;link rel="import"&gt;</code>) — removed (inert doc, required JS to stamp DOM)</li>
       <li><strong>2017–Today:</strong> <a href="https://github.com/whatwg/html/issues/2791"><code>whatwg/html#2791</code></a> — 280+ comments, 225+ 👍, custom elements (<code>&lt;include-fragment&gt;</code>)</li>
@@ -37,7 +37,7 @@
   </section>
 
   <section class="comment">
-    <p>Including one piece of HTML inside another is one of the oldest requests on the web. SSI and PHP were literally invented for it in 1995. On the client, &lt;iframe seamless&gt; and HTML Imports both tried and failed, while whatwg/html#2791 has been active since 2017 with hundreds of comments and thumbs-ups.</p>
+    <p>Including one piece of HTML inside another is one of the oldest requests on the web. SSI and PHP were invented for it in 1995. On the client, &lt;iframe seamless&gt; and HTML Imports both tried and failed, while whatwg/html#2791 has been active since 2017 with hundreds of comments and thumbs-ups.</p>
   </section>
 
   <section class="slide" id="quotes">
@@ -48,7 +48,7 @@
     </blockquote>
     <blockquote>
       <p>“A way for DRY HTML authoring without the burden of running code server-side or requiring JS. It's actually what I naively expected HTML imports to do at first.”</p>
-      <p class="attribution">— @brandondees (74 👍 on <code>#2791</code>) · GitHub shipped <code>&lt;include-fragment&gt;</code> in production for 10+ years (@josh)</p>
+      <p class="attribution">— @brandondees (74 👍 on <code>#2791</code>) · GitHub shipped <code>&lt;include-fragment&gt;</code> for 10+ years (@josh)</p>
     </blockquote>
   </section>
 
@@ -59,51 +59,33 @@
   <section class="slide" id="why-rejected">
     <h2>Why Was It Rejected Until Now?</h2>
     <ul>
-      <li><strong>“Just do it on the server or in a build tool”</strong> — ignored static sites, client-cached shared chrome, and independent async widgets</li>
+      <li><strong>“Just do it on the server”</strong> — ignored static sites, cached shared chrome, and independent async widgets</li>
       <li><strong>Sync vs. Async Dilemma:</strong>
         <ul>
-          <li><em>“Synchronous fetching is a big no-no.”</em> (@annevk) — blocks the HTML parser</li>
-          <li>Naive async fetching caused FOUC, half-rendered UI, and layout shifts</li>
+          <li><em>“Synchronous fetching is a big no-no.”</em> (@annevk) — blocks the parser</li>
+          <li>Naive async fetching caused FOUC and layout shifts</li>
         </ul>
       </li>
-      <li><strong>No Built-in Sanitizer:</strong> Injecting external HTML was either an XSS hazard or required JS sanitizers</li>
-      <li><strong>HTML Parser Grammar:</strong> A new <code>&lt;include&gt;</code> tag gets foster-parented out of <code>&lt;table&gt;</code> &amp; <code>&lt;select&gt;</code></li>
+      <li><strong>No Built-in Sanitizer:</strong> Injecting external HTML was an XSS hazard without JS sanitizers</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why did #2791 stall for 9 years? First, synchronous fetching blocks the parser, while naive async fetching caused FOUC and layout shifts. Second, there was no native HTML sanitizer in the browser. Third, introducing a new &lt;include&gt; element breaks inside &lt;table&gt;, &lt;tr&gt;, and &lt;select&gt; due to HTML parser foster-parenting rules.</p>
+    <p>Why did #2791 stall for 9 years? Synchronous fetching blocks the parser, while naive async fetching caused FOUC and layout shifts. And there was no native HTML sanitizer in the browser to safely include untrusted or external markup.</p>
   </section>
 
   <section class="slide" id="why-now">
-    <h2>Why <em>Now</em> Is the Time</h2>
+    <h2>Why <em>Now</em>?</h2>
+    <p>Three new primitives make client-side includes both <strong>more feasible</strong> and <strong>more valuable</strong>:</p>
     <ol>
-      <li><strong>Native Sanitizer API:</strong> Browser-native, parser-integrated sanitization is now built in — <code>&lt;template src&gt;</code> can be <strong>safe by default</strong></li>
-      <li><strong>Out-of-Order Streaming &amp; Rendering Primitives:</strong>
-        <ul>
-          <li><code>&lt;template for&gt;</code> + <code>&lt;?start&gt;</code> / <code>&lt;?marker&gt;</code> for declarative targeting</li>
-          <li><code>buffer</code> mode + preload gating + <code>&lt;link rel="expect" blocking="render"&gt;</code> eliminate FOUC &amp; CLS without sync fetching</li>
-        </ul>
-      </li>
-      <li><strong><code>&lt;template&gt;</code> Parser Superpowers:</strong> Already valid anywhere in HTML (<code>&lt;table&gt;</code>, <code>&lt;select&gt;</code>, <code>&lt;head&gt;</code>, Shadow DOM)</li>
+      <li><strong>Sanitizer API</strong> — safe-by-default HTML parsing built into the browser</li>
+      <li><strong>Render-Blocking (<code>rel="expect"</code>)</strong> — coordinate first paint without sync fetching</li>
+      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — declarative target slots &amp; streaming DOM updates</li>
     </ol>
   </section>
 
   <section class="comment">
-    <p>All three missing pieces have now landed in the platform: the Sanitizer API gives us safe-by-default inclusion, out-of-order streaming (&lt;template for&gt;) plus rel="expect" and buffer mode solve async rendering and layout shift, and &lt;template&gt; already bypasses foster-parenting everywhere in the HTML parser.</p>
-  </section>
-
-  <section class="slide" id="patching-gap">
-    <h2>Complements HTML Patching (<code>&lt;template for&gt;</code>)</h2>
-    <ul>
-      <li><strong>External Fetching (<code>src</code>):</strong> No need to multiplex every auxiliary widget (comments, sidebar, ads) in the main server stream</li>
-      <li><strong>Atomic Buffering (<code>buffer</code>):</strong> Avoid chunk-by-chunk layout jank when desired</li>
-      <li><strong>Independent Trust Boundary (<code>sanitize</code>):</strong> Sanitize third-party or user fragments separately from the main page</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>HTML patching (&lt;template for&gt;) handles out-of-order streaming inside a single response, while Fragment Include extends the exact same &lt;template&gt; primitive to external fetches, buffered commits, and independent sanitization.</p>
+    <p>We now have the three missing primitives in the platform: native Sanitizer, declarative render-blocking (rel="expect"), and out-of-order streaming (&lt;template for&gt;). Together they make client-side includes both feasible to specify cleanly and much more valuable in practice.</p>
   </section>
 
   <section class="slide" id="solution">
@@ -196,33 +178,16 @@
   </section>
 
   <section class="comment">
-    <p>If the main document reaches EOF and #site-header hasn't appeared yet, render-blocking stays active while any &lt;template src&gt; fetches are in flight, unblocking as soon as #site-header finishes parsing. We also explore &lt;link rel="expect" href="header.html" blocking="render"&gt; or &lt;template for="..." src="..." blocking="render"&gt; in &lt;head&gt;.</p>
+    <p>If the main document reaches EOF and #site-header hasn't appeared yet, render-blocking stays active while any &lt;template src&gt; fetches are in flight, unblocking as soon as #site-header finishes parsing.</p>
   </section>
 
   <section class="slide" id="security">
     <h2>Security &amp; Sanitization</h2>
-    <table class="striped">
-      <thead>
-        <tr>
-          <th>Mode</th>
-          <th>Default</th>
-          <th>Override</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>External (<code>src="..."</code>)</td>
-          <td><strong>Sanitized</strong> (scripts stripped)</td>
-          <td><code>sanitize="unsafe"</code></td>
-        </tr>
-        <tr>
-          <td>Inline (no <code>src</code>)</td>
-          <td><strong>Unsafe</strong> (matches patching)</td>
-          <td><code>sanitize</code></td>
-        </tr>
-      </tbody>
-    </table>
-    <p><strong>CSP:</strong> New <code>fragment-src</code> directive + standard <code>script-src</code> enforcement.</p>
+    <ul>
+      <li><strong>External (<code>src</code>):</strong> Sanitized by default; opt out via <code>sanitize="unsafe"</code></li>
+      <li><strong>Inline (no <code>src</code>):</strong> Unsafe by default; opt in via <code>sanitize</code></li>
+      <li><strong>CSP:</strong> Controlled by <code>fragment-src</code> + standard <code>script-src</code></li>
+    </ul>
   </section>
 
   <section class="comment">
@@ -232,14 +197,14 @@
   <section class="slide" id="alternatives">
     <h2>Alternatives Considered</h2>
     <ul>
+      <li><strong>New <code>&lt;fragment&gt;</code> element</strong> — <code>&lt;template&gt;</code> already has the “disappear from the DOM” behavior (<code>shadowrootmode</code>, <code>for</code>) and works everywhere in the parser</li>
       <li><strong><code>&lt;script type="html" src="..."&gt;</code></strong> — parser-blocking legacy defaults; can't hold inline HTML</li>
-      <li><strong>New <code>&lt;fragment&gt;</code> element</strong> — foster-parented out of <code>&lt;table&gt;</code>, <code>&lt;select&gt;</code>, etc.</li>
       <li><strong>Global <code>buffer</code> / <code>sanitize</code> attributes</strong> — permanent DOM clutter &amp; false security promises for <code>innerHTML</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>&lt;template&gt; is uniquely privileged in the HTML parser: it is valid anywhere in the grammar (including inside tables and selects) and already acts as a self-consuming parser directive for shadowrootmode and for.</p>
+    <p>Why not a new &lt;fragment&gt; element? &lt;template&gt; already has the "disappear from the DOM" quality in the parser (as seen with shadowrootmode and for) and is already valid inside &lt;table&gt;, &lt;select&gt;, and &lt;head&gt;.</p>
   </section>
 
   <section class="slide final" id="discussion">
