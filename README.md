@@ -6,7 +6,7 @@ W3C TPAC 2026 slide decks and interactive demos by **Noam Rosenthal** (26–30 O
    - 📅 **Mon 26 Oct, 17:00–18:00** (Breakout) & **Thu 29 Oct, 09:00–10:30** (WHATWG)
    - Interactive Demo: [`fragment-include/demo.html`](./fragment-include/demo.html)
    - Explainer: [`WICG/declarative-partial-updates/fragment-include-explainer.md`](https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md)
-2. **[Sanitizer in Trusted Types (`createParserOptions`)](./trusted-types-sanitizer/index.html)** *(with Frederik Braun)*
+2. **[Sanitizer in Trusted Types (`createParserOptions`)](./trusted-types-sanitizer/index.html)** *(with Frederic Braun)*
    - 📅 **Tue 27 Oct, 14:15–15:00** (WebAppSec WG)
    - Spec PRs: [`w3c/trusted-types#606`](https://github.com/w3c/trusted-types/pull/606) · [`whatwg/html#12583`](https://github.com/whatwg/html/pull/12583) · [`whatwg/html#13013`](https://github.com/whatwg/html/issues/13013)
 3. **[Progressive Shells](./progressive-shell/index.html)** *(with Vladimir Levin)*
