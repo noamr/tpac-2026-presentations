@@ -131,13 +131,22 @@
 
   <section class="slide" id="cls">
     <h2>Zero Layout Shift with <code>rel="expect"</code></h2>
-    <syntax-highlight language="html">&lt;head&gt;
-  &lt;link rel="expect" href="#site-header" blocking="render"&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;template src="header.html"&gt;&lt;/template&gt;
-  &lt;main&gt;Painted together with #site-header&lt;/main&gt;
-&lt;/body&gt;</syntax-highlight>
+    <syntax-highlight language="html">&lt;link rel="expect" href="#site-header" blocking="render"&gt;
+&lt;template src="header.html"&gt;&lt;/template&gt;
+&lt;main&gt;Painted together with #site-header&lt;/main&gt;</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Naive async include layout shift vs rel=expect zero CLS">
+      <rect x="10" y="10" width="320" height="100" rx="6" fill="#f85149" fill-opacity="0.12" stroke="#f85149" stroke-width="1.5"/>
+      <text x="170" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Without rel="expect" (Layout Shift ❌)</text>
+      <text x="170" y="58" text-anchor="middle" font-size="11" fill="currentColor">Frame 1: &lt;main&gt; paints at Y=0</text>
+      <text x="170" y="77" text-anchor="middle" font-size="11" fill="#f85149">Frame 2: header.html arrives → pushes &lt;main&gt; down!</text>
+      <text x="170" y="96" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Why async client-side includes failed before)</text>
+
+      <rect x="350" y="10" width="320" height="100" rx="6" fill="#2ea043" fill-opacity="0.12" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="510" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">With rel="expect" (Zero CLS ✔)</text>
+      <text x="510" y="58" text-anchor="middle" font-size="11" fill="currentColor">Render held while header.html is in flight</text>
+      <text x="510" y="77" text-anchor="middle" font-size="11" fill="#2ea043">#site-header parsed → single atomic first paint!</text>
+      <text x="510" y="96" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(&lt;template&gt; self-removes when done)</text>
+    </svg>
   </section>
 
   <section class="comment">
@@ -189,7 +198,6 @@
     <ul>
       <li>Render-blocking in <code>&lt;head&gt;</code>: <code>rel="expect"</code> vs. <code>&lt;template blocking="render"&gt;</code>?</li>
       <li>HTML Modules alignment (<code>with { type: "fragment" }</code>)</li>
-      <li><strong><a href="demo.html">▶ Live Demo: Network &amp; Rendering Race (<code>buffer</code> &amp; <code>rel="expect"</code>)</a></strong></li>
     </ul>
   </section>
 

@@ -43,14 +43,30 @@
   </section>
 
   <section class="slide" id="attempt-1">
-    <h2>Approach 1: Two-Phase View Transitions (<code>deferPageSwap</code>)</h2>
-    <p><strong>Idea:</strong> Keep the old page interactive &amp; transition to a loading state while the new Document loads in the background.</p>
+    <h2>1. Two-Phase View Transitions</h2>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Two-phase view transition timeline showing Document swap wiping state">
+      <rect x="10" y="18" width="205" height="72" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
+      <text x="112" y="43" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">0ms: Old Document Live</text>
+      <text x="112" y="63" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">Transition to loading UI</text>
+      <text x="112" y="80" text-anchor="middle" font-size="11" fill="#2ea043">User types "shoes" in search</text>
+
+      <text x="235" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
+
+      <rect x="255" y="26" width="155" height="56" rx="6" fill="#d29922" fill-opacity="0.2" stroke="#d29922" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="332" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="#d29922">300ms: Page Swap!</text>
+      <text x="332" y="68" text-anchor="middle" font-size="11" fill="currentColor">Old Doc → New Doc</text>
+
+      <text x="430" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
+
+      <rect x="450" y="18" width="220" height="72" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="560" y="43" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">New Document Loaded ❌</text>
+      <text x="560" y="63" text-anchor="middle" font-size="11" fill="currentColor">Search input reset to ""</text>
+      <text x="560" y="80" text-anchor="middle" font-size="11" fill="#f85149">Focus &amp; scroll wiped!</text>
+    </svg>
     <ul>
-      <li>❌ <strong>Still swaps the <code>Document</code> at the end</strong> — wipes any typing or scroll done while waiting</li>
-      <li>❌ <strong>Source page must know destination UI</strong></li>
-      <li>❌ <strong>Doesn't help cold starts</strong></li>
+      <li>❌ <strong>Still swaps <code>Document</code> at the end</strong> — wipes typing &amp; scroll</li>
+      <li>❌ <strong>Source page must know destination UI</strong> &amp; <strong>no cold-start win</strong></li>
     </ul>
-    <p class="note"><strong><a href="demo.html#vt">▶ Demo 1: Two-Phase View Transition State Loss</a></strong></p>
   </section>
 
   <section class="comment">
@@ -58,13 +74,30 @@
   </section>
 
   <section class="slide" id="attempt-2">
-    <h2>Approach 2: Declarative Skeleton Documents</h2>
-    <p><strong>Idea:</strong> Pre-cache a lightweight skeleton <code>Document</code> for <code>/item/:id</code> → swap to skeleton at 0ms → swap to real <code>Document</code> when loaded.</p>
+    <h2>2. Declarative Skeleton Documents</h2>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Declarative skeleton timeline showing the double-swap trap">
+      <rect x="10" y="18" width="180" height="72" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
+      <text x="100" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">0ms: Swap #1 (Skeleton)</text>
+      <text x="100" y="61" text-anchor="middle" font-size="11" fill="currentColor">Cached Skeleton Doc</text>
+      <text x="100" y="79" text-anchor="middle" font-size="11" fill="#2ea043">User types "shoes"</text>
+
+      <text x="208" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
+
+      <rect x="226" y="26" width="175" height="56" rx="6" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="2" stroke-dasharray="4,3"/>
+      <text x="313" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">300ms: Swap #2 ❌</text>
+      <text x="313" y="68" text-anchor="middle" font-size="11" fill="currentColor">Skeleton Doc → Real Doc</text>
+
+      <text x="419" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
+
+      <rect x="438" y="18" width="232" height="72" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="554" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Double-Swap Trap ❌</text>
+      <text x="554" y="61" text-anchor="middle" font-size="11" fill="currentColor">Skeleton thrown away!</text>
+      <text x="554" y="79" text-anchor="middle" font-size="11" fill="#f85149">Typed "shoes" &amp; focus wiped</text>
+    </svg>
     <ul>
       <li>✅ Fixes cold starts &amp; destination owns its skeleton</li>
-      <li>❌ <strong>The Double-Swap Trap:</strong> swapping from the skeleton <code>Document</code> to the real <code>Document</code> <em>still wipes user input, focus, and scroll!</em></li>
+      <li>❌ <strong>Double-Swap Trap:</strong> Skeleton <code>Document</code> → Real <code>Document</code> wipes state!</li>
     </ul>
-    <p class="note"><strong><a href="demo.html#skeleton">▶ Demo 2: Declarative Skeleton Double-Swap Trap</a></strong></p>
   </section>
 
   <section class="comment">
@@ -72,11 +105,24 @@
   </section>
 
   <section class="slide" id="insight">
-    <h2>The Insight: Don't Swap Out the Skeleton!</h2>
+    <h2>The Insight: Don't Swap the Skeleton!</h2>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Progressive shell single-document timeline">
+      <rect x="10" y="16" width="660" height="84" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
+      <text x="340" y="36" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Single Live Document (Never Swapped Out)</text>
+
+      <rect x="28" y="46" width="275" height="42" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="165" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Paint Cached Shell Prefix</text>
+      <text x="165" y="81" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">User types "shoes" (stays live)</text>
+
+      <text x="335" y="72" text-anchor="middle" font-size="18" fill="#2ea043">+ Stream</text>
+
+      <rect x="375" y="46" width="277" height="42" rx="5" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="513" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">300ms: Post-&lt;?shellboundary&gt;</text>
+      <text x="513" y="81" text-anchor="middle" font-size="11" fill="#2ea043">&lt;template for&gt; patches same Document ✔</text>
+    </svg>
     <ul>
-      <li>Why load a skeleton <code>Document</code> only to throw it away 200ms later?</li>
-      <li><strong>Make the skeleton and the final page the <em>same</em> <code>Document</code></strong></li>
-      <li>Paint the shell at <strong>0ms</strong> → stream the real content into it via <code>&lt;template for&gt;</code></li>
+      <li>Make the skeleton and the final page the <strong><em>same</em> <code>Document</code></strong></li>
+      <li>Paint shell at <strong>0ms</strong> → stream content into it via <code>&lt;template for&gt;</code></li>
     </ul>
   </section>
 
@@ -108,12 +154,10 @@
       <div>
         <h3>1. Instant Shell (Cold / Cross-Shell)</h3>
         <p>Paint cached shell at <strong>0ms</strong> → stream post-boundary patches into the <strong>same Document</strong>.</p>
-        <p><a href="demo.html#shell-cold">▶ Demo 3: 0ms Cold Start</a></p>
       </div>
       <div>
         <h3>2. Navigation Upgrade (Same Shell)</h3>
         <p>Keep current Document <strong>live</strong> → skip pre-boundary bytes &amp; patch in place.</p>
-        <p><a href="demo.html#shell-upgrade">▶ Demo 4: In-Place Upgrade</a></p>
       </div>
     </div>
   </section>
@@ -141,7 +185,6 @@
       <li>Path-prefix scoping + strict CSP / COOP / COEP match</li>
       <li>Any mismatch → clean fallback to normal MPA navigation</li>
       <li><strong>Discussion:</strong> Navigation API &amp; View Transitions integration</li>
-      <li><strong><a href="demo.html">▶ Open All 4 Interactive Navigation Demos</a></strong></li>
     </ul>
   </section>
 

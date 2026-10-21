@@ -28,13 +28,23 @@
   </section>
 
   <section class="slide" id="origins">
-    <h2>How It Came About: The Streaming Problem</h2>
+    <h2>Why Streaming Broke <code>createHTML</code></h2>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Chunk-by-chunk createHTML failure vs single-pass createParserOptions">
+      <rect x="10" y="10" width="320" height="100" rx="6" fill="#f85149" fill-opacity="0.12" stroke="#f85149" stroke-width="1.5"/>
+      <text x="170" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Why createHTML(chunk) Fails ❌</text>
+      <text x="170" y="56" text-anchor="middle" font-size="11" fill="currentColor">Chunk 1: "&lt;scr"  |  Chunk 2: "ipt&gt;evil()&lt;/script&gt;"</text>
+      <text x="170" y="75" text-anchor="middle" font-size="11" fill="#f85149">Each chunk looks harmless alone → XSS when joined!</text>
+      <text x="170" y="94" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">And for strings: DOMPurify → serialize → re-parse (2×)</text>
+
+      <rect x="350" y="10" width="320" height="100" rx="6" fill="#2ea043" fill-opacity="0.12" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="510" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">createParserOptions ✔</text>
+      <text x="510" y="56" text-anchor="middle" font-size="11" fill="currentColor">Stream / String → Native HTML Parser + Sanitizer</text>
+      <text x="510" y="75" text-anchor="middle" font-size="11" fill="#2ea043">Sanitizes stateful tokens while parsing (1× pass)</text>
+      <text x="510" y="94" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">Works identically for streaming &amp; innerHTML</text>
+    </svg>
     <ul>
-      <li><strong>Trusted Types today:</strong> <code>createHTML(string) → TrustedHTML</code></li>
-      <li><strong>Streaming HTML (<code>streamHTMLUnsafe</code>):</strong> There is no full string up front!</li>
-      <li><strong>Chunk-by-chunk <code>createHTML(chunk)</code> fails:</strong><br>
-        Chunk 1: <code>&lt;scr</code> · Chunk 2: <code>ipt&gt;evil()&lt;/script&gt;</code></li>
-      <li>Even for strings: <code>createHTML</code> forces a <strong>double parse</strong> (DOMPurify → serialize → browser parse)</li>
+      <li><strong><code>createHTML(str)</code>:</strong> Needs full string up front; forces a double parse</li>
+      <li><strong><code>createParserOptions(opts)</code>:</strong> Configures the stateful HTML parser directly</li>
     </ul>
   </section>
 

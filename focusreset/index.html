@@ -29,10 +29,27 @@
 
   <section class="slide" id="problem">
     <h2>Silent Focus Loss</h2>
-    <p>Remove the focused element from the DOM:</p>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Silent focus loss when activeElement is removed from the DOM">
+      <rect x="10" y="14" width="195" height="88" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="107" y="40" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">1. Focused Element</text>
+      <text x="107" y="63" text-anchor="middle" font-size="12" fill="#58a6ff">&lt;button&gt;Delete&lt;/button&gt;</text>
+      <text x="107" y="84" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">activeElement = button</text>
+
+      <text x="225" y="62" text-anchor="middle" font-size="20" fill="currentColor">→</text>
+
+      <rect x="245" y="24" width="175" height="68" rx="6" fill="#d29922" fill-opacity="0.18" stroke="#d29922" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="332" y="52" text-anchor="middle" font-size="13" font-weight="bold" fill="#d29922">2. button.remove()</text>
+      <text x="332" y="73" text-anchor="middle" font-size="11" fill="currentColor">Node disconnected</text>
+
+      <text x="440" y="62" text-anchor="middle" font-size="20" fill="currentColor">→</text>
+
+      <rect x="460" y="14" width="210" height="88" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="1.5"/>
+      <text x="565" y="40" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">3. Silent Reset ❌</text>
+      <text x="565" y="62" text-anchor="middle" font-size="12" fill="currentColor">activeElement → &lt;body&gt;</text>
+      <text x="565" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">0 events fired (no blur/focusout!)</text>
+    </svg>
     <ul>
-      <li>Focus silently drops to <code>document.body</code></li>
-      <li><strong>Zero events fired</strong> (no <code>blur</code>, no <code>focusout</code>)</li>
+      <li>Focus silently drops to <code>document.body</code> with <strong>zero events</strong></li>
       <li>Users lose their place; modal focus traps break</li>
     </ul>
   </section>
@@ -115,7 +132,6 @@ nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
     <ul>
       <li>HTML PR <a href="https://github.com/whatwg/html/pull/13050"><code>#13050</code></a> · DOM PR <a href="https://github.com/whatwg/dom/pull/1512"><code>#1512</code></a> · WPT <a href="https://github.com/web-platform-tests/wpt/pull/63595"><code>#63595</code></a></li>
       <li>Unblocks interop on <a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a></li>
-      <li><strong><a href="demo.html">▶ Live Demo: Focus Loss &amp; Auto-Cancellation Visualizer</a></strong></li>
     </ul>
   </section>
 

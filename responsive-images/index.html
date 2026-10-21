@@ -80,14 +80,31 @@
 
   <section class="slide" id="issue-13069">
     <h2>2. Target Density Knob (<code>#13069</code>)</h2>
-    <syntax-highlight language="html">&lt;!-- Save ~44% pixels below the fold --&gt;
-&lt;img srcset="..." sizes="auto" densityscale="0.75"&gt;
+    <syntax-highlight language="html">&lt;img srcset="150.jpg 150w, 200.jpg 200w, 300.jpg 300w"
+  sizes="auto" densityscale="0.75" loading="lazy"&gt;</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 145" aria-label="Target density knob chart for a 100x100 box on 2x DPR">
+      <rect x="8" y="8" width="210" height="128" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35"/>
+      <text x="113" y="32" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Thumbnail (0.75×)</text>
+      <text x="113" y="54" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 box @ 2x DPR</text>
+      <rect x="53" y="66" width="120" height="32" rx="5" fill="#116329" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="113" y="87" text-anchor="middle" font-size="14" font-weight="bold" fill="#2ea043">Picks 150w (−44% px)</text>
+      <text x="113" y="120" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.75">densityscale="0.75"</text>
 
-&lt;!-- Extra sharpness for zoomable hero --&gt;
-&lt;img srcset="..." sizes="auto" densityscale="1.5"&gt;</syntax-highlight>
-    <ul>
-      <li>No more lying in <code>sizes</code> or lying in <code>w</code> descriptors (<code>img?w=720 800w</code>)</li>
-    </ul>
+      <rect x="235" y="8" width="210" height="128" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35"/>
+      <text x="340" y="32" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Default (1.0×)</text>
+      <text x="340" y="54" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 box @ 2x DPR</text>
+      <rect x="280" y="66" width="120" height="32" rx="5" fill="#0550ae" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="340" y="87" text-anchor="middle" font-size="14" font-weight="bold" fill="#58a6ff">Picks 200w (baseline)</text>
+      <text x="340" y="120" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.75">Browser default</text>
+
+      <rect x="462" y="8" width="210" height="128" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35"/>
+      <text x="567" y="32" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Zoomable Hero (1.5×)</text>
+      <text x="567" y="54" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 box @ 2x DPR</text>
+      <rect x="507" y="66" width="120" height="32" rx="5" fill="#6639ba" fill-opacity="0.2" stroke="#a371f7" stroke-width="1.5"/>
+      <text x="567" y="87" text-anchor="middle" font-size="14" font-weight="bold" fill="#a371f7">Picks 300w (extra crisp)</text>
+      <text x="567" y="120" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.75">densityscale="1.5"</text>
+    </svg>
+    <p class="note">Replaces lying in <code>w</code> descriptors (e.g. writing <code>img?w=720 800w</code> in production).</p>
   </section>
 
   <section class="comment">
@@ -95,46 +112,97 @@
   </section>
 
   <section class="slide" id="issue-12248">
-    <h2>3. 2D <code>sizes</code> &amp; <code>object-fit</code> (<code>#12248</code>)</h2>
-    <syntax-highlight language="html">&lt;img loading="lazy" sizes="auto"
-  style="width: 400px; height: 400px; object-fit: cover"
-  srcset="sm.jpg 400w 300h, md.jpg 800w 600h"&gt;</syntax-highlight>
-    <ul>
-      <li><strong><code>cover</code>:</strong> <code>max(W, H·r)</code> → fixes blurry cards</li>
-      <li><strong><code>contain</code>:</strong> <code>min(W, H·r)</code> → fixes 10× over-fetching</li>
-      <li><strong><code>h</code> descriptor:</strong> pre-fetch aspect ratio, zero infinite loops</li>
-    </ul>
+    <h2>3. <code>object-fit</code> Selection (<code>#12248</code>)</h2>
+    <syntax-highlight language="html">&lt;img sizes="auto" srcset="s.jpg 50w 100h, l.jpg 100w 200h"
+  style="width: 100px; height: 100px; object-fit: contain | cover"&gt;</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 190" aria-label="100x100 container with 50x100 and 100x200 sources depending on object-fit">
+      <!-- Column 1: Sources -->
+      <text x="105" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Sources (1:2 portrait)</text>
+      <rect x="35" y="68" width="42" height="84" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="2"/>
+      <text x="56" y="114" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">50×100</text>
+      <rect x="95" y="32" width="75" height="150" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="2"/>
+      <text x="132" y="112" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
+
+      <!-- Column 2: object-fit: contain -->
+      <text x="340" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: contain</text>
+      <rect x="302" y="48" width="76" height="76" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <rect x="321" y="48" width="38" height="76" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
+      <text x="340" y="90" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">50×100</text>
+      <text x="340" y="144" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container</text>
+      <text x="340" y="164" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">✔ Pick 50×100</text>
+      <text x="340" y="181" text-anchor="middle" font-size="11" fill="#f85149">(Today picks 100×200 — 4× px!)</text>
+
+      <!-- Column 3: object-fit: cover -->
+      <text x="565" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: cover</text>
+      <rect x="527" y="29" width="76" height="114" fill="#58a6ff" fill-opacity="0.12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="527" y="48" width="76" height="76" fill="#58a6ff" fill-opacity="0.35" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <text x="565" y="90" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
+      <text x="565" y="160" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container (cropped)</text>
+      <text x="565" y="180" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">✔ Pick 100×200</text>
+    </svg>
   </section>
 
   <section class="comment">
-    <p>PR #13053 revives the h descriptor in srcset as a pre-fetch aspect-ratio hint and makes sizes="auto" 2D and object-fit aware. Because the pre-fetch hint remains authoritative after load, it also fixes the spec's concrete-object-size infinite download loop.</p>
+    <p>In a 100×100 container with 50×100 and 100×200 sources, the right source depends on object-fit: contain renders at 50×100 so it should pick 50×100, while cover renders at 100×200 so it should pick 100×200. PR #13053 adds the h descriptor and makes sizes="auto" 2D and object-fit aware.</p>
   </section>
 
   <section class="slide" id="issue-11428">
     <h2>4. Fix <code>scale-down</code> Upscaling (<code>#11428</code>)</h2>
-    <syntax-highlight language="html">&lt;div style="width: 800px; height: 600px"&gt;
-  &lt;img srcset="logo.png 200w" sizes="auto" loading="lazy"
-    style="width: 100%; object-fit: scale-down"&gt;
-&lt;/div&gt;</syntax-highlight>
-    <ul>
-      <li>Today: <code>density = 200/800 = 0.25x</code> → <code>naturalWidth = 800px</code>!</li>
-      <li><code>scale-down</code> upscales the <code>200px</code> logo to <code>800px</code> blurry</li>
-    </ul>
+    <syntax-highlight language="html">&lt;img srcset="logo.png 50w" sizes="auto" loading="lazy"
+  style="width: 100px; height: 100px; object-fit: scale-down"&gt;</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 165" aria-label="scale-down upscaling problem in a 100x100 container">
+      <!-- Source -->
+      <text x="110" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">1. Source File</text>
+      <rect x="85" y="62" width="50" height="50" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="2"/>
+      <text x="110" y="91" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">50×50</text>
+      <text x="110" y="138" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">logo.png (50w)</text>
+
+      <!-- Expected -->
+      <text x="340" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#2ea043">2. Expected (scale-down)</text>
+      <rect x="295" y="42" width="90" height="90" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <rect x="315" y="62" width="50" height="50" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
+      <text x="340" y="91" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">50×50</text>
+      <text x="340" y="152" text-anchor="middle" font-size="12" fill="currentColor">Stays 50×50 inside 100×100 box</text>
+
+      <!-- Actual Today -->
+      <text x="565" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">3. Actual Today ❌</text>
+      <rect x="520" y="42" width="90" height="90" fill="#f85149" fill-opacity="0.25" stroke="#f85149" stroke-width="2"/>
+      <text x="565" y="84" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×100 (Blurry!)</text>
+      <text x="565" y="102" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">naturalWidth = 100</text>
+      <text x="565" y="152" text-anchor="middle" font-size="12" fill="#f85149">density = 50/100 = 0.5x → upscales!</text>
+    </svg>
   </section>
 
   <section class="comment">
-    <p>Authors use object-fit: scale-down or none specifically so a small 200px image won't upscale to 800px. But because w descriptors derive naturalWidth from sizes (200 / 0.25 = 800px), scale-down upscales it to 800px anyway! We should not inflate naturalWidth past native 1x/DPR bounds for scale-down and none.</p>
+    <p>Authors use object-fit: scale-down or none specifically so a small 50px image won't upscale to a 100×100 container. But because w descriptors derive naturalWidth from sizes (50 / 0.5 = 100px), scale-down upscales it to 100×100 anyway! We should not inflate naturalWidth past native 1x/DPR bounds for scale-down and none.</p>
   </section>
 
   <section class="slide" id="issue-12565">
     <h2>5. Expose True File Pixels (<code>#12565</code>)</h2>
-    <syntax-highlight language="js">// 800×600 file rendered in a 400px sizes="auto" box:
-img.naturalWidth;   // 400 (just echoes layout width!)
-img.resourceWidth;  // 800 (true file pixels)
-img.resourceHeight; // 600</syntax-highlight>
-    <ul>
-      <li>Lets sites measure bandwidth waste in RUM &amp; cap zoom UIs</li>
-    </ul>
+    <syntax-highlight language="js">img.naturalWidth;   // 100 (just echoes layout width!)
+img.resourceWidth;  // 200 (true file pixels)</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 155" aria-label="naturalWidth vs resourceWidth chart">
+      <rect x="25" y="20" width="180" height="115" rx="8" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
+      <text x="115" y="55" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Downloaded File</text>
+      <text x="115" y="82" text-anchor="middle" font-size="18" font-weight="bold" fill="#58a6ff">200 × 200 px</text>
+      <text x="115" y="110" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">srcset="pic.jpg 200w"</text>
+
+      <text x="235" y="82" text-anchor="middle" font-size="22" fill="currentColor">→</text>
+
+      <rect x="265" y="35" width="140" height="85" rx="6" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <text x="335" y="68" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">sizes="auto" Box</text>
+      <text x="335" y="92" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">100 × 100 px</text>
+
+      <text x="435" y="82" text-anchor="middle" font-size="22" fill="currentColor">→</text>
+
+      <rect x="465" y="20" width="195" height="52" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="1.5"/>
+      <text x="562" y="43" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">naturalWidth → 100 ❌</text>
+      <text x="562" y="61" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">Echoes layout width</text>
+
+      <rect x="465" y="83" width="195" height="52" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="562" y="106" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">resourceWidth → 200 ✔</text>
+      <text x="562" y="124" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">True file pixels (RUM &amp; zoom)</text>
+    </svg>
   </section>
 
   <section class="comment">
@@ -149,7 +217,6 @@ img.resourceHeight; // 600</syntax-highlight>
       <li><strong><code>#12248</code>:</strong> 2D <code>sizes</code> + <code>h</code> descriptor for <code>cover</code> / <code>contain</code></li>
       <li><strong><code>#11428</code>:</strong> Don't upscale <code>scale-down</code> / <code>none</code></li>
       <li><strong><code>#12565</code>:</strong> True pixel dimensions (<code>resourceWidth</code>)</li>
-      <li><strong><a href="demo.html">▶ Live Demo: Blur &amp; Bandwidth Visualizer</a></strong></li>
     </ul>
   </section>
 
