@@ -177,7 +177,7 @@
 <body>
   <header>
     <div>
-      <a class="back-link" href="index.html">← Back to Slides</a>
+      <a class="back-link" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">← Back to Slides</a>
       <h1>Client-Side Includes: Network &amp; Rendering Race</h1>
       <div class="subtitle">Comparing naive JS fetch+innerHTML vs. <code>&lt;template src buffer&gt;</code> vs. <code>&lt;link rel="expect"&gt;</code></div>
     </div>

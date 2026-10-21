@@ -65,7 +65,6 @@
       <li><strong>Legacy Fragment Sinks:</strong> <code>innerHTML</code>, <code>outerHTML</code>, <code>insertAdjacentHTML()</code>, <code>createContextualFragment()</code></li>
       <li><strong>Safe Sinks (<code>setHTML</code>, <code>parseHTML</code>, <code>streamHTML</code>):</strong> Already safe by default — bypass Trusted Types entirely</li>
     </ul>
-    <p class="note"><strong><a href="demo.html">▶ Open Interactive Scenarios Demo</a></strong></p>
   </section>
 
   <section class="comment">
@@ -117,13 +116,13 @@ await response.body.pipeThrough(new TextDecoderStream()).pipeTo(writable);</code
     <ul>
       <li><strong>Explicit <code>TrustedHTMLParserOptions</code>:</strong> Satisfies TT — raw strings allowed</li>
       <li><strong>Default policy has <code>createParserOptions</code>:</strong> Takes precedence over <code>createHTML</code></li>
-      <li><strong>No <code>createParserOptions</code>:</strong> Falls back to <code>TrustedHTML</code> / <code>createHTML</code> (100% backwards-compatible)</li>
+      <li><strong>No <code>createParserOptions</code>:</strong> Falls back to <code>TrustedHTML</code> / <code>createHTML</code> <em>only when not streaming</em> (streaming throws <code>TypeError</code>)</li>
       <li><strong><code>TrustedHTML</code> + unvetted author options:</strong> Throws <code>TypeError</code> (prevents insecure blends, <a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>If a caller passes a TrustedHTML together with an unvetted author option like { runScripts: true } or a custom sanitizer, it throws so an attacker cannot escalate a TrustedHTML that was only vetted for static inert markup.</p>
+    <p>When no TrustedHTMLParserOptions is provided and defaultPolicy.createParserOptions is missing, non-streaming sinks fall back to createHTML / TrustedHTML for backwards compatibility, whereas streaming sinks (streamHTMLUnsafe) throw a TypeError because there is no full string to pass to createHTML. Also, passing a TrustedHTML together with unvetted author options ({ runScripts: true } or a custom sanitizer) throws a TypeError.</p>
   </section>
 
   <section class="slide" id="future-sinks">
@@ -145,7 +144,6 @@ await response.body.pipeThrough(new TextDecoderStream()).pipeTo(writable);</code
     <ul>
       <li>Trusted Types PR <a href="https://github.com/w3c/trusted-types/pull/606"><code>#606</code></a> · HTML PR <a href="https://github.com/whatwg/html/pull/12583"><code>#12583</code></a> · WPTs landed</li>
       <li>Should we extend <code>defaultPolicy.createParserOptions</code> to <code>srcdoc</code>, <code>document.write()</code>, and <code>DOMParser</code> (<a href="https://github.com/whatwg/html/issues/13013"><code>html#13013</code></a>)?</li>
-      <li><strong><a href="demo.html">▶ Live Demo: Interactive Policy &amp; Sink Simulator</a></strong></li>
     </ul>
   </section>
 

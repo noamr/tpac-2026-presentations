@@ -191,7 +191,7 @@
 <body>
   <header>
     <div>
-      <a class="back-link" href="index.html">← Back to Slides</a>
+      <a class="back-link" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">← Back to Slides</a>
       <h1>Instant, Seamless Navigations: Interactive Walkthrough</h1>
       <div class="subtitle">Compare Two-Phase View Transitions, Declarative Skeletons, and Progressive Shells while typing during navigation</div>
     </div>
@@ -368,26 +368,25 @@
       }
     }
 
+    function applyHashMode() {
+      const hash = location.hash.replace('#', '');
+      const mode = ['vt', 'skeleton', 'shell-cold', 'shell-upgrade'].includes(hash) ? hash : 'vt';
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+      runMode(mode);
+    }
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        runMode(btn.dataset.mode);
+        history.replaceState(null, '', '#' + btn.dataset.mode);
+        applyHashMode();
       });
     });
 
     document.getElementById('replayBtn').addEventListener('click', () => runMode(currentMode));
-
-    // Support deep link hash (#vt, #skeleton, #shell-cold, #shell-upgrade)
-    const hash = location.hash.replace('#', '');
-    if (['vt', 'skeleton', 'shell-cold', 'shell-upgrade'].includes(hash)) {
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.mode === hash);
-      });
-      runMode(hash);
-    } else {
-      runMode('vt');
-    }
+    window.addEventListener('hashchange', applyHashMode);
+    applyHashMode();
   </script>
 </body>
 </html>

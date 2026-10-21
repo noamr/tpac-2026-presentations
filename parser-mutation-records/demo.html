@@ -168,7 +168,7 @@
 <body>
   <header>
     <div>
-      <a class="back-link" href="index.html">← Back to Slides</a>
+      <a class="back-link" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">← Back to Slides</a>
       <h1>Parser-Aware <code>MutationObserver</code> Demo (Based on <code>WICG/declarative-partial-updates#110</code>)</h1>
       <div class="subtitle">Why observing raw DOM nodes isn't enough for streaming patches, characterData tokens, and SSR hydration</div>
     </div>

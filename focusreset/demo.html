@@ -132,7 +132,7 @@
 <body>
   <header>
     <div>
-      <a class="back-link" href="index.html">← Back to Slides</a>
+      <a class="back-link" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">← Back to Slides</a>
       <h1>The <code>focusreset</code> Event: Live Keyboard &amp; Focus Visualizer</h1>
       <div class="subtitle">Click or press Enter on any "Delete" button to remove the focused element from the DOM</div>
     </div>
