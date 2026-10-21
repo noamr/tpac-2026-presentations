@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trusted Types createParserOptions Demo — TPAC 2026</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { margin: 0; font-size: 1.35rem; }
+    .subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+    .back-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    .scenario-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .scen-btn {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+    .scen-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1.2fr;
+      gap: 18px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 1.02rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    pre {
+      margin: 0;
+      background: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+    .pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step {
+      background: #0b1120;
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+    }
+    .step.good { border-left-color: var(--good); background: rgba(34,197,94,0.1); }
+    .step.bad { border-left-color: var(--bad); background: rgba(239,68,68,0.1); }
+    .step.warn { border-left-color: var(--warn); background: rgba(245,158,11,0.1); }
+    .dom-out {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a class="back-link" href="index.html">← Back to Slides</a>
+      <h1>Sanitizer in Trusted Types (<code>createParserOptions</code>): Scenario Simulator</h1>
+      <div class="subtitle">Explore how <code>createParserOptions</code> handles streaming, legacy sinks, insecure blends, and full-document sinks</div>
+    </div>
+  </header>
+
+  <div class="scenario-bar">
+    <button class="scen-btn active" data-scen="split-stream">1. Why Streaming Needs <code>createParserOptions</code></button>
+    <button class="scen-btn" data-scen="default-innerhtml">2. Default Policy + Legacy <code>innerHTML</code> / <code>createContextualFragment</code></button>
+    <button class="scen-btn" data-scen="named-unsafe">3. Named Policy + <code>setHTMLUnsafe</code></button>
+    <button class="scen-btn" data-scen="insecure-blend">4. Blocked: <code>TrustedHTML</code> + Unvetted <code>{ runScripts: true }</code> (#615)</button>
+    <button class="scen-btn" data-scen="legacy-fulldoc">5. Future: <code>iframe.srcdoc</code> &amp; <code>document.write()</code> (#13013)</button>
+  </div>
+
+  <div class="grid">
+    <!-- Left: Code & Input -->
+    <div class="card">
+      <h2 id="codeTitle">Code &amp; Untrusted Payload</h2>
+      <pre id="codeBlock"></pre>
+      <div style="font-size:0.8rem; color:var(--muted); text-transform:uppercase; font-weight:700;">Resulting Sanitized DOM / Outcome</div>
+      <div class="dom-out" id="domOut"></div>
+    </div>
+
+    <!-- Right: Spec Algorithm Walkthrough -->
+    <div class="card">
+      <h2>Spec Pipeline (<code>get trusted type compliant input</code>)</h2>
+      <div class="pipeline" id="pipeline"></div>
+    </div>
+  </div>
+
+  <script>
+    const codeBlock = document.getElementById('codeBlock');
+    const domOut = document.getElementById('domOut');
+    const pipeline = document.getElementById('pipeline');
+
+    const scenarios = {
+      'split-stream': {
+        code: `// Incoming network chunks split across a <script> tag:
+// Chunk 1: "<div>Hello <scr"
+// Chunk 2: "ipt>alert('XSS')</script><b>World</b></div>"
+
+const policy = trustedTypes.createPolicy("stream-policy", {
+  createParserOptions(options) {
+    return { sanitizer: "default", runScripts: false };
+  }
+});
+
+const writable = el.streamHTMLUnsafe(
+  policy.createParserOptions()
+);
+// Pipe chunks directly into native HTML parser!`,
+        dom: `✅ Rendered DOM:\n<div>Hello <b>World</b></div>\n(Split <script> stripped while parsing — 0 buffering code in JS!)`,
+        steps: [
+          { cls: 'bad', html: '<strong>Why <code>createHTML(chunk)</code> fails:</strong> Chunk 1 (<code>"&lt;scr"</code>) and Chunk 2 (<code>"ipt&gt;alert(1)&lt;/script&gt;"</code>) look harmless in isolation or get mangled if sanitized separately.' },
+          { cls: 'active', html: '<strong>Step 1:</strong> <code>policy.createParserOptions()</code> returns an immutable <code>TrustedHTMLParserOptions</code> with <code>sanitizer: "default"</code> and <code>runScripts: false</code>.' },
+          { cls: 'active', html: '<strong>Step 2:</strong> <code>el.streamHTMLUnsafe(trustedOpts)</code> verifies the <code>TrustedHTMLParserOptions</code> token (with <code>throwIfMissing = true</code>).' },
+          { cls: 'good', html: '<strong>Step 3 (Sanitize-While-Parsing):</strong> The browser\'s native streaming HTML tokenizer/parser reassembles <code>&lt;script&gt;</code> across chunk boundaries and strips it before insertion!' }
+        ]
+      },
+      'default-innerhtml': {
+        code: `// Content-Security-Policy: require-trusted-types-for 'script'
+trustedTypes.createPolicy("default", {
+  createParserOptions(options) {
+    // Blocks scripts even for createContextualFragment!
+    return { sanitizer: "default", runScripts: false };
+  }
+});
+
+const dirty = "<p onclick=evil()>Hi<script>evil()<\\/script></p>";
+el.innerHTML = dirty;
+range.createContextualFragment(dirty);`,
+        dom: `✅ Rendered DOM:\n<p>Hi</p>\n(onclick removed, <script> stripped, 1 single parse pass!)`,
+        steps: [
+          { cls: 'active', html: '<strong>Step 1 (Sink Entry):</strong> <code>innerHTML</code> and <code>createContextualFragment</code> construct internal parser options (<code>{ runScripts: false }</code> and <code>{ runScripts: true }</code> respectively).' },
+          { cls: 'active', html: '<strong>Step 2 (Default Policy Precedence):</strong> Because <code>defaultPolicy.createParserOptions</code> is defined, the browser invokes it <em>instead of</em> <code>createHTML</code>.' },
+          { cls: 'good', html: '<strong>Step 3 (Single-Pass Native Sanitize):</strong> Returns <code>TrustedHTMLParserOptions { sanitizer: "default", runScripts: false }</code>. No DOMPurify parse → serialize → re-parse!' }
+        ]
+      },
+      'named-unsafe': {
+        code: `const cardPolicy = trustedTypes.createPolicy("card-policy", {
+  createParserOptions(userOptions) {
+    const s = new Sanitizer(userOptions.sanitizer || "default");
+    s.removeElement("img"); // policy enforces extra restriction
+    s.removeUnsafe();
+    return { sanitizer: s, runScripts: false };
+  }
+});
+
+// Raw string is allowed because options are TrustedHTMLParserOptions!
+el.setHTMLUnsafe(
+  "<h2>Title</h2><img src=x onerror=evil()>",
+  cardPolicy.createParserOptions()
+);`,
+        dom: `✅ Rendered DOM:\n<h2>Title</h2>\n(Raw string accepted without TrustedHTML wrapper; <img> stripped by policy's Sanitizer)`,
+        steps: [
+          { cls: 'active', html: '<strong>Step 1:</strong> Caller creates <code>TrustedHTMLParserOptions</code> via <code>cardPolicy.createParserOptions()</code>.' },
+          { cls: 'active', html: '<strong>Step 2:</strong> <code>setHTMLUnsafe(rawString, trustedOptions)</code> checks if <code>options</code> is a <code>TrustedHTMLParserOptions</code>.' },
+          { cls: 'good', html: '<strong>Step 3:</strong> Because the parser options are trusted, <code>rawString</code> does <strong>not</strong> need to be a <code>TrustedHTML</code> (and does not trigger <code>defaultPolicy</code>).' }
+        ]
+      },
+      'insecure-blend': {
+        code: `// Policy vetted a TrustedHTML assuming inert innerHTML:
+const inertHTML = htmlPolicy.createHTML(
+  "<div><script>alert('dormant in innerHTML')<\\/script></div>"
+);
+
+// Attacker or buggy caller tries to pair TrustedHTML
+// with unvetted author options:
+el.setHTMLUnsafe(inertHTML, { runScripts: true });`,
+        dom: `🛑 TypeError: Failed to execute 'setHTMLUnsafe' on 'Element':\nCannot combine TrustedHTML with unvetted parser options ({ runScripts: true }).`,
+        steps: [
+          { cls: 'warn', html: '<strong>The Threat (<code>w3c/trusted-types#615</code>):</strong> A <code>TrustedHTML</code> created for <code>innerHTML</code> might contain dormant <code>&lt;script&gt;</code> tags or rely on a specific sanitizer.' },
+          { cls: 'bad', html: '<strong>Step 1:</strong> Caller passes <code>TrustedHTML</code> + author-supplied <code>{ runScripts: true }</code> (or author-supplied <code>sanitizer</code>) without <code>TrustedHTMLParserOptions</code>.' },
+          { cls: 'good', html: '<strong>Step 2 (Blocked!):</strong> When <code>optionsFromAuthor = true</code> and <code>defaultPolicy.createParserOptions</code> is absent, combining <code>TrustedHTML</code> with non-default options throws a <code>TypeError</code>!' }
+        ]
+      },
+      'legacy-fulldoc': {
+        code: `// Legacy full-document sinks (whatwg/html#13013):
+iframe.srcdoc = "<p onload=evil()>Hello <script>evil()<\\/script></p>";
+
+document.open();
+document.write("<h1>Part 1 <scr");
+document.write("ipt>evil()<\\/script></h1>");
+document.close();`,
+        dom: `⚠️ Today: Falls back to createHTML(string) (breaks split document.write!)\n🚀 Proposed (html#13013): Route full-document parser through defaultPolicy.createParserOptions!`,
+        steps: [
+          { cls: 'warn', html: '<strong>Current State (<code>whatwg/html#12583</code>):</strong> <code>iframe.srcdoc</code>, <code>document.write()</code>, and <code>DOMParser.parseFromString()</code> do not take parser options and currently fall back to <code>createHTML</code>.' },
+          { cls: 'active', html: '<strong>Why <code>srcdoc</code> is ready next (<code>whatwg/html#13013</code>):</strong> With sanitize-while-parsing (<code>whatwg/html#12756</code>), the full-document HTML parser can apply a <code>Sanitizer</code> from <code>defaultPolicy.createParserOptions</code>.' },
+          { cls: 'good', html: '<strong>How <code>document.write()</code> can work:</strong> Even though multiple <code>document.write()</code> calls feed the same active parser, consulting <code>defaultPolicy.createParserOptions</code> when the parser is initialized sanitizes across all writes!' }
+        ]
+      }
+    };
+
+    function renderScenario(key) {
+      const s = scenarios[key];
+      codeBlock.textContent = s.code;
+      domOut.textContent = s.dom;
+      pipeline.innerHTML = s.steps
+        .map(st => `<div class="step ${st.cls}">${st.html}</div>`)
+        .join('');
+    }
+
+    document.querySelectorAll('.scen-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.scen-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderScenario(btn.dataset.scen);
+      });
+    });
+
+    renderScenario('split-stream');
+  </script>
+</body>
+</html>
