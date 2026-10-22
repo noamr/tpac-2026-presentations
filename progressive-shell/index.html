@@ -111,9 +111,9 @@
       <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: New Document</text>
     </svg>
     <ul>
-      <li>Final <code>Document</code> swap still wipes input, focus &amp; scroll</li>
-      <li>Source page must know destination UI (<code>#skeleton</code> lives in old page)</li>
-      <li>Same-origin only — no cold-start or cross-origin win</li>
+      <li>Final swap still wipes input, focus &amp; scroll</li>
+      <li>Old page must know destination UI</li>
+      <li>No cold-start or cross-origin win</li>
     </ul>
   </section>
 
@@ -123,12 +123,11 @@
 
   <section class="slide" id="skeleton-what">
     <h2>2. Declarative Skeleton Documents</h2>
-    <syntax-highlight language="html">&lt;!-- Cached skeleton.html shown at 0ms for /item/:id routes --&gt;
-&lt;link rel="skeleton" href="/item-skeleton.html" pattern="/item/:id"&gt;</syntax-highlight>
+    <syntax-highlight language="html">&lt;link rel="skeleton" href="/item-skeleton.html" pattern="/item/:id"&gt;</syntax-highlight>
     <ul>
-      <li>Destination route caches a separate, lightweight skeleton <code>Document</code></li>
-      <li>Browser swaps to <code>Skeleton Doc</code> at <strong>0ms</strong>, then to <code>Real Doc</code> on load</li>
-      <li>Destination owns its skeleton; works on cold starts &amp; cross-origin</li>
+      <li>Cache a separate skeleton <code>Document</code> per route</li>
+      <li>Swap to <code>Skeleton Doc</code> at <strong>0ms</strong>, then to <code>Real Doc</code></li>
+      <li>Destination owns UI; works on cold starts</li>
     </ul>
   </section>
 
@@ -149,8 +148,8 @@
       <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: Real Document</text>
     </svg>
     <ul>
-      <li><strong>Double-Swap Trap:</strong> <code>Skeleton Doc</code> → <code>Real Doc</code> wipes focus, scroll &amp; typed text</li>
-      <li>Forcing skeleton inputs to be <code>inert</code> creates a broken "half-measure" UX</li>
+      <li><strong>Double-Swap Trap:</strong> Second swap wipes focus, scroll &amp; typing</li>
+      <li>Making skeleton <code>inert</code> feels broken</li>
     </ul>
   </section>
 
