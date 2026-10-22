@@ -174,17 +174,20 @@
 
   <section class="slide" id="security">
     <h2>3a. Safe by Default (<code>sanitize</code>)</h2>
-    <syntax-highlight language="html">&lt;template for src="widget.html"&gt;&lt;/template&gt;
+    <syntax-highlight language="html">&lt;button class="icon-btn"&gt;
+  &lt;template for src="https://icons.example/star.svg" crossorigin&gt;&lt;/template&gt;
+  Star
+&lt;/button&gt;
 
 &lt;template for src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><code>src</code> is sanitized by default</li>
-      <li><code>sanitize="unsafe"</code> opts out</li>
+      <li><code>src</code> is sanitized by default (<code>sanitize="unsafe"</code> opts out)</li>
+      <li><strong>3P inline SVG:</strong> Stylable with CSS (<code>currentColor</code>), sanitized, off the main stream</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Third mitigation (part 1): external includes (&lt;template src&gt;) are sanitized by default using the browser's built-in Sanitizer API. Authors must explicitly write sanitize="unsafe" to allow scripts inside an external fragment.</p>
+    <p>Third mitigation (part 1): external includes (&lt;template src&gt;) are sanitized by default using the browser's built-in Sanitizer API. A great example is including a third-party SVG as an inline &lt;svg&gt; in the DOM—stylable with CSS currentColor, cached separately off the main stream, and safely sanitized without XSS risk.</p>
   </section>
 
   <section class="slide" id="sanitize-inline">
