@@ -69,15 +69,16 @@
 
   <section class="slide" id="issue-13077">
     <h2>1. Standardize Selection (<code>#13077</code>)</h2>
-    <ul>
-      <li>All engines use <strong>first candidate <code>&gt;= targetDensity</code></strong></li>
-      <li>Chrome reuses already-loaded higher-res candidates</li>
-      <li><strong>Proposal:</strong> Spec both normatively</li>
-    </ul>
+    <ol>
+      <li><strong><code>targetDensity</code> = <code>devicePixelRatio</code></strong> (UA <strong>MAY</strong> adjust for user prefs / privacy)</li>
+      <li><strong>Sort</strong> candidates by density ascending (first in document order wins ties)</li>
+      <li><strong>Select</strong> first candidate <code>&gt;= targetDensity</code>, or <strong>last</strong> (largest) if none</li>
+      <li>UA <strong>MAY</strong> reuse an already-loaded candidate with density <code>&gt; selected</code></li>
+    </ol>
   </section>
 
   <section class="comment">
-    <p>Since late 2024, WebKit, Gecko, and Blink all use the same density threshold, and Chrome's optimization to reuse an already-loaded higher-res image can be standardized rather than left implementation-defined. This unlocks WPT tests and deterministic knobs.</p>
+    <p>Since late 2024, WebKit, Gecko, and Blink all use the same selection algorithm: sort ascending, pick the first candidate &gt;= targetDensity, or the largest if none. We can spec this normatively, with explicit MAY allowances for user preference/privacy DPR adjustments and Chrome's cache reuse of already-loaded higher-res candidates.</p>
   </section>
 
   <section class="slide" id="issue-13069">
