@@ -26,7 +26,7 @@
   </section>
 
   <section class="comment">
-    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Proposes extending MutationObserver with { parser: true } and Node/ShadowRoot with isParsing.</p>
+    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Proposes extending MutationObserver with { parseEnd: true, template: true } and Element/ShadowRoot with isParsing.</p>
   </section>
 
   <section class="slide" id="use-case-1">
@@ -94,23 +94,24 @@
   </section>
 
   <section class="slide" id="proposal">
-    <h2>Proposal: <code>{ parser: true }</code></h2>
+    <h2>Proposal: <code>parseEnd</code> &amp; <code>template</code></h2>
     <syntax-highlight language="js">observer.observe(document, {
-  childList: true, subtree: true, parser: true
+  childList: true, subtree: true,
+  parseEnd: true, template: true
 });</syntax-highlight>
     <ul>
-      <li><code>element.isParsing</code> + cross-chunk empty <code>childList</code> record</li>
-      <li><code>record.templateStatus</code> &amp; <code>record.templateAttributes</code></li>
+      <li><strong><code>parseEnd: true</code>:</strong> <code>element.isParsing</code> + cross-chunk empty <code>childList</code> record</li>
+      <li><strong><code>template: true</code>:</strong> <code>record.templateStatus</code> &amp; <code>record.templateAttributes</code></li>
       <li><code>record.parserContextElement</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Opt-in via parser: true on MutationObserverInit. Paired with element.isParsing, elements that open and close in the same chunk need zero extra records; elements split across chunks emit an empty childList record with target === closedElement when popped.</p>
+    <p>Separate opt-ins on MutationObserverInit: parseEnd: true for cross-chunk element completion (paired with element.isParsing), and template: true for parser-consumed &lt;template&gt; lifecycle records.</p>
   </section>
 
   <section class="slide" id="parsed-elements">
-    <h2>Element Completion: <code>isParsing</code></h2>
+    <h2><code>parseEnd: true</code> &amp; <code>isParsing</code></h2>
     <syntax-highlight language="js">// 1. Opened &amp; closed in the same chunk:
 for (const n of r.addedNodes) {
   if (n instanceof Element &amp;&amp; !n.isParsing) enhance(n);
@@ -130,7 +131,7 @@ if (!r.addedNodes.length &amp;&amp; !r.removedNodes.length &amp;&amp; !r.templat
   </section>
 
   <section class="slide" id="template-lifecycle">
-    <h2>Non-Attaching <code>&lt;template&gt;</code>s</h2>
+    <h2><code>template: true</code></h2>
     <syntax-highlight language="js">for (const r of records) {
   if (r.templateStatus === "start") {
     console.log(r.templateAttributes.getNamedItem("for"));
@@ -162,14 +163,14 @@ if (!r.addedNodes.length &amp;&amp; !r.removedNodes.length &amp;&amp; !r.templat
     <h2>Discussion</h2>
     <ul>
       <li>Supporting SSR &amp; streaming HTML without ignoring dynamic DOM updates</li>
-      <li><code>{ parser: true }</code> on <code>MutationObserver</code> + <code>element.isParsing</code></li>
-      <li>Opt-in granularity: <code>parser</code> vs. separate <code>template</code> + <code>parseEnd</code></li>
+      <li><code>{ parseEnd: true, template: true }</code> on <code>MutationObserver</code> + <code>element.isParsing</code></li>
+      <li>Opt-in granularity: <code>parseEnd</code> + <code>template</code> vs. single <code>parser: true</code></li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md"><code>parser-mutation-records-explainer.md</code></a> · <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</p>
   </section>
 
   <section class="comment">
-    <p>Open discussion on how { parser: true } and node.isParsing hit the balance between ergonomic server-driven/streaming HTML observation and reminding developers that DOM trees also mutate dynamically after parsing.</p>
+    <p>Open discussion on how { parseEnd: true, template: true } and element.isParsing hit the balance between ergonomic server-driven/streaming HTML observation and reminding developers that DOM trees also mutate dynamically after parsing.</p>
   </section>
 
 </body>
