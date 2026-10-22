@@ -33,8 +33,8 @@
     <syntax-highlight language="http">Connection-Allowlist: (response-origin "https://*.site.example"
   "https://cdn.example"); report-to=endpoint</syntax-highlight>
     <ul>
-      <li><strong>One job:</strong> Block outbound connections not matching the allowlist</li>
-      <li>Covers Fetch, navigations, WebSockets, WebTransport, WebRTC, <code>dns-prefetch</code>, <code>preconnect</code></li>
+      <li>Block outbound connections outside the allowlist</li>
+      <li>Fetch, navigations, WebSockets, WebTransport, WebRTC, preconnect</li>
       <li><strong>Graduated to W3C WebAppSec WG</strong></li>
     </ul>
   </section>
@@ -44,11 +44,11 @@
   </section>
 
   <section class="slide" id="user-agency">
-    <h2>User Agency &amp; the Browser Boundary (<a href="https://github.com/WICG/connection-allowlists/issues/31"><code>#31</code></a>)</h2>
+    <h2>User Agency (<a href="https://github.com/WICG/connection-allowlists/issues/31"><code>#31</code></a>)</h2>
     <ul>
-      <li><strong>Core rule:</strong> Only block what the page itself can initiate or <code>preventDefault()</code></li>
-      <li><strong>Browser UI wins:</strong> Address bar, bookmarks, extensions, and context menus are <strong>not</strong> blocked</li>
-      <li><strong>The tension:</strong> What when a user gesture uses a page-crafted URL?</li>
+      <li>Only block what the page can initiate or <code>preventDefault()</code></li>
+      <li>Browser UI is never blocked (address bar, extensions, context menus)</li>
+      <li><strong>Tension:</strong> User gesture + page-crafted URL</li>
     </ul>
   </section>
 
@@ -59,12 +59,9 @@
   <section class="slide" id="open-navigation">
     <h2>Open Issues: Navigation &amp; Gestures</h2>
     <ul>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus (“Open in New Tab”):</strong><br>
-        User gesture (out of scope) <em>vs.</em> exfiltration via LLM-generated or <code>oncontextmenu</code>-mutated <code>href</code></li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes (<code>mailto:</code>, <code>intent:</code>, <code>slack:</code>):</strong><br>
-        Not a network fetch <em>vs.</em> exfiltrates page data to external apps via URL</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code> in Service Workers:</strong><br>
-        Enforce the SW's allowlist, the target document's, or both?</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus:</strong> User gesture <em>vs.</em> exfiltration via dynamic <code>href</code></li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes (<code>mailto:</code>, <code>intent:</code>):</strong> Non-HTTP <em>vs.</em> URL payload to apps</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code>:</strong> SW allowlist, document allowlist, or both?</li>
     </ul>
   </section>
 
@@ -75,12 +72,9 @@
   <section class="slide" id="open-iframes-redirects">
     <h2>Open Issues: Sandboxing &amp; Redirects</h2>
     <ul>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Dynamic originless iframes (<code>about:blank</code> / <code>srcdoc</code>):</strong><br>
-        AI sandboxes want dynamic policies <em>vs.</em> mutating after creation races with active fetches</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> same-origin escape:</strong><br>
-        Needed for same-origin fetches <em>vs.</em> opening an unprotected same-origin page (<code>/404</code>) + <code>eval()</code></li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Server-side redirects:</strong><br>
-        Matching redirect targets leaks cross-origin URLs in reports <em>vs.</em> coarse <code>redirection-allowed</code> flag</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Originless iframes (<code>srcdoc</code>):</strong> Dynamic policy <em>vs.</em> racing active fetches</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin fetch <em>vs.</em> <code>open('/404')</code> + <code>eval()</code></li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirects:</strong> Pattern matching (leaks targets) <em>vs.</em> <code>redirection-allowed</code> flag</li>
     </ul>
   </section>
 
@@ -91,9 +85,9 @@
   <section class="slide" id="embedded-problem">
     <h2>Why Embedded Enforcement? (<a href="https://github.com/WICG/connection-allowlists/issues/28"><code>#28</code></a>)</h2>
     <ul>
-      <li><code>Connection-Allowlist</code> only governs a document's <strong>own</strong> connections</li>
-      <li>Every navigated <code>&lt;iframe&gt;</code> (even same-origin!) brings its own policy container</li>
-      <li>Data passed to a permissive child frame can still be exfiltrated</li>
+      <li><code>Connection-Allowlist</code> only governs a document's own connections</li>
+      <li>Navigated <code>&lt;iframe&gt;</code>s (even same-origin) bring their own policy container</li>
+      <li>Permissive child frames can exfiltrate parent data</li>
     </ul>
   </section>
 
@@ -106,10 +100,10 @@
     <syntax-highlight language="html">&lt;iframe connectionallowlist='("https://api.example" response-origin)'
         src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
     <ul>
-      <li><strong>Follows the CSP-EE (<code>&lt;iframe csp&gt;</code>) model</strong></li>
+      <li>Follows <strong>CSP-EE</strong> (<code>&lt;iframe csp&gt;</code>)</li>
       <li><strong>Request:</strong> <code>Sec-Required-Connection-Allowlist</code></li>
-      <li><strong>Opt-in:</strong> Subset <code>Connection-Allowlist</code>, <code>Allow-Connection-Allowlist-From</code>, or local scheme</li>
-      <li><strong>Inherited:</strong> Applies to nested frames &amp; workers</li>
+      <li><strong>Opt-in:</strong> Subset policy or <code>Allow-Connection-Allowlist-From</code></li>
+      <li><strong>Inherited</strong> by nested frames &amp; workers</li>
     </ul>
   </section>
 
@@ -120,9 +114,9 @@
   <section class="slide" id="upstreaming">
     <h2>Upstreaming to Standards</h2>
     <ul>
-      <li><strong>Fetch (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>):</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> / <em>obtain a connection</em></li>
-      <li><strong>HTML (<a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>):</strong> Policy container, <code>&lt;iframe connectionallowlist&gt;</code>, <code>dns-prefetch</code>, <code>preconnect</code></li>
-      <li><strong>WebRTC &amp; Service Workers:</strong> ICE candidates + <code>navigate()</code> / <code>openWindow()</code></li>
+      <li><strong>Fetch (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>):</strong> <em>Main Fetch</em> + <code>environment</code> in <em>obtain a connection</em></li>
+      <li><strong>HTML (<a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>):</strong> Policy container, <code>&lt;iframe connectionallowlist&gt;</code>, preconnect</li>
+      <li><strong>WebRTC &amp; Service Workers:</strong> ICE candidates, <code>navigate()</code>, <code>openWindow()</code></li>
     </ul>
   </section>
 
@@ -133,10 +127,10 @@
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
-      <li><strong>Embedded Enforcement:</strong> <code>&lt;iframe connectionallowlist&gt;</code> &amp; shared CSP-EE plumbing (<a href="https://github.com/WICG/connection-allowlists/issues/28"><code>#28</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>)</li>
-      <li><strong>Navigation boundaries:</strong> Context menus (<a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a>), custom schemes (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>), <code>client.navigate()</code> (<a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a>)</li>
-      <li><strong>Sandboxing &amp; redirects:</strong> Dynamic iframes (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>), <code>response-origin</code> (<a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a>), redirects (<a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a>)</li>
-      <li><strong>Upstreaming:</strong> Fetch (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>), HTML, WebRTC &amp; Service Workers</li>
+      <li><strong>Embedded Enforcement</strong> (<a href="https://github.com/WICG/connection-allowlists/issues/28"><code>#28</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>)</li>
+      <li><strong>Navigation &amp; gestures</strong> (<a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a>)</li>
+      <li><strong>Sandboxing &amp; redirects</strong> (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a>)</li>
+      <li><strong>Upstreaming to Fetch &amp; HTML</strong> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/connection-allowlists"><code>github.com/WICG/connection-allowlists</code></a></p>
   </section>
