@@ -44,41 +44,37 @@
 
   <section class="slide" id="attempt-1">
     <h2>1. Two-Phase View Transitions</h2>
-    <svg class="chart" viewBox="0 0 680 90" aria-label="Old Document swapped for New Document">
-      <rect x="20" y="15" width="240" height="60" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
-      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">0ms: Old Document</text>
-
-      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap</text>
-      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
-
-      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
-      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: New Document</text>
-    </svg>
+    <syntax-highlight language="js">navigation.addEventListener("navigate", e =&gt; {
+  e.deferPageSwap(); // or declarative intermediate VT
+  document.startViewTransition(() =&gt; showLoadingState());
+});</syntax-highlight>
     <ul>
-      <li>Swaps <code>Document</code> at the end — wipes input, focus &amp; scroll</li>
-      <li>Source page must know destination UI; no cold-start win</li>
+      <li><strong>What it is:</strong> Old page transitions to an intermediate loading state (via <code>deferPageSwap()</code> or declarative VT) until the new page is ready</li>
+      <li><strong>Why not enough:</strong>
+        <ul>
+          <li>Final <code>Document</code> swap still wipes input, focus &amp; scroll</li>
+          <li>Source page must know destination UI; no cold-start win</li>
+        </ul>
+      </li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>With deferPageSwap, the old page stays live during TTFB and can animate to an intermediate state. But when the new Document finally arrives, the browser still swaps Documents—destroying any input focus or search text the user typed during the wait. Plus, every source page has to know how to render the destination's loading skeleton.</p>
+    <p>Two-phase View Transitions (both programmatic deferPageSwap() and declarative intermediate View Transitions) let the outgoing page stay live during TTFB and animate to a loading state before the cross-document VT swap. But when the new Document arrives, the final Document swap still destroys any input focus or text typed during the wait, and it can't help cold starts or cross-origin navigations.</p>
   </section>
 
   <section class="slide" id="attempt-2">
     <h2>2. Declarative Skeleton Documents</h2>
-    <svg class="chart" viewBox="0 0 680 90" aria-label="Skeleton Document swapped for Real Document">
-      <rect x="20" y="15" width="240" height="60" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
-      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#2ea043">0ms: Skeleton Doc</text>
-
-      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap #2</text>
-      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
-
-      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
-      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: Real Document</text>
-    </svg>
+    <syntax-highlight language="html">&lt;!-- Cached skeleton.html shown at 0ms, replaced when item.html loads --&gt;
+&lt;link rel="skeleton" href="/item-skeleton.html" pattern="/item/:id"&gt;</syntax-highlight>
     <ul>
-      <li>Fixes cold starts; destination owns its skeleton</li>
-      <li><strong>Double-Swap Trap:</strong> Skeleton <code>Document</code> → Real <code>Document</code> wipes state</li>
+      <li><strong>What it is:</strong> Cache a separate skeleton <code>Document</code> for a route pattern; swap to it at <strong>0ms</strong>, then swap to the real <code>Document</code> on load</li>
+      <li><strong>Why not enough:</strong>
+        <ul>
+          <li>Fixes cold starts; destination owns its skeleton</li>
+          <li><strong>Double-Swap Trap:</strong> <code>Skeleton Doc</code> → <code>Real Doc</code> wipes state</li>
+        </ul>
+      </li>
     </ul>
   </section>
 
