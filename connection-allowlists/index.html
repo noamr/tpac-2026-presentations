@@ -16,7 +16,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Connection Allowlists</h1>
-    <h4>Status update, embedded enforcement &amp; path to W3C</h4>
+    <h4>Status update, embedded enforcement &amp; upstreaming</h4>
     <address>Noam Rosenthal &amp; Mike West</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -45,7 +45,7 @@
   <section class="slide" id="status">
     <h2>Status Update</h2>
     <ul>
-      <li><strong>Spec &amp; prototypes:</strong> <a href="https://github.com/WICG/connection-allowlists"><code>WICG/connection-allowlists</code></a> (Chromium &amp; Edge)</li>
+      <li><strong>W3C WebAppSec WG graduation approved</strong> (moving from <a href="https://github.com/WICG/connection-allowlists"><code>WICG/connection-allowlists</code></a>)</li>
       <li><strong>Workers:</strong> Service/Shared Workers + <code>navigate()</code> / <code>openWindow()</code> (<a href="https://github.com/WICG/connection-allowlists/pull/26"><code>#26</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/39"><code>#39</code></a>)</li>
       <li><strong>Pre-request:</strong> Early Hints (<code>103</code>), <code>dns-prefetch</code>, <code>preconnect</code> (<a href="https://github.com/WICG/connection-allowlists/pull/30"><code>#30</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/33"><code>#33</code></a>)</li>
       <li><strong>Embedded Enforcement:</strong> <code>&lt;iframe connectionAllowlist&gt;</code> (<a href="https://github.com/WICG/connection-allowlists/pull/29"><code>#29</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/35"><code>#35</code></a>)</li>
@@ -53,26 +53,15 @@
   </section>
 
   <section class="comment">
-    <p>Over the past few months we've closed the big gaps in the WICG spec: Service Worker and Shared Worker integration, 103 Early Hints, dns-prefetch and preconnect environment plumbing, local schemes, and—thanks to Brandon Maslen from Edge—Embedded Enforcement for iframes.</p>
+    <p>Graduation to W3C WebAppSec WG is approved. Over the past few months we've also closed the big gaps in the spec: Service Worker and Shared Worker integration, 103 Early Hints, dns-prefetch and preconnect environment plumbing, local schemes, and—thanks to Brandon Maslen from Edge—Embedded Enforcement for iframes.</p>
   </section>
 
   <section class="slide" id="embedded-problem">
     <h2>Why Embedded Enforcement?</h2>
-    <svg class="chart" viewBox="0 0 680 125" aria-label="Cross-origin iframe bypass without embedded enforcement vs constrained subtree with embedded enforcement">
-      <rect x="10" y="10" width="320" height="105" rx="6" fill="#f85149" fill-opacity="0.12" stroke="#f85149" stroke-width="1.5"/>
-      <text x="170" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Without Embedded Enforcement ❌</text>
-      <text x="170" y="54" text-anchor="middle" font-size="11" fill="currentColor">Parent: Connection-Allowlist: (response-origin)</text>
-      <text x="170" y="73" text-anchor="middle" font-size="11" fill="currentColor">↳ embeds &lt;iframe src="https://widget.example"&gt;</text>
-      <text x="170" y="94" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">Widget has its own policy → fetches evil.example!</text>
-
-      <rect x="350" y="10" width="320" height="105" rx="6" fill="#2ea043" fill-opacity="0.12" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="510" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">With &lt;iframe connectionAllowlist&gt; ✔</text>
-      <text x="510" y="54" text-anchor="middle" font-size="11" fill="currentColor">Parent requires (response-origin) on iframe</text>
-      <text x="510" y="73" text-anchor="middle" font-size="11" fill="currentColor">↳ Widget opts in (or is blocked from loading)</text>
-      <text x="510" y="94" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ea043">Widget + nested frames/workers are capped ✔</text>
-    </svg>
     <ul>
-      <li>Cross-origin iframes bring their own policy container</li>
+      <li><code>Connection-Allowlist</code> only governs a document's <strong>own</strong> connections</li>
+      <li>Cross-origin <code>&lt;iframe&gt;</code>s bring their own policy container</li>
+      <li>Data passed to a permissive child frame can still be exfiltrated</li>
     </ul>
   </section>
 
@@ -96,23 +85,21 @@
   </section>
 
   <section class="slide" id="upstreaming">
-    <h2>Path to W3C &amp; Upstreaming</h2>
+    <h2>Upstreaming to Standards</h2>
     <ul>
-      <li><strong>1. Graduate WICG → W3C WebAppSec WG</strong></li>
-      <li><strong>2. Fetch:</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> / <em>obtain a connection</em> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
-      <li><strong>3. HTML:</strong> Policy container, <code>&lt;iframe connectionAllowlist&gt;</code>, <code>dns-prefetch</code>, <code>preconnect</code></li>
-      <li><strong>4. WebRTC &amp; Service Workers:</strong> ICE candidates + <code>navigate()</code> / <code>openWindow()</code></li>
+      <li><strong>Fetch:</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> / <em>obtain a connection</em> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
+      <li><strong>HTML:</strong> Policy container, <code>&lt;iframe connectionAllowlist&gt;</code>, <code>dns-prefetch</code>, <code>preconnect</code></li>
+      <li><strong>WebRTC &amp; Service Workers:</strong> ICE candidates + <code>navigate()</code> / <code>openWindow()</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Our goal is to move Connection Allowlists from WICG into the W3C WebAppSec Working Group and upstream the monkey-patches into Fetch, HTML, WebRTC, and Service Workers. In particular, Fetch's low-level "resolve an origin" and "obtain a connection" algorithms need an environment parameter so lower-level connections like WebTransport, preconnect, and dns-prefetch are centrally checked.</p>
+    <p>With graduation to WebAppSec WG approved, our next step is upstreaming the monkey-patches into Fetch, HTML, WebRTC, and Service Workers. In particular, Fetch's low-level "resolve an origin" and "obtain a connection" algorithms need an environment parameter so lower-level connections like WebTransport, preconnect, and dns-prefetch are centrally checked.</p>
   </section>
 
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
-      <li><strong>W3C WebAppSec WG adoption</strong></li>
       <li><strong>Fetch &amp; HTML upstreaming:</strong> Central check vs. per-callsite; shared CSP-EE scaffolding</li>
       <li><strong>Edge cases:</strong> Custom schemes (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>) &amp; dynamic iframe updates (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>)</li>
     </ul>
