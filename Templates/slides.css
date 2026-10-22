@@ -143,6 +143,7 @@
 
 /* Colors and backgrounds for light mode */
 html, .lightmode {
+  color-scheme: light;
   --index-bg: url(linen.png) #595b60;
   --index-fg: white;
   --address-fg: hsl(356,67%,40%);
@@ -201,6 +202,7 @@ html, .lightmode {
 /* Colors and backgrounds for dark mode */
 @media (prefers-color-scheme: dark) {
   html {
+    color-scheme: dark;
     --index-bg: linear-gradient(#0005,#0005), url(linen.png) #595b60;
     --index-fg: #eee;
     --address-fg: hsl(356,90%,60%);
@@ -257,6 +259,7 @@ html, .lightmode {
   }
 }
 .darkmode {
+  color-scheme: dark;
   --index-bg: linear-gradient(#0005,#0005), url(linen.png) #595b60;
   --index-fg: #eee;
   --address-fg: hsl(356,90%,60%);
@@ -468,10 +471,8 @@ sub, sup {line-height: 0.5}
   font-size: 0.7em;
   line-height: 1.35;
 }
-::highlight(punctuation),
-::highlight(number),
-::highlight(atrule) {
-  color: var(--prettylights-fg);
+::highlight(punctuation) {
+  color: light-dark(#59636e, #9198a1);
 }
 ::highlight(namespace) {
   opacity: 0.7;
@@ -480,55 +481,57 @@ sub, sup {line-height: 0.5}
 ::highlight(prolog),
 ::highlight(doctype),
 ::highlight(cdata) {
-  color: var(--prettylights-comment);
+  color: light-dark(#59636e, #9198a1);
 }
 ::highlight(constant),
+::highlight(number),
+::highlight(atrule),
 ::highlight(attr-name),
 ::highlight(char),
 ::highlight(builtin),
 ::highlight(operator) {
-  color: var(--prettylights-constant);
+  color: light-dark(#0550ae, #79c0ff);
 }
 ::highlight(property),
 ::highlight(tag),
 ::highlight(boolean),
 ::highlight(symbol) {
-  color: var(--prettylights-entity-tag);
+  color: light-dark(#116329, #7ee787);
 }
 ::highlight(entity),
 ::highlight(selector),
 ::highlight(class-name),
 ::highlight(function) {
-  color: var(--prettylights-entity);
+  color: light-dark(#6639ba, #d2a8ff);
 }
 ::highlight(keyword),
 ::highlight(rule) {
-  color: var(--prettylights-keyword);
+  color: light-dark(#cf222e, #ff7b72);
 }
 ::highlight(string),
 ::highlight(attr-value) {
-  color: var(--prettylights-string);
+  color: light-dark(#0a3069, #a5d6ff);
 }
 ::highlight(variable) {
-  color: var(--prettylights-variable);
+  color: light-dark(#953800, #ffa657);
 }
 ::highlight(regex) {
-  color: var(--prettylights-string-regexp);
+  color: light-dark(#116329, #7ee787);
 }
 ::highlight(deleted) {
-  color: var(--prettylights-deleted-text);
-  background-color: var(--prettylights-deleted-bg);
+  color: light-dark(#82071e, #ffdcd7);
+  background-color: light-dark(#ffebe9, #67060c);
 }
 ::highlight(inserted) {
-  color: var(--prettylights-inserted-text);
-  background-color: var(--prettylights-inserted-bg);
+  color: light-dark(#116329, #aff5b4);
+  background-color: light-dark(#dafbe1, #033a16);
 }
 ::highlight(url) {
   text-decoration: underline;
-  color: var(--prettylights-constant-other-reference-link);
+  color: light-dark(#0a3069, #a5d6ff);
 }
 ::highlight(important) {
-  color: var(--prettylights-heading);
+  color: light-dark(#0550ae, #1f6feb);
 }
 .slide svg.chart {
   display: block;
