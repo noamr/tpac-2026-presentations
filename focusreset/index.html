@@ -116,36 +116,23 @@ nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
 
   <section class="slide" id="timing">
     <h2>Timing: Microtask vs. Rendering</h2>
-    <div class="columns">
-      <div>
-        <h3>Rendering Step (Step 17)</h3>
-        <ul>
-          <li>For <strong>style/layout</strong> (<code>display: none</code>)</li>
-          <li>Updates <code>activeElement</code> &amp; fires <code>blur</code> <strong>together</strong> after layout</li>
-          <li>Misses DOM removals inside <code>rAF</code> / <code>ResizeObserver</code></li>
-        </ul>
-      </div>
-      <div>
-        <h3><code>MutationObserver</code> Microtask ✔</h3>
-        <ul>
-          <li><code>node.remove()</code> <strong>already resets <code>activeElement</code> synchronously</strong></li>
-          <li>Avoids a long gap where <code>activeElement</code> &amp; events are out of sync</li>
-          <li>Aligns with <code>MutationObserver</code> &amp; <code>slotchange</code></li>
-        </ul>
-      </div>
-    </div>
+    <ul>
+      <li><strong>Rendering step (<code>display: none</code>):</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> <em>together</em> after layout</li>
+      <li><strong>DOM removal (<code>node.remove()</code>):</strong> Resets <code>activeElement</code> <em>synchronously</em></li>
+      <li><strong>Why microtask?</strong> Keeps event in sync with <code>activeElement</code> &amp; catches removals in <code>rAF</code> / <code>ResizeObserver</code></li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>Why fire in the MutationObserver microtask rather than Step 17 of "update the rendering" (#focus-fixup-rule)? Step 17 is for style/layout changes like display:none where the UA only knows the element stopped being focusable after layout—and Step 17 updates activeElement and fires blur together. On DOM removal (#node-remove-focus-fixup), activeElement is already reset synchronously. Waiting until rendering would leave activeElement and events out of sync across tasks, and any JS inside update-the-rendering (rAF, ResizeObserver) can also remove nodes. Microtask timing keeps focusreset coupled to the DOM mutation while letting compound operations (remove + focus) settle first.</p>
+    <p>Step 17 of update-the-rendering is for style changes (display:none) and updates activeElement + fires blur together. On DOM removal, activeElement is already reset synchronously; firing focusreset in the MutationObserver microtask keeps it in sync with activeElement and handles removals during rAF/ResizeObserver.</p>
   </section>
 
   <section class="slide" id="alternatives">
-    <h2>Other Alternatives Considered</h2>
+    <h2>Why Not…</h2>
     <ul>
       <li><strong>Sync <code>blur</code> on removal?</strong> Re-entrancy hazard mid-removal</li>
-      <li><strong>Async <code>blur</code> on ancestor?</strong> Ancestor was never focused; breaks if reparented</li>
-      <li><strong>Exposing <code>relatedTarget</code>?</strong> Leaks detached DOM subtrees &amp; closed Shadow DOM</li>
+      <li><strong>Async <code>blur</code> on ancestor?</strong> Ancestor was never focused</li>
+      <li><strong>Exposing <code>relatedTarget</code>?</strong> Leaks detached DOM &amp; closed Shadow DOM</li>
     </ul>
   </section>
 
