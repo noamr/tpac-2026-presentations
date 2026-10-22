@@ -29,47 +29,57 @@
     <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Proposes extending MutationObserver with { parser: true } and Node/ShadowRoot with isParsing.</p>
   </section>
 
-  <section class="slide" id="problem">
-    <h2>What the Parser Knows (and the DOM Forgets)</h2>
+  <section class="slide" id="use-case-1">
+    <h2>Use Case 1: Streaming Children (<a href="https://github.com/WICG/webcomponents/issues/809"><code>#809</code></a>, <a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>)</h2>
+    <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;
+&lt;!-- Chunk 2 --&gt; &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</syntax-highlight>
     <ul>
-      <li><strong>Is this element finished parsing?</strong></li>
-      <li><strong>Non-attaching <code>&lt;template&gt;</code>s</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
-      <li><strong>Which container triggered the parse?</strong></li>
+      <li><code>addedNodes</code> fires on the <strong>start tag</strong> — across network chunks, children are incomplete</li>
+      <li>Hits custom elements validating/slotting children (<code>&lt;s-select&gt;</code>), inline code blocks, and streaming MPA→SPA updates (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>)</li>
+      <li><strong>Today's workaround (<code>html-parsed-element</code>, <code>writable-dom</code>):</strong> per-element observers + ancestor <code>nextSibling</code> walks (<strong>100ms+ main-thread cost</strong>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>The HTML parser tracks the stack of open elements, processes special &lt;template&gt; elements that are consumed by the parser without ever attaching to the DOM (Declarative Shadow DOM and &lt;template for&gt;), and knows the fragment context root—none of which is visible to MutationObserver today.</p>
+    <p>In WICG/webcomponents#809, whatwg/dom#662, and whatwg/dom#1116, developers building custom elements (like Shopify's &lt;s-select&gt; validating &lt;s-option&gt; children, data tables, or Svelte's light-DOM slots) and streaming HTML swaps hit the same wall: addedNodes and connectedCallback fire on the opening tag, when the parser may yield mid-element across network chunks. Libraries like html-parsed-element and Marko's writable-dom have to walk ancestor nextSibling chains on every mutation, burning 100ms+ of main-thread time.</p>
   </section>
 
-  <section class="slide" id="pain-points">
-    <h2>Why It Hurts Today</h2>
-    <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;
-&lt;!-- Chunk 2 --&gt; &lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;</syntax-highlight>
+  <section class="slide" id="use-case-2">
+    <h2>Use Case 2: Streaming Patches (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>, <a href="https://github.com/whatwg/html/issues/13008"><code>html#13008</code></a>)</h2>
+    <syntax-highlight language="html">&lt;template for="results" data-turn="3"&gt;
+  &lt;p&gt;Streamed response...&lt;/p&gt;
+&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Premature hydration:</strong> <code>addedNodes</code> fires on the open tag before children arrive</li>
-      <li><strong>Invisible <code>&lt;template&gt;</code>s:</strong> <code>shadowrootmode</code> &amp; <code>&lt;template for&gt;</code> never enter <code>addedNodes</code></li>
+      <li><code>&lt;template for&gt;</code> is consumed by the parser and never enters <code>addedNodes</code></li>
+      <li>Streaming UIs (e.g., OpenAI's prototype in <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>) need <strong>attribution &amp; error control</strong>:
+        <ul>
+          <li>Which patch caused this mutation (e.g. <code>data-turn="3"</code>)?</li>
+          <li>Did the patch finish (<code>"end"</code>) or fail (<code>"abort"</code> on truncated stream / missing target)?</li>
+        </ul>
+      </li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>SSR frameworks, custom elements, and hydration libraries cannot tell when a server-streamed element's children have finished parsing (whatwg/dom#898, w3c/webcomponents#809). And non-attaching &lt;template&gt; elements (&lt;template shadowrootmode&gt; and &lt;template for&gt;) never enter addedNodes, so observers can't attribute mutations to a patch, know when a patch finishes, or detect when a patch's target was missing.</p>
+    <p>In WICG/declarative-partial-updates#110 (filed by OpenAI) and whatwg/html#13008, streaming applications using &lt;template for&gt; need to correlate DOM mutations with the initiating patch, read metadata attributes off the template, and know whether a patch finished cleanly or aborted due to network truncation or a missing target. Without parser reflection, apps must build a parallel client-side patch feed.</p>
   </section>
 
-  <section class="slide" id="quotes">
-    <h2>What Developers Are Saying</h2>
-    <blockquote>
-      <p>“Knowing <em>which patch</em> caused a mutation (and how it resolved) is way more useful than just knowing ‘the DOM changed.’”</p>
-      <p class="attribution">— @callie-openai (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>WICG/declarative-partial-updates#110</code></a>)</p>
-    </blockquote>
-    <blockquote>
-      <p>“There is no way to know within <code>connectedCallback</code> if the node has finished parsing its children or not.”</p>
-      <p class="attribution">— @WebReflection (<a href="https://github.com/w3c/webcomponents/issues/809"><code>w3c/webcomponents#809</code></a>, 100+ 👍)</p>
-    </blockquote>
+  <section class="slide" id="use-case-3">
+    <h2>Use Case 3: Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)</h2>
+    <syntax-highlight language="html">&lt;my-card&gt;
+  &lt;template shadowrootmode="open"&gt;
+    &lt;unregistered-child&gt;&lt;/unregistered-child&gt;
+  &lt;/template&gt;
+&lt;/my-card&gt;</syntax-highlight>
+    <ul>
+      <li>Component autoloaders &amp; polyfills (e.g. Web Awesome) need to observe inside shadow roots</li>
+      <li>Monkey-patching <code>attachShadow()</code> misses <code>&lt;template shadowrootmode&gt;</code> completely</li>
+      <li>Parser consumes the <code>&lt;template&gt;</code> with <strong>zero <code>MutationRecord</code>s</strong> on the host</li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>In WICG/declarative-partial-updates#110, OpenAI described building a streaming UI prototype where they had to build a custom document-level patch feed because MutationObserver couldn't separate parser-owned patch mutations from hydration or client UI updates, nor detect missing targets or stream EOF aborts. Meanwhile w3c/webcomponents#809 and whatwg/dom#898 have asked for parser completion state for years.</p>
+    <p>In whatwg/dom#1287 and #1439, component autoloaders and polyfills need to discover shadow roots as they attach. Today they monkey-patch Element.prototype.attachShadow(), which completely misses Declarative Shadow DOM because the parser consumes &lt;template shadowrootmode&gt; without queueing any MutationRecord on the host.</p>
   </section>
 
   <section class="slide" id="objection">
