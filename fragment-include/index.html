@@ -86,7 +86,7 @@
   <section class="slide" id="solution">
     <h2>Proposal: <code>&lt;template src&gt;</code></h2>
     <syntax-highlight language="html">&lt;!-- In-place include --&gt;
-&lt;template src="header.html"&gt;&lt;/template&gt;
+&lt;template for src="header.html"&gt;&lt;/template&gt;
 
 &lt;!-- Targeted include --&gt;
 &lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
@@ -122,7 +122,7 @@
   <section class="slide" id="fouc-cls">
     <h2>2. Taming FOUC &amp; Layout Shifts</h2>
     <syntax-highlight language="html">&lt;link rel="expect" href="#site-header" blocking="render"&gt;
-&lt;template src="header.html"&gt;&lt;/template&gt;
+&lt;template for src="header.html"&gt;&lt;/template&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
     <svg class="chart" viewBox="0 0 680 120" aria-label="Mitigating FOUC and layout shifts with render-blocking and buffer">
       <rect x="10" y="10" width="320" height="100" rx="6" fill="#1f6feb" fill-opacity="0.12" stroke="#1f6feb" stroke-width="1.5"/>
@@ -146,10 +146,10 @@
   <section class="slide" id="security">
     <h2>3. Safe by Default</h2>
     <syntax-highlight language="html">&lt;!-- Default: sanitized via built-in Sanitizer API --&gt;
-&lt;template src="widget.html"&gt;&lt;/template&gt;
+&lt;template for src="widget.html"&gt;&lt;/template&gt;
 
 &lt;!-- Explicit opt-out (governed by CSP fragment-src &amp; script-src) --&gt;
-&lt;template src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
+&lt;template for src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
       <li><strong>Sanitized by default:</strong> Strips scripts &amp; inline event handlers</li>
       <li><strong>Defense in depth:</strong> <code>sanitize="unsafe"</code> still requires CSP <code>fragment-src</code> + <code>script-src</code></li>
