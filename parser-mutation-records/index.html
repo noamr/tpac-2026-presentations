@@ -29,19 +29,45 @@
     <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Proposes extending MutationObserver with { parseEnd: true, template: true } and Element/ShadowRoot with isParsing.</p>
   </section>
 
-  <section class="slide" id="use-case-1">
-    <h2>1. Parse End (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
+  <section class="slide" id="parse-end-problem">
+    <h2>1. Parse End: The Problem (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;
 &lt;!-- Chunk 2 --&gt; &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</syntax-highlight>
     <ul>
-      <li><code>addedNodes</code> fires on start tag — children aren't there yet</li>
-      <li>Needed for: evaluating text/code once (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>), indexing children, entry animations (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>)</li>
-      <li>Today's workarounds: <strong>100ms+</strong> ancestor walks</li>
+      <li>Parser inserts elements on the <strong>start tag</strong></li>
+      <li><code>addedNodes</code> &amp; <code>connectedCallback()</code> run before children exist</li>
+      <li>No signal when <code>&lt;/s-select&gt;</code> is reached</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why do developers need to know when an element finishes parsing? Three concrete cases from dom#662, dom#1116, html#12200, and webcomponents#809: evaluating text/script/config children once without chunk-split errors, validating or indexing light-DOM children (like Shopify's &lt;s-select&gt;), and animating streamed subtrees only once complete. Today addedNodes fires on the start tag, forcing 100ms+ ancestor-walk workarounds.</p>
+    <p>When the HTML parser sees a start tag, it inserts the element into the DOM immediately before parsing its children. If a network chunk splits inside the element, addedNodes and connectedCallback() see a half-parsed subtree with no signal when the closing tag arrives.</p>
+  </section>
+
+  <section class="slide" id="parse-end-use-cases">
+    <h2>Parse End: Use Cases</h2>
+    <ul>
+      <li><strong>Evaluate content once</strong> (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>) — code blocks, math, JSON config</li>
+      <li><strong>Batch child setup</strong> — <code>&lt;s-select&gt;</code> indexing <code>&lt;s-option&gt;</code> children</li>
+      <li><strong>Streamed entry animations</strong> (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>) — animate only when complete</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Three recurring use cases: (1) elements whose text content is evaluated once, like syntax highlighters, LaTeX math, or JSON config where a split chunk causes a syntax error; (2) components that index or validate light-DOM children like Shopify's &lt;s-select&gt;; and (3) streaming chat/UI animations that shouldn't trigger on half-rendered elements.</p>
+  </section>
+
+  <section class="slide" id="parse-end-workarounds">
+    <h2>Parse End: Workarounds Today</h2>
+    <ul>
+      <li><strong>Wait for <code>DOMContentLoaded</code></strong> — kills streaming UX</li>
+      <li><strong><code>setTimeout</code> / <code>rAF</code></strong> — races with slow network chunks</li>
+      <li><strong><code>nextSibling</code> ancestor walks</strong> — <strong>100ms+</strong> main-thread cost</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Today libraries choose between waiting for DOMContentLoaded (giving up incremental rendering), timers (which break on slow networks), or walking ancestors on every MutationRecord to check for a nextSibling (which costs 100ms+ on large pages and still fails for last-child chains).</p>
   </section>
 
   <section class="slide" id="use-case-2">
