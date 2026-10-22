@@ -158,7 +158,7 @@ html, .lightmode {
     0.7px -0.7px hsl(0,0%,98%), 0.7px 0.7px hsl(0,0%,98%),
     -0.7px 0.7px hsl(0,0%,98%);
   --cover-bg: center / auto 100.1% url(cover.svg) no-repeat hsl(0,0%,98%);
-  --cover-event-fg: hsl(250,19%,50%);
+  --cover-event-fg: hsl(248,38%,32%);
   --final-bg: top / 100.1% auto no-repeat url(slide.svg),
     left / 2.7em /*= L */ 100.1% repeat-y
     linear-gradient(hsl(244,37%,92%),hsl(244,37%,92%)),
@@ -173,29 +173,33 @@ html, .lightmode {
   --toc-list-marker-fg: hsl(211,100%,17%);
   --b6-canvas-fg: hsla(0,100%,45%,0.8);
   --em-bg: hsl(62,100%,50%);
-  --code-bg: #eee;
+  --code-bg: #f1f5f9;
+  --code-border: #cbd5e1;
+  --code-link-bg: #eff6ff;
+  --code-link-fg: #003580;
+  --code-link-border: #93c5fd;
   --table-striped-bg: #eee;
-  --link-fg: #00c;
-  --visited-fg: #609;
+  --link-fg: #003580;
+  --visited-fg: #581c87;
   --can-invert-filter: none;
-  --h1-h2-fg: hsl(250,19%,50%);
-  --prettylights-bg: #f6f8fa;
-  --prettylights-border: #d0d7de;
-  --prettylights-fg: #1f2328;
-  --prettylights-comment: #59636e;
-  --prettylights-constant: #0550ae;
-  --prettylights-constant-other-reference-link: #0a3069;
-  --prettylights-entity: #6639ba;
+  --h1-h2-fg: hsl(248,38%,32%);
+  --prettylights-bg: #ffffff;
+  --prettylights-border: #cbd5e1;
+  --prettylights-fg: #0f172a;
+  --prettylights-comment: #475569;
+  --prettylights-constant: #003580;
+  --prettylights-constant-other-reference-link: #003580;
+  --prettylights-entity: #5b21b6;
   --prettylights-entity-tag: #116329;
-  --prettylights-keyword: #cf222e;
-  --prettylights-bold: #1f2328;
+  --prettylights-keyword: #b91c1c;
+  --prettylights-bold: #0f172a;
   --prettylights-deleted-bg: #ffebe9;
   --prettylights-deleted-text: #82071e;
-  --prettylights-heading: #0550ae;
+  --prettylights-heading: #003580;
   --prettylights-inserted-bg: #dafbe1;
   --prettylights-inserted-text: #116329;
-  --prettylights-italic: #1f2328;
-  --prettylights-string: #0a3069;
+  --prettylights-italic: #0f172a;
+  --prettylights-string: #003580;
   --prettylights-string-regexp: #116329;
   --prettylights-variable: #953800;
 }
@@ -216,7 +220,7 @@ html, .lightmode {
       -0.7px -0.7px #000, 0.7px -0.7px #000, 0.7px 0.7px #000,
       -0.7px 0.7px #000;
     --cover-bg: center / auto 100.1% url(cover-dark.svg) no-repeat black;
-    --cover-event-fg: hsl(250,19%,70%);
+    --cover-event-fg: hsl(220,40%,85%);
     --final-bg: top / 100.1% auto no-repeat url(slide-dark.svg),
       left / 2.7em /*= L */ 100.1% repeat-y
       linear-gradient(hsl(244,23%,27%),hsl(244,23%,27%)),
@@ -231,29 +235,33 @@ html, .lightmode {
     --toc-list-marker-fg:  hsl(250,100%,90%);
     --b6-canvas-fg: hsla(130,100%,60%,0.8);
     --em-bg: hsl(322,100%,40%);
-    --code-bg: #444;
+    --code-bg: #161b22;
+    --code-border: #30363d;
+    --code-link-bg: #0f172a;
+    --code-link-fg: #bae6fd;
+    --code-link-border: #38bdf8;
     --table-striped-bg: #333;
-    --link-fg: #AEF;
-    --visited-fg: #EAD;
+    --link-fg: #bae6fd;
+    --visited-fg: #e9d5ff;
     --can-invert-filter: invert(1);
-    --h1-h2-fg: hsl(251,9%,75%);
-    --prettylights-bg: #151b23;
+    --h1-h2-fg: hsl(220,45%,90%);
+    --prettylights-bg: #0d1117;
     --prettylights-border: #30363d;
     --prettylights-fg: #f0f6fc;
     --prettylights-comment: #9198a1;
-    --prettylights-constant: #79c0ff;
-    --prettylights-constant-other-reference-link: #a5d6ff;
+    --prettylights-constant: #a5d6ff;
+    --prettylights-constant-other-reference-link: #bae6fd;
     --prettylights-entity: #d2a8ff;
     --prettylights-entity-tag: #7ee787;
     --prettylights-keyword: #ff7b72;
     --prettylights-bold: #f0f6fc;
     --prettylights-deleted-bg: #67060c;
     --prettylights-deleted-text: #ffdcd7;
-    --prettylights-heading: #1f6feb;
+    --prettylights-heading: #a5d6ff;
     --prettylights-inserted-bg: #033a16;
     --prettylights-inserted-text: #aff5b4;
     --prettylights-italic: #f0f6fc;
-    --prettylights-string: #a5d6ff;
+    --prettylights-string: #bae6fd;
     --prettylights-string-regexp: #7ee787;
     --prettylights-variable: #ffa657;
   }
@@ -273,7 +281,7 @@ html, .lightmode {
       -0.7px -0.7px #000, 0.7px -0.7px #000, 0.7px 0.7px #000,
       -0.7px 0.7px #000;
   --cover-bg: center / auto 100.1% url(cover-dark.svg) no-repeat black;
-  --cover-event-fg: hsl(250,19%,70%);
+  --cover-event-fg: hsl(220,40%,85%);
   --final-bg: top / 100.1% auto no-repeat url(slide-dark.svg),
     left / 2.7em /*= L */ 100.1% repeat-y
     linear-gradient(hsl(244,23%,27%),hsl(244,23%,27%)),
@@ -288,29 +296,33 @@ html, .lightmode {
   --toc-list-marker-fg:  hsl(250,100%,90%);
   --b6-canvas-fg: hsla(130,100%,60%,0.8);
   --em-bg: hsl(322,100%,40%);
-  --code-bg: #444;
+  --code-bg: #161b22;
+  --code-border: #30363d;
+  --code-link-bg: #0f172a;
+  --code-link-fg: #bae6fd;
+  --code-link-border: #38bdf8;
   --table-striped-bg: #333;
-  --link-fg: #AEF;
-  --visited-fg: #EAD;
+  --link-fg: #bae6fd;
+  --visited-fg: #e9d5ff;
   --can-invert-filter: invert(1);
-  --h1-h2-fg: hsl(251,9%,75%);
-  --prettylights-bg: #151b23;
+  --h1-h2-fg: hsl(220,45%,90%);
+  --prettylights-bg: #0d1117;
   --prettylights-border: #30363d;
   --prettylights-fg: #f0f6fc;
   --prettylights-comment: #9198a1;
-  --prettylights-constant: #79c0ff;
-  --prettylights-constant-other-reference-link: #a5d6ff;
+  --prettylights-constant: #a5d6ff;
+  --prettylights-constant-other-reference-link: #bae6fd;
   --prettylights-entity: #d2a8ff;
   --prettylights-entity-tag: #7ee787;
   --prettylights-keyword: #ff7b72;
   --prettylights-bold: #f0f6fc;
   --prettylights-deleted-bg: #67060c;
   --prettylights-deleted-text: #ffdcd7;
-  --prettylights-heading: #1f6feb;
+  --prettylights-heading: #a5d6ff;
   --prettylights-inserted-bg: #033a16;
   --prettylights-inserted-text: #aff5b4;
   --prettylights-italic: #f0f6fc;
-  --prettylights-string: #a5d6ff;
+  --prettylights-string: #bae6fd;
   --prettylights-string-regexp: #7ee787;
   --prettylights-variable: #ffa657;
 }
@@ -356,6 +368,8 @@ h4 {font-size: 1.2em; margin: 0.5em 0}
 .slide.textfit, .textfit .slide {height: 23em /*= N */}
 .clear .slide:not(.cover), .slide:not(.cover).clear {background-image: none}
 .slide:target {outline: lime solid 0.5em; outline-offset: 1em}
+:link {color: #bae6fd}
+:visited {color: #e9d5ff}
 .slide h3 a {color: inherit}
 .slide :link {color: var(--link-fg)}
 .slide :visited {color: var(--visited-fg)}
@@ -446,8 +460,15 @@ ul.with-icons > li > *:first-child {display: inline-block;
   text-shadow: none;
 }
 .slide code {background: var(--code-bg); padding: 0.1em 0.3em;
-  border-radius: 0.3em}
-.slide pre code {background: none; padding: 0; font: inherit} /* Reset */
+  border-radius: 0.3em; border: 1px solid var(--code-border)}
+.slide :link code, .slide :visited code,
+.slide code :link, .slide code :visited {
+  background: var(--code-link-bg);
+  color: var(--code-link-fg);
+  border-color: var(--code-link-border);
+  text-decoration: underline;
+}
+.slide pre code {background: none; border: none; padding: 0; font: inherit} /* Reset */
 sub, sup {line-height: 0.5}
 .slide pre, .slide syntax-highlight {
   display: block;
@@ -472,7 +493,7 @@ sub, sup {line-height: 0.5}
   line-height: 1.35;
 }
 ::highlight(punctuation) {
-  color: #57606a;
+  color: #475569;
 }
 ::highlight(namespace) {
   opacity: 0.7;
@@ -480,7 +501,7 @@ sub, sup {line-height: 0.5}
 ::highlight(comment),
 ::highlight(doctype),
 ::highlight(cdata) {
-  color: #6e7781;
+  color: #475569;
 }
 ::highlight(constant),
 ::highlight(number),
@@ -488,7 +509,7 @@ sub, sup {line-height: 0.5}
 ::highlight(char),
 ::highlight(builtin),
 ::highlight(operator) {
-  color: #0550ae;
+  color: #003580;
 }
 ::highlight(attr-name),
 ::highlight(variable) {
@@ -498,47 +519,47 @@ sub, sup {line-height: 0.5}
 ::highlight(tag),
 ::highlight(boolean),
 ::highlight(symbol) {
-  color: #1a7f37;
+  color: #116329;
 }
 ::highlight(entity),
 ::highlight(selector),
 ::highlight(class-name),
 ::highlight(function) {
-  color: #8250df;
+  color: #5b21b6;
 }
 ::highlight(keyword),
 ::highlight(prolog),
 ::highlight(rule) {
-  color: #cf222e;
+  color: #b91c1c;
 }
 ::highlight(string),
 ::highlight(attr-value) {
-  color: #0550ae;
+  color: #003580;
 }
 ::highlight(regex) {
-  color: #1a7f37;
+  color: #116329;
 }
 ::highlight(deleted) {
   color: #82071e;
   background-color: #ffebe9;
 }
 ::highlight(inserted) {
-  color: #1a7f37;
+  color: #116329;
   background-color: #dafbe1;
 }
 ::highlight(url) {
   text-decoration: underline;
-  color: #0550ae;
+  color: #003580;
 }
 ::highlight(important) {
-  color: #cf222e;
+  color: #b91c1c;
 }
 @media (prefers-color-scheme: dark) {
   ::highlight(punctuation),
   ::highlight(comment),
   ::highlight(doctype),
   ::highlight(cdata) {
-    color: #8b949e;
+    color: #9198a1;
   }
   ::highlight(constant),
   ::highlight(number),
@@ -547,7 +568,7 @@ sub, sup {line-height: 0.5}
   ::highlight(builtin),
   ::highlight(operator),
   ::highlight(url) {
-    color: #79c0ff;
+    color: #a5d6ff;
   }
   ::highlight(attr-name),
   ::highlight(variable) {
@@ -574,7 +595,7 @@ sub, sup {line-height: 0.5}
   }
   ::highlight(string),
   ::highlight(attr-value) {
-    color: #a5d6ff;
+    color: #bae6fd;
   }
   ::highlight(deleted) {
     color: #ffdcd7;
@@ -585,12 +606,23 @@ sub, sup {line-height: 0.5}
     background-color: #033a16;
   }
 }
+html:has(.darkmode)::highlight(punctuation),
+html:has(.darkmode)::highlight(comment),
+html:has(.darkmode)::highlight(doctype),
+html:has(.darkmode)::highlight(cdata),
 .darkmode ::highlight(punctuation),
 .darkmode ::highlight(comment),
 .darkmode ::highlight(doctype),
 .darkmode ::highlight(cdata) {
-  color: #8b949e;
+  color: #9198a1;
 }
+html:has(.darkmode)::highlight(constant),
+html:has(.darkmode)::highlight(number),
+html:has(.darkmode)::highlight(atrule),
+html:has(.darkmode)::highlight(char),
+html:has(.darkmode)::highlight(builtin),
+html:has(.darkmode)::highlight(operator),
+html:has(.darkmode)::highlight(url),
 .darkmode ::highlight(constant),
 .darkmode ::highlight(number),
 .darkmode ::highlight(atrule),
@@ -598,12 +630,19 @@ sub, sup {line-height: 0.5}
 .darkmode ::highlight(builtin),
 .darkmode ::highlight(operator),
 .darkmode ::highlight(url) {
-  color: #79c0ff;
+  color: #a5d6ff;
 }
+html:has(.darkmode)::highlight(attr-name),
+html:has(.darkmode)::highlight(variable),
 .darkmode ::highlight(attr-name),
 .darkmode ::highlight(variable) {
   color: #ffa657;
 }
+html:has(.darkmode)::highlight(property),
+html:has(.darkmode)::highlight(tag),
+html:has(.darkmode)::highlight(boolean),
+html:has(.darkmode)::highlight(symbol),
+html:has(.darkmode)::highlight(regex),
 .darkmode ::highlight(property),
 .darkmode ::highlight(tag),
 .darkmode ::highlight(boolean),
@@ -611,30 +650,53 @@ sub, sup {line-height: 0.5}
 .darkmode ::highlight(regex) {
   color: #7ee787;
 }
+html:has(.darkmode)::highlight(entity),
+html:has(.darkmode)::highlight(selector),
+html:has(.darkmode)::highlight(class-name),
+html:has(.darkmode)::highlight(function),
 .darkmode ::highlight(entity),
 .darkmode ::highlight(selector),
 .darkmode ::highlight(class-name),
 .darkmode ::highlight(function) {
   color: #d2a8ff;
 }
+html:has(.darkmode)::highlight(keyword),
+html:has(.darkmode)::highlight(prolog),
+html:has(.darkmode)::highlight(rule),
+html:has(.darkmode)::highlight(important),
 .darkmode ::highlight(keyword),
 .darkmode ::highlight(prolog),
 .darkmode ::highlight(rule),
 .darkmode ::highlight(important) {
   color: #ff7b72;
 }
+html:has(.darkmode)::highlight(string),
+html:has(.darkmode)::highlight(attr-value),
 .darkmode ::highlight(string),
 .darkmode ::highlight(attr-value) {
-  color: #a5d6ff;
+  color: #bae6fd;
 }
+html:has(.lightmode)::highlight(punctuation),
 .lightmode ::highlight(punctuation) {
-  color: #57606a;
+  color: #475569;
 }
+html:has(.lightmode)::highlight(comment),
+html:has(.lightmode)::highlight(doctype),
+html:has(.lightmode)::highlight(cdata),
 .lightmode ::highlight(comment),
 .lightmode ::highlight(doctype),
 .lightmode ::highlight(cdata) {
-  color: #6e7781;
+  color: #475569;
 }
+html:has(.lightmode)::highlight(constant),
+html:has(.lightmode)::highlight(number),
+html:has(.lightmode)::highlight(atrule),
+html:has(.lightmode)::highlight(char),
+html:has(.lightmode)::highlight(builtin),
+html:has(.lightmode)::highlight(operator),
+html:has(.lightmode)::highlight(string),
+html:has(.lightmode)::highlight(attr-value),
+html:has(.lightmode)::highlight(url),
 .lightmode ::highlight(constant),
 .lightmode ::highlight(number),
 .lightmode ::highlight(atrule),
@@ -644,30 +706,45 @@ sub, sup {line-height: 0.5}
 .lightmode ::highlight(string),
 .lightmode ::highlight(attr-value),
 .lightmode ::highlight(url) {
-  color: #0550ae;
+  color: #003580;
 }
+html:has(.lightmode)::highlight(attr-name),
+html:has(.lightmode)::highlight(variable),
 .lightmode ::highlight(attr-name),
 .lightmode ::highlight(variable) {
   color: #953800;
 }
+html:has(.lightmode)::highlight(property),
+html:has(.lightmode)::highlight(tag),
+html:has(.lightmode)::highlight(boolean),
+html:has(.lightmode)::highlight(symbol),
+html:has(.lightmode)::highlight(regex),
 .lightmode ::highlight(property),
 .lightmode ::highlight(tag),
 .lightmode ::highlight(boolean),
 .lightmode ::highlight(symbol),
 .lightmode ::highlight(regex) {
-  color: #1a7f37;
+  color: #116329;
 }
+html:has(.lightmode)::highlight(entity),
+html:has(.lightmode)::highlight(selector),
+html:has(.lightmode)::highlight(class-name),
+html:has(.lightmode)::highlight(function),
 .lightmode ::highlight(entity),
 .lightmode ::highlight(selector),
 .lightmode ::highlight(class-name),
 .lightmode ::highlight(function) {
-  color: #8250df;
+  color: #5b21b6;
 }
+html:has(.lightmode)::highlight(keyword),
+html:has(.lightmode)::highlight(prolog),
+html:has(.lightmode)::highlight(rule),
+html:has(.lightmode)::highlight(important),
 .lightmode ::highlight(keyword),
 .lightmode ::highlight(prolog),
 .lightmode ::highlight(rule),
 .lightmode ::highlight(important) {
-  color: #cf222e;
+  color: #b91c1c;
 }
 .slide svg.chart {
   display: block;
