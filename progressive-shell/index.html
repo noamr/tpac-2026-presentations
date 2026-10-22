@@ -29,30 +29,29 @@
     <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/progressive-shell-explainer.md. Traces the journey from two-phase view transitions and declarative skeletons to progressive shells.</p>
   </section>
 
+  <section class="slide" id="goal">
+    <h2>We Want Navigations to Be:</h2>
+    <ul>
+      <li><strong>Instant</strong> — also on cold starts &amp; cross-origin</li>
+      <li><strong>Seamless</strong> — no state reset</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>What we want from navigation on the web: instant response (even on cold starts and cross-origin links) and seamless continuity (no state reset).</p>
+  </section>
+
   <section class="slide" id="problem">
-    <h2>Navigation Today: Pick Your Poison</h2>
+    <h2>Navigation Today</h2>
     <ul>
-      <li><strong>MPA:</strong> Paint freeze &amp; state reset</li>
-      <li><strong>SPA:</strong> Pay on cold start, ship tons of JS</li>
-      <li><strong>Prerendering:</strong> Fill memory with pages just in case</li>
+      <li><strong>MPA:</strong> State resets, paint-freeze</li>
+      <li><strong>SPA:</strong> Long cold-start or pre-hydration uncanny valley</li>
+      <li><strong>Prerendering:</strong> Big RAM budget "just in case"</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>When a user clicks a link or opens a URL, loading is rarely instant. MPAs freeze the screen during TTFB and wipe out typing, focus, and scroll when the new document swaps in. SPAs ship large JS routers to keep a shell alive, but users pay a startup tax and cold starts or cross-origin links are still slow. Full-page prerendering is too heavy to cover every link.</p>
-  </section>
-
-  <section class="slide" id="what-if">
-    <h2>What If…</h2>
-    <ul>
-      <li><strong>Instant</strong> — even on cold starts &amp; cross-origin</li>
-      <li><strong>Preserves state</strong> — typing, focus, scroll, media</li>
-      <li><strong>Optionally upgrades MPA</strong> — no JS router needed</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>What if the browser natively understood your app shell—giving you instant 0ms cold starts from cross-origin links and the omnibox, seamless state-preserving navigations between pages, and zero client-side router tax?</p>
+    <p>Today users pay in one of three ways: MPAs freeze during TTFB and reset state on swap; SPAs pay a long cold-start or sit in a pre-hydration uncanny valley; and full-page prerendering requires a big RAM budget "just in case".</p>
   </section>
 
   <section class="slide" id="two-phase-imperative">
@@ -99,7 +98,7 @@
   </section>
 
   <section class="slide" id="two-phase-why-not">
-    <h2>Two-Phase VT: Why It's Not Enough</h2>
+    <h2>Two-Phase VT: Why Not</h2>
     <svg class="chart" viewBox="0 0 680 90" aria-label="Old Document swapped for New Document">
       <rect x="20" y="15" width="240" height="60" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
       <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">0ms: Old Document</text>
@@ -148,7 +147,7 @@
       <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: Real Document</text>
     </svg>
     <ul>
-      <li><strong>Double-Swap Trap:</strong> Second swap wipes focus, scroll &amp; typing</li>
+      <li>Second swap wipes focus, scroll &amp; typing</li>
       <li>Making skeleton <code>inert</code> feels broken</li>
     </ul>
   </section>
