@@ -105,11 +105,12 @@
 
   <section class="slide" id="out-of-order">
     <h2>1. Parser Order ≠ Document Order</h2>
-    <syntax-highlight language="html">&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
-
-&lt;main&gt;
+    <syntax-highlight language="html">&lt;main&gt;
   &lt;?start name="feed"&gt;&lt;p class="skeleton"&gt;Loading...&lt;/p&gt;&lt;?end&gt;
-&lt;/main&gt;</syntax-highlight>
+&lt;/main&gt;
+&lt;footer&gt;...&lt;/footer&gt;
+
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
       <li>Decouples fetch from DOM position</li>
       <li>Streams into the target slot as bytes arrive</li>
