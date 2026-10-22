@@ -30,13 +30,13 @@
   </section>
 
   <section class="slide" id="use-case-1">
-    <h2>1. Acting on Complete Subtrees (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/whatwg/dom/issues/1116"><code>#1116</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
+    <h2>1. Acting on Complete Subtrees (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;
 &lt;!-- Chunk 2 --&gt; &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</syntax-highlight>
     <ul>
-      <li><strong>Evaluate content once:</strong> Code blocks, math/markdown elements, or streamed scripts without chunk-split syntax errors</li>
-      <li><strong>Batch child setup &amp; validation:</strong> Validate/slot children (<code>&lt;s-select&gt;</code>) without false warnings or O(N²) re-layout per chunk</li>
-      <li><strong>Animate complete subtrees:</strong> Trigger View Transitions or reveal streamed nodes without half-parsed layout shifts (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>)</li>
+      <li><strong>Evaluate content once:</strong> Code/math blocks &amp; streamed scripts without chunk-split errors (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>)</li>
+      <li><strong>Batch child setup:</strong> Validate/slot children (<code>&lt;s-select&gt;</code>) without false warnings per chunk</li>
+      <li><strong>Animate complete subtrees:</strong> Reveal or transition nodes without half-parsed layout shifts (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>)</li>
     </ul>
   </section>
 
@@ -50,9 +50,9 @@
   &lt;p&gt;Streamed response...&lt;/p&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Attribution:</strong> Separate parser-streamed patches from client UI edits &amp; read server metadata (<code>data-turn="3"</code>)</li>
-      <li><strong>Flow control:</strong> Know when a streamed patch starts and settles (<code>"end"</code>) to trigger hydration or scroll behavior</li>
-      <li><strong>Error recovery:</strong> Detect truncated streams or missing targets (<code>"abort"</code>) to show retry/fallback UI</li>
+      <li><strong>Attribution:</strong> Separate parser patches from client UI edits &amp; read metadata (<code>data-turn="3"</code>)</li>
+      <li><strong>Flow control:</strong> Detect patch <code>"start"</code> and <code>"end"</code> to trigger hydration or scroll</li>
+      <li><strong>Error recovery:</strong> Detect truncated streams or missing targets (<code>"abort"</code>)</li>
     </ul>
   </section>
 
@@ -68,9 +68,9 @@
   &lt;/template&gt;
 &lt;/my-card&gt;</syntax-highlight>
     <ul>
-      <li><strong>Component autoloaders:</strong> Lazy-load custom element definitions (e.g. Web Awesome / Shoelace) when tags appear inside shadow trees</li>
-      <li><strong>Accessibility &amp; DOM auditing:</strong> Run live a11y checks (e.g. Accented) across open shadow roots as markup streams in</li>
-      <li><strong>SSR shadow-root hydration:</strong> Know when a declarative shadow root attaches (<code>"start"</code>) and finishes parsing (<code>"end"</code>)</li>
+      <li><strong>Component autoloaders:</strong> Lazy-load custom elements (Web Awesome / Shoelace) inside shadow trees</li>
+      <li><strong>Accessibility auditing:</strong> Run live a11y checks (Accented) across open shadow roots</li>
+      <li><strong>SSR hydration:</strong> Detect when declarative shadow roots attach (<code>"start"</code>) and complete (<code>"end"</code>)</li>
     </ul>
   </section>
 
