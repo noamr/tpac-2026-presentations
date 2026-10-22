@@ -26,7 +26,7 @@
   </section>
 
   <section class="comment">
-    <p>Explainer: https://github.com/noamr/explainers/blob/main/responsive-images-explainer.md. Covers WHATWG HTML issues #13077, #13069, #12248 (PR #13053), #11428, and #12565 (PR #13046).</p>
+    <p>Explainer: https://github.com/noamr/explainers/blob/main/responsive-images-explainer.md. Covers WHATWG HTML issues #13077, #13069, #12248 (PR #13053), and #12565 (PR #13046).</p>
   </section>
 
   <section class="slide" id="user-problem">
@@ -43,7 +43,6 @@
         <h3>Blurry Images</h3>
         <ul>
           <li><strong>33–78% under-fetch</strong> on <code>object-fit: cover</code></li>
-          <li><code>scale-down</code> &amp; <code>none</code> upscale small images</li>
           <li>Soft zoomable heroes</li>
         </ul>
       </div>
@@ -51,7 +50,7 @@
   </section>
 
   <section class="comment">
-    <p>Every responsive image trades off sharpness against bandwidth. Today users regularly get the worst of both worlds: wasted megabytes on decorative backdrops and letterboxed banners, and blurry images on square object-fit: cover cards, upscaled scale-down icons, and zoomable hero photos.</p>
+    <p>Every responsive image trades off sharpness against bandwidth. Today users regularly get the worst of both worlds: wasted megabytes on decorative backdrops and letterboxed banners, and blurry images on square object-fit: cover cards and zoomable hero photos.</p>
   </section>
 
   <section class="slide" id="theme">
@@ -150,40 +149,8 @@
     <p>In a 100×100 container with 50×100 and 100×200 sources, the right source depends on object-fit: contain renders at 50×100 so it should pick 50×100, while cover renders at 100×200 so it should pick 100×200. PR #13053 adds the h descriptor, makes sizes="auto" 2D and object-fit aware, and adds 2D sizes="cover 100px 100px" (or contain) for eager images and the preload scanner.</p>
   </section>
 
-  <section class="slide" id="issue-11428">
-    <h2>4. Fix <code>scale-down</code> Upscaling (<code>#11428</code>)</h2>
-    <syntax-highlight language="html">&lt;img srcset="logo.png 50w" sizes="auto" loading="lazy"
-  style="width: 100px; height: 100px; object-fit: scale-down"&gt;</syntax-highlight>
-    <svg class="chart" viewBox="0 0 680 165" aria-label="scale-down upscaling problem in a 100x100 container">
-      <!-- Source -->
-      <text x="110" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">1. Source File</text>
-      <rect x="84" y="55" width="52" height="52" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="2"/>
-      <text x="110" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">50×50</text>
-      <text x="110" y="152" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">logo.png (50w)</text>
-
-      <!-- Expected -->
-      <text x="340" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="#2ea043">2. Expected (scale-down)</text>
-      <rect x="288" y="29" width="104" height="104" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
-      <rect x="314" y="55" width="52" height="52" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
-      <text x="340" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">50×50</text>
-      <text x="340" y="152" text-anchor="middle" font-size="12" fill="currentColor">Stays 50×50 inside 100×100 box</text>
-
-      <!-- Actual Today -->
-      <text x="565" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">3. Actual Today ❌</text>
-      <rect x="513" y="29" width="104" height="104" fill="#f85149" fill-opacity="0.25" stroke="#f85149" stroke-width="2"/>
-      <text x="565" y="66" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×100</text>
-      <text x="565" y="84" text-anchor="middle" font-size="12" font-weight="bold" fill="#f85149">(Blurry!)</text>
-      <text x="565" y="104" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.85">naturalWidth: 100</text>
-      <text x="565" y="152" text-anchor="middle" font-size="12" fill="#f85149">density = 50/100 = 0.5x → upscales!</text>
-    </svg>
-  </section>
-
-  <section class="comment">
-    <p>Authors use object-fit: scale-down or none specifically so a small 50px image won't upscale to a 100×100 container. But because w descriptors derive naturalWidth from sizes (50 / 0.5 = 100px), scale-down upscales it to 100×100 anyway! We should not inflate naturalWidth past native 1x/DPR bounds for scale-down and none.</p>
-  </section>
-
   <section class="slide" id="issue-12565">
-    <h2>5. Expose True File Pixels (<code>#12565</code>)</h2>
+    <h2>4. Expose True File Pixels (<code>#12565</code>)</h2>
     <syntax-highlight language="js">img.naturalWidth; // 100 (just echoes layout width!)
 img.imageWidth;   // 200 (true file pixels)</syntax-highlight>
     <svg class="chart" viewBox="0 0 680 155" aria-label="naturalWidth vs imageWidth chart">
@@ -220,7 +187,6 @@ img.imageWidth;   // 200 (true file pixels)</syntax-highlight>
       <li><strong><a href="https://github.com/whatwg/html/issues/13077"><code>#13077</code></a>:</strong> Normative selection + higher-res cache reuse</li>
       <li><strong><a href="https://github.com/whatwg/html/issues/13069"><code>#13069</code></a>:</strong> Density knob (<code>densityscale</code>)</li>
       <li><strong><a href="https://github.com/whatwg/html/issues/12248"><code>#12248</code></a>:</strong> 2D <code>sizes</code> + <code>h</code> descriptor for <code>cover</code> / <code>contain</code></li>
-      <li><strong><a href="https://github.com/whatwg/html/issues/11428"><code>#11428</code></a>:</strong> Don't upscale <code>scale-down</code> / <code>none</code></li>
       <li><strong><a href="https://github.com/whatwg/html/issues/12565"><code>#12565</code></a>:</strong> True pixel dimensions (<code>imageWidth</code>)</li>
       <li><strong>Discussion:</strong> Where implementation-defined decisions stay for privacy</li>
     </ul>
@@ -228,7 +194,7 @@ img.imageWidth;   // 200 (true file pixels)</syntax-highlight>
   </section>
 
   <section class="comment">
-    <p>Together, these five issues standardize the browser baseline and give websites the knobs they need to eliminate both blurry images and wasted bandwidth.</p>
+    <p>Together, these four issues standardize the browser baseline and give websites the knobs they need to eliminate both blurry images and wasted bandwidth.</p>
   </section>
 
 </body>
