@@ -59,34 +59,32 @@
 
   <section class="slide" id="why-rejected">
     <h2>Why It Stalled</h2>
-    <ul>
-      <li><strong>“Just do it on the server”</strong></li>
-      <li><strong>Sync fetch:</strong> <em>“A big no-no”</em> (@annevk)</li>
-      <li><strong>Async fetch:</strong> FOUC &amp; layout shifts</li>
-      <li><strong>Security:</strong> XSS without a native sanitizer</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Why was it rejected for so long? First, "do it on the server" ignored static sites, client-cached chrome, and independent async widgets. Second, synchronous fetching blocks the parser, while naive async fetching caused FOUC and layout shifts. Third, there was no built-in HTML sanitizer.</p>
-  </section>
-
-  <section class="slide" id="why-now">
-    <h2>What Changed?</h2>
-    <p>We finally have the building blocks to do this safely:</p>
     <ol>
-      <li><strong>Sanitizer API</strong> — safe by default</li>
-      <li><strong>Render-Blocking (<code>rel="expect"</code>) &amp; <code>buffer</code></strong> — manage layout shifts &amp; FOUC</li>
-      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — declarative slots</li>
+      <li><strong>Parser-blocking waterfalls:</strong> Sync fetching halts the parser (<em>“a big no-no”</em>, @annevk)</li>
+      <li><strong>FOUC &amp; layout shifts:</strong> Async fragments paint unstyled or push content around</li>
+      <li><strong>XSS:</strong> Injecting raw HTML without a built-in sanitizer</li>
     </ol>
   </section>
 
   <section class="comment">
-    <p>For years, fear of footguns (FOUC, layout shifts, XSS) kept client-side includes out of the platform, pushing developers into heavy JS or server-only setups. Now we have the Sanitizer API, rel="expect" to balance speed and smoothness, and &lt;template for&gt;—so we can make the simple thing safe.</p>
+    <p>Client-side includes stalled on three core problems: synchronous fetching created parser-blocking network waterfalls, asynchronous fetching caused FOUC and layout shifts, and injecting fetched HTML carried XSS risk without a native sanitizer.</p>
+  </section>
+
+  <section class="slide" id="why-now">
+    <h2>What Changed?</h2>
+    <ol>
+      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — fetch in parallel without blocking the parser</li>
+      <li><strong>Render-Blocking (<code>rel="expect"</code>) &amp; <code>buffer</code></strong> — control when fragments paint</li>
+      <li><strong>Sanitizer API</strong> — safe by default in the parser</li>
+    </ol>
+  </section>
+
+  <section class="comment">
+    <p>Each of those three blockers now has a platform primitive: out-of-order streaming (&lt;template for&gt;) decouples fetching from parser position, rel="expect" and buffer prevent FOUC and manage layout shifts, and the Sanitizer API makes external markup safe by default.</p>
   </section>
 
   <section class="slide" id="solution">
-    <h2>Proposal: Extend <code>&lt;template&gt;</code></h2>
+    <h2>Proposal: <code>&lt;template src&gt;</code></h2>
     <syntax-highlight language="html">&lt;!-- In-place include --&gt;
 &lt;template src="header.html"&gt;&lt;/template&gt;
 
@@ -102,39 +100,31 @@
     <p>A &lt;template&gt; becomes active when it has for, src, or both. For in-place includes, it acts as a temporary insertion anchor and removes itself on completion. Disconnecting it mid-fetch aborts the network request.</p>
   </section>
 
-  <section class="slide" id="buffer">
-    <h2>Streaming vs. <code>buffer</code></h2>
-    <div class="columns">
-      <div>
-        <h3>Streaming (default)</h3>
-        <syntax-highlight language="html">&lt;template
-  for="rows"
-  src="rows.html"&gt;
-&lt;/template&gt;</syntax-highlight>
-        <p>Streams straight into DOM.</p>
-      </div>
-      <div>
-        <h3>Buffered (<code>buffer</code>)</h3>
-        <syntax-highlight language="html">&lt;template
-  for="comments"
-  src="comments.html"
-  buffer&gt;
-&lt;/template&gt;</syntax-highlight>
-        <p>Commits atomically on EOF.</p>
-      </div>
-    </div>
+  <section class="slide" id="out-of-order">
+    <h2>1. Breaking the Waterfall</h2>
+    <syntax-highlight language="html">&lt;!-- Kick off fetch early in &lt;head&gt; or body without blocking parser --&gt;
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
+
+&lt;!-- Parser continues; slot updates when data arrives --&gt;
+&lt;main&gt;
+  &lt;?start name="feed"&gt;&lt;p class="skeleton"&gt;Loading...&lt;/p&gt;&lt;?end&gt;
+&lt;/main&gt;</syntax-highlight>
+    <ul>
+      <li><strong>Decoupled fetch &amp; placement:</strong> Start fetching early; main document keeps parsing</li>
+      <li><strong>Streams by default:</strong> Content flows straight into the target range as bytes arrive</li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>Streaming is default. Adding buffer parses off-screen into template.content and inserts atomically on EOF. Preloads (&lt;link rel="preload"&gt;, modulepreload) inside a buffered template fetch immediately and gate the atomic commit so styles are ready without FOUC.</p>
+    <p>First mitigation: instead of blocking the HTML parser on a synchronous fetch, &lt;template src&gt; fetches asynchronously and combines with &lt;template for&gt; so fetches can start early in the document while the parser renders placeholders and the rest of the page in parallel.</p>
   </section>
 
-  <section class="slide" id="cls">
-    <h2>Managing Layout Shifts</h2>
+  <section class="slide" id="fouc-cls">
+    <h2>2. Taming FOUC &amp; Layout Shifts</h2>
     <syntax-highlight language="html">&lt;link rel="expect" href="#site-header" blocking="render"&gt;
 &lt;template src="header.html"&gt;&lt;/template&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="Managing layout shifts with render-blocking and buffering">
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Mitigating FOUC and layout shifts with render-blocking and buffer">
       <rect x="10" y="10" width="320" height="100" rx="6" fill="#1f6feb" fill-opacity="0.12" stroke="#1f6feb" stroke-width="1.5"/>
       <text x="170" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">Render-Blocking (rel="expect")</text>
       <text x="170" y="58" text-anchor="middle" font-size="11" fill="currentColor">Hold initial render while header.html is in flight</text>
@@ -142,23 +132,27 @@
       <text x="170" y="96" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Prevents late header from pushing &lt;main&gt; down)</text>
 
       <rect x="350" y="10" width="320" height="100" rx="6" fill="#2ea043" fill-opacity="0.12" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="510" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Buffering (buffer) + Placeholders</text>
+      <text x="510" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Buffered Swap (buffer)</text>
       <text x="510" y="58" text-anchor="middle" font-size="11" fill="currentColor">Parse off-screen &amp; wait for preloaded styles</text>
-      <text x="510" y="77" text-anchor="middle" font-size="11" fill="#2ea043">Swap placeholder atomically on EOF (no half-rendered FOUC)</text>
-      <text x="510" y="96" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Manage speed vs. visual stability per fragment)</text>
+      <text x="510" y="77" text-anchor="middle" font-size="11" fill="#2ea043">Swap atomically on EOF — no half-styled FOUC</text>
+      <text x="510" y="96" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Gated on &lt;link rel="preload"&gt; inside the fragment)</text>
     </svg>
   </section>
 
   <section class="comment">
-    <p>If the main document reaches EOF before #site-header is parsed, render-blocking stays active while pending &lt;template src&gt; fetches are in flight, unblocking as soon as #site-header finishes parsing.</p>
+    <p>Second mitigation: rel="expect" holds first paint until critical above-the-fold chrome (#site-header) is parsed, while the buffer attribute parses async fragments off-screen into template.content, waits for any &lt;link rel="preload"&gt; stylesheets inside the fragment, and swaps atomically on EOF without FOUC.</p>
   </section>
 
   <section class="slide" id="security">
-    <h2>Security</h2>
+    <h2>3. Safe by Default</h2>
+    <syntax-highlight language="html">&lt;!-- Default: sanitized via built-in Sanitizer API --&gt;
+&lt;template src="widget.html"&gt;&lt;/template&gt;
+
+&lt;!-- Explicit opt-out (governed by CSP fragment-src &amp; script-src) --&gt;
+&lt;template src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong><code>&lt;template src&gt;</code>:</strong> Sanitized by default</li>
-      <li><strong>Opt-out:</strong> <code>sanitize="unsafe"</code></li>
-      <li><strong>CSP:</strong> <code>fragment-src</code> + <code>script-src</code></li>
+      <li><strong>Sanitized by default:</strong> Strips scripts &amp; inline event handlers</li>
+      <li><strong>Defense in depth:</strong> <code>sanitize="unsafe"</code> still requires CSP <code>fragment-src</code> + <code>script-src</code></li>
     </ul>
   </section>
 
