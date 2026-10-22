@@ -29,18 +29,31 @@
     <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/progressive-shell-explainer.md. Traces the journey from two-phase view transitions and declarative skeletons to progressive shells.</p>
   </section>
 
-  <section class="slide" id="goal">
-    <h2>Speed vs. Smoothness in Navigation</h2>
-    <ol>
-      <li><strong>Respond at 0ms</strong> — instant shell</li>
-      <li><strong>Stay interactive</strong> — no frozen frame during TTFB</li>
-      <li><strong>Keep user state</strong> — preserve typing, focus, and scroll</li>
-    </ol>
-    <p class="note">Without prerendering 50 full pages or forcing “everything is JS.”</p>
+  <section class="slide" id="problem">
+    <h2>The Navigation Dilemma Today</h2>
+    <ul>
+      <li><strong>MPAs freeze &amp; reset:</strong> Paint holding freezes the UI during TTFB; document swap wipes typing, focus, scroll, and media</li>
+      <li><strong>SPAs pay a JS tax &amp; miss cold starts:</strong> Heavy client routers still wait on the network for omnibox, bookmarks, and cross-origin links</li>
+      <li><strong>Full-page prerendering doesn't scale:</strong> Too heavy in memory &amp; bandwidth to prerender every destination URL</li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>For better and for worse, many sites adopt an SPA architecture just to control their loading sequence and avoid a flash or frozen screen between pages. How do we let developers balance speed and smoothness—without forcing them into "everything is JS" or prerendering 50 full pages?</p>
+    <p>When a user clicks a link or opens a URL, loading is rarely instant. MPAs freeze the screen during TTFB and wipe out typing, focus, and scroll when the new document swaps in. SPAs ship large JS routers to keep a shell alive, but users pay a startup tax and cold starts or cross-origin links are still slow. Full-page prerendering is too heavy to cover every link.</p>
+  </section>
+
+  <section class="slide" id="what-if">
+    <h2>What If…</h2>
+    <p><strong>Navigation was instant, preserved live state, and worked even on cold starts &amp; cross-origin links?</strong></p>
+    <ul>
+      <li><strong>0ms response</strong> — paint the route's shell immediately, even from the omnibox or another site</li>
+      <li><strong>Zero state loss</strong> — keep typing, focus, scroll, and media alive across navigations</li>
+      <li><strong>Zero JS router</strong> — stream page content into the shell with declarative HTML</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>What if the browser natively understood your app shell—giving you instant 0ms cold starts from cross-origin links and the omnibox, seamless state-preserving navigations between pages, and zero client-side router tax?</p>
   </section>
 
   <section class="slide" id="two-phase-imperative">
