@@ -156,6 +156,27 @@
     <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response off-screen into template.content, waits for any preloaded stylesheets inside the fragment, and swaps the placeholder atomically on EOF.</p>
   </section>
 
+  <section class="slide" id="buffer-inline">
+    <h2><code>buffer</code> Works on the Main Stream Too</h2>
+    <syntax-highlight language="html">&lt;!-- Buffer an in-place section of the main HTML stream --&gt;
+&lt;template for buffer&gt;
+  &lt;link rel="preload" href="widget.css" as="style"&gt;
+  &lt;link rel="stylesheet" href="widget.css"&gt;
+  &lt;div class="widget"&gt;...&lt;/div&gt;
+&lt;/template&gt;
+
+&lt;!-- Or buffer an inline out-of-order patch --&gt;
+&lt;template for="comments" buffer&gt;...&lt;/template&gt;</syntax-highlight>
+    <ul>
+      <li><strong>Not just for <code>src</code>:</strong> Buffer any inline section or streamed patch in the main response</li>
+      <li>Commits atomically on <code>&lt;/template&gt;</code> once preloaded subresources are ready</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Because buffer is a general &lt;template&gt; primitive rather than a fetch-only flag, you can also use &lt;template for buffer&gt; on the incoming main HTML stream to hold a complex widget or out-of-order patch off-screen until its closing &lt;/template&gt; tag and preloaded styles arrive.</p>
+  </section>
+
   <section class="slide" id="security">
     <h2>3a. Safe by Default (<code>sanitize</code>)</h2>
     <syntax-highlight language="html">&lt;!-- Default: sanitized via built-in Sanitizer API --&gt;
@@ -164,13 +185,34 @@
 &lt;!-- Explicit opt-out when scripts are needed --&gt;
 &lt;template for src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Sanitized by default:</strong> Strips <code>&lt;script&gt;</code>, inline event handlers, and dangerous URLs</li>
-      <li><strong>Inline <code>&lt;template for&gt;</code> (no <code>src</code>):</strong> Unsanitized (already part of the main document stream)</li>
+      <li><strong>External includes (<code>src</code>):</strong> Sanitized by default — strips <code>&lt;script&gt;</code>, inline event handlers, and dangerous URLs</li>
+      <li><strong>Explicit opt-out:</strong> Requires <code>sanitize="unsafe"</code></li>
     </ul>
   </section>
 
   <section class="comment">
     <p>Third mitigation (part 1): external includes (&lt;template src&gt;) are sanitized by default using the browser's built-in Sanitizer API. Authors must explicitly write sanitize="unsafe" to allow scripts inside an external fragment.</p>
+  </section>
+
+  <section class="slide" id="sanitize-inline">
+    <h2><code>sanitize</code> Works on the Main Stream Too</h2>
+    <syntax-highlight language="html">&lt;!-- Sanitize an inline section of the main HTML stream --&gt;
+&lt;template for sanitize&gt;
+  &lt;article class="user-comment"&gt;
+    Hello! &lt;script&gt; evil() &lt;/script&gt;
+  &lt;/article&gt;
+&lt;/template&gt;
+
+&lt;!-- Or sanitize an inline out-of-order patch --&gt;
+&lt;template for="comments" sanitize&gt;...&lt;/template&gt;</syntax-highlight>
+    <ul>
+      <li><strong>Inline <code>&lt;template for&gt;</code> (no <code>src</code>):</strong> Unsanitized by default, opt-in via <code>sanitize</code></li>
+      <li>Declarative, parser-level sanitization for user-generated content in SSR streams</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Just like buffer, sanitize works without src too. While inline &lt;template for&gt; is unsanitized by default because it's part of the main document stream, adding sanitize lets server-rendered pages declaratively sanitize untrusted regions or streamed patches directly in the HTML parser.</p>
   </section>
 
   <section class="slide" id="csp">
