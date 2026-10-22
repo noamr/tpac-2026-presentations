@@ -472,66 +472,202 @@ sub, sup {line-height: 0.5}
   line-height: 1.35;
 }
 ::highlight(punctuation) {
-  color: light-dark(#59636e, #9198a1);
+  color: #57606a;
 }
 ::highlight(namespace) {
   opacity: 0.7;
 }
 ::highlight(comment),
-::highlight(prolog),
 ::highlight(doctype),
 ::highlight(cdata) {
-  color: light-dark(#59636e, #9198a1);
+  color: #6e7781;
 }
 ::highlight(constant),
 ::highlight(number),
 ::highlight(atrule),
-::highlight(attr-name),
 ::highlight(char),
 ::highlight(builtin),
 ::highlight(operator) {
-  color: light-dark(#0550ae, #79c0ff);
+  color: #0550ae;
+}
+::highlight(attr-name),
+::highlight(variable) {
+  color: #953800;
 }
 ::highlight(property),
 ::highlight(tag),
 ::highlight(boolean),
 ::highlight(symbol) {
-  color: light-dark(#116329, #7ee787);
+  color: #1a7f37;
 }
 ::highlight(entity),
 ::highlight(selector),
 ::highlight(class-name),
 ::highlight(function) {
-  color: light-dark(#6639ba, #d2a8ff);
+  color: #8250df;
 }
 ::highlight(keyword),
+::highlight(prolog),
 ::highlight(rule) {
-  color: light-dark(#cf222e, #ff7b72);
+  color: #cf222e;
 }
 ::highlight(string),
 ::highlight(attr-value) {
-  color: light-dark(#0a3069, #a5d6ff);
-}
-::highlight(variable) {
-  color: light-dark(#953800, #ffa657);
+  color: #0550ae;
 }
 ::highlight(regex) {
-  color: light-dark(#116329, #7ee787);
+  color: #1a7f37;
 }
 ::highlight(deleted) {
-  color: light-dark(#82071e, #ffdcd7);
-  background-color: light-dark(#ffebe9, #67060c);
+  color: #82071e;
+  background-color: #ffebe9;
 }
 ::highlight(inserted) {
-  color: light-dark(#116329, #aff5b4);
-  background-color: light-dark(#dafbe1, #033a16);
+  color: #1a7f37;
+  background-color: #dafbe1;
 }
 ::highlight(url) {
   text-decoration: underline;
-  color: light-dark(#0a3069, #a5d6ff);
+  color: #0550ae;
 }
 ::highlight(important) {
-  color: light-dark(#0550ae, #1f6feb);
+  color: #cf222e;
+}
+@media (prefers-color-scheme: dark) {
+  ::highlight(punctuation),
+  ::highlight(comment),
+  ::highlight(doctype),
+  ::highlight(cdata) {
+    color: #8b949e;
+  }
+  ::highlight(constant),
+  ::highlight(number),
+  ::highlight(atrule),
+  ::highlight(char),
+  ::highlight(builtin),
+  ::highlight(operator),
+  ::highlight(url) {
+    color: #79c0ff;
+  }
+  ::highlight(attr-name),
+  ::highlight(variable) {
+    color: #ffa657;
+  }
+  ::highlight(property),
+  ::highlight(tag),
+  ::highlight(boolean),
+  ::highlight(symbol),
+  ::highlight(regex) {
+    color: #7ee787;
+  }
+  ::highlight(entity),
+  ::highlight(selector),
+  ::highlight(class-name),
+  ::highlight(function) {
+    color: #d2a8ff;
+  }
+  ::highlight(keyword),
+  ::highlight(prolog),
+  ::highlight(rule),
+  ::highlight(important) {
+    color: #ff7b72;
+  }
+  ::highlight(string),
+  ::highlight(attr-value) {
+    color: #a5d6ff;
+  }
+  ::highlight(deleted) {
+    color: #ffdcd7;
+    background-color: #67060c;
+  }
+  ::highlight(inserted) {
+    color: #aff5b4;
+    background-color: #033a16;
+  }
+}
+.darkmode ::highlight(punctuation),
+.darkmode ::highlight(comment),
+.darkmode ::highlight(doctype),
+.darkmode ::highlight(cdata) {
+  color: #8b949e;
+}
+.darkmode ::highlight(constant),
+.darkmode ::highlight(number),
+.darkmode ::highlight(atrule),
+.darkmode ::highlight(char),
+.darkmode ::highlight(builtin),
+.darkmode ::highlight(operator),
+.darkmode ::highlight(url) {
+  color: #79c0ff;
+}
+.darkmode ::highlight(attr-name),
+.darkmode ::highlight(variable) {
+  color: #ffa657;
+}
+.darkmode ::highlight(property),
+.darkmode ::highlight(tag),
+.darkmode ::highlight(boolean),
+.darkmode ::highlight(symbol),
+.darkmode ::highlight(regex) {
+  color: #7ee787;
+}
+.darkmode ::highlight(entity),
+.darkmode ::highlight(selector),
+.darkmode ::highlight(class-name),
+.darkmode ::highlight(function) {
+  color: #d2a8ff;
+}
+.darkmode ::highlight(keyword),
+.darkmode ::highlight(prolog),
+.darkmode ::highlight(rule),
+.darkmode ::highlight(important) {
+  color: #ff7b72;
+}
+.darkmode ::highlight(string),
+.darkmode ::highlight(attr-value) {
+  color: #a5d6ff;
+}
+.lightmode ::highlight(punctuation) {
+  color: #57606a;
+}
+.lightmode ::highlight(comment),
+.lightmode ::highlight(doctype),
+.lightmode ::highlight(cdata) {
+  color: #6e7781;
+}
+.lightmode ::highlight(constant),
+.lightmode ::highlight(number),
+.lightmode ::highlight(atrule),
+.lightmode ::highlight(char),
+.lightmode ::highlight(builtin),
+.lightmode ::highlight(operator),
+.lightmode ::highlight(string),
+.lightmode ::highlight(attr-value),
+.lightmode ::highlight(url) {
+  color: #0550ae;
+}
+.lightmode ::highlight(attr-name),
+.lightmode ::highlight(variable) {
+  color: #953800;
+}
+.lightmode ::highlight(property),
+.lightmode ::highlight(tag),
+.lightmode ::highlight(boolean),
+.lightmode ::highlight(symbol),
+.lightmode ::highlight(regex) {
+  color: #1a7f37;
+}
+.lightmode ::highlight(entity),
+.lightmode ::highlight(selector),
+.lightmode ::highlight(class-name),
+.lightmode ::highlight(function) {
+  color: #8250df;
+}
+.lightmode ::highlight(keyword),
+.lightmode ::highlight(prolog),
+.lightmode ::highlight(rule),
+.lightmode ::highlight(important) {
+  color: #cf222e;
 }
 .slide svg.chart {
   display: block;

@@ -50,11 +50,18 @@ Prism.languages.http = {
       return token;
     }
     if (Array.isArray(token?.content)) {
-      const insideTokens = token.content.flatMap((x) =>
-        typeof x === "string"
-          ? { type: token.type, content: x, length: x.length }
-          : x
-      );
+      const insideTokens = token.content.flatMap((x) => {
+        if (typeof x === "string") {
+          return { type: token.type, content: x, length: x.length };
+        }
+        if (token.type === "attr-value" && x.type === "punctuation" && x.alias !== "attr-equals") {
+          return { ...x, type: "attr-value" };
+        }
+        if (token.type === "tag" && x.type === "punctuation") {
+          return { ...x, type: "tag" };
+        }
+        return x;
+      });
       return insideTokens.flatMap(getFlatToken);
     }
     return token;
