@@ -83,7 +83,7 @@ Browser Responsibility (Interop)          Website Responsibility (Business & UX 
   & reuse loaded higher-res source        • 2D Layout & object-fit (#12248):
 • Respect native size bounds for            Declare w/h aspect ratio & cover/contain
   object-fit: scale-down / none (#11428)  • True Pixel Inspection (#12565):
-                                            Read resourceWidth / resourceHeight for RUM & zoom
+                                            Read imageWidth / imageHeight for RUM & zoom
 ```
 
 ### 1. Define Source Selection Normatively ([#13077](https://github.com/whatwg/html/issues/13077))
@@ -138,24 +138,24 @@ Resolve `(width, height)` from the CSS **content box** and compute the candidate
 #### D. Fix unexpected upscaling under `object-fit: scale-down` and `none` ([#11428](https://github.com/whatwg/html/issues/11428))
 When `object-fit: scale-down` or `object-fit: none` is used on a `w`-descriptor image without explicit `width`/`height` attributes, prevent sub-`1x` (or sub-DPR) candidate densities from inflating `naturalWidth` up to the container's `sizes` width—so a `200w` image inside an `800px` `object-fit: scale-down` container stays crisp at its native size rather than upscaling to `800px`.
 
-### 4. Expose True Intrinsic Resource Dimensions ([#12565](https://github.com/whatwg/html/issues/12565))
+### 4. Expose True Intrinsic Image Dimensions ([#12565](https://github.com/whatwg/html/issues/12565))
 Expose the uncorrected pixel dimensions of the loaded image resource (and/or its selected pixel density) on `HTMLImageElement`:
 
 ```webidl
 partial interface HTMLImageElement {
-  readonly attribute unsigned long resourceWidth;
-  readonly attribute unsigned long resourceHeight;
+  readonly attribute unsigned long imageWidth;
+  readonly attribute unsigned long imageHeight;
   readonly attribute double currentPixelDensity;
 };
 ```
-*(Bikeshedding names: `resourceWidth` / `resourceHeight` vs. `intrinsicWidth` / `intrinsicHeight` vs. `decodedWidth` / `decodedHeight`.)*
+*(Bikeshedding names: `imageWidth` / `imageHeight` vs. `resourceWidth` / `resourceHeight` vs. `intrinsicWidth` / `intrinsicHeight` vs. `decodedWidth` / `decodedHeight`.)*
 
 ```js
 const img = document.querySelector("img");
 // 800x600 image (800w) rendered in a 400px box with sizes="auto":
-img.naturalWidth;   // 400 (density-corrected CSS width)
-img.resourceWidth;  // 800 (true pixel width of the loaded file!)
-img.resourceHeight; // 600 (true pixel height of the loaded file!)
+img.naturalWidth;  // 400 (density-corrected CSS width)
+img.imageWidth;    // 800 (true pixel width of the loaded file!)
+img.imageHeight;   // 600 (true pixel height of the loaded file!)
 ```
 - Lets sites measure real-world image over-fetching and under-fetching in RUM telemetry.
 - Lets lightbox and zoom components check available pixel headroom synchronously without creating an offscreen `new Image()`.
@@ -170,8 +170,8 @@ We could leave selection implementation-defined and rely solely on UA heuristics
 ### Keep lying in `sizes` or `w` descriptors to control density
 Authors currently write `sizes="50vw"` on a `100vw` image (which breaks `sizes="auto"` and `naturalWidth`) or lie in `w` descriptors (`img.jpg?w=720 800w`, which breaks CDN cache reuse and 2D `w`/`h` aspect ratios). A dedicated `densityscale` attribute avoids both problems.
 
-### Change `naturalWidth` directly instead of adding `resourceWidth`
-Changing `naturalWidth` to return raw file pixels for `w`-descriptor images would break existing web pages that rely on `naturalWidth` reflecting the density-corrected CSS size (including [PR #13046](https://github.com/whatwg/html/pull/13046)). Adding `resourceWidth` / `resourceHeight` preserves full backward compatibility.
+### Change `naturalWidth` directly instead of adding `imageWidth`
+Changing `naturalWidth` to return raw file pixels for `w`-descriptor images would break existing web pages that rely on `naturalWidth` reflecting the density-corrected CSS size (including [PR #13046](https://github.com/whatwg/html/pull/13046)). Adding `imageWidth` / `imageHeight` preserves full backward compatibility.
 
 ### Server-side Client Hints (`Sec-CH-DPR` / `Sec-CH-Width`)
 Client Hints require server-side negotiation, CDN `Vary` configuration, and extra policy headers. Declarative client-side `srcset` knobs work on any static host or CDN and compose directly with `sizes="auto"`.
@@ -184,7 +184,7 @@ Client Hints require server-side negotiation, CDN `Vary` configuration, and extr
 - **Internationalization**: None affected.
 - **Performance & Business Impact**:
   - Sites can cut secondary/below-the-fold image bandwidth by **40–50%** using `densityscale` (`#13069`) and up to **90%** on letterboxed `object-fit: contain` images (`#12248`).
-  - Sites can eliminate blurry `object-fit: cover` cards (`#12248`) and measure their exact pixel efficiency in RUM via `resourceWidth` (`#12565`).
+  - Sites can eliminate blurry `object-fit: cover` cards (`#12248`) and measure their exact pixel efficiency in RUM via `imageWidth` (`#12565`).
 
 ---
 
@@ -202,10 +202,10 @@ Client Hints require server-side negotiation, CDN `Vary` configuration, and extr
 Per the [W3C Security and Privacy Self-Review Questionnaire](https://w3c.github.io/security-questionnaire/):
 
 ### 2.1 What information does this feature expose, and for what purposes?
-`resourceWidth` and `resourceHeight` expose the raw pixel width and height of the loaded image resource so sites can manage zoom bounds and measure image sizing accuracy. This information is **already exposed** today by loading `img.currentSrc` in an `<img>` without `w` descriptors and reading `naturalWidth` / `naturalHeight`, or via `createImageBitmap(img)`.
+`imageWidth` and `imageHeight` expose the raw pixel width and height of the loaded image resource so sites can manage zoom bounds and measure image sizing accuracy. This information is **already exposed** today by loading `img.currentSrc` in an `<img>` without `w` descriptors and reading `naturalWidth` / `naturalHeight`, or via `createImageBitmap(img)`.
 
 ### 2.2 Do features in your specification expose the minimum amount of information necessary to enable their intended uses?
-Yes. `resourceWidth` / `resourceHeight` expose only integer pixel dimensions when the image is *completely available*, governed by the exact same cross-origin rules as `naturalWidth` / `naturalHeight`.
+Yes. `imageWidth` / `imageHeight` expose only integer pixel dimensions when the image is *completely available*, governed by the exact same cross-origin rules as `naturalWidth` / `naturalHeight`.
 
 ### 2.3 How do the features in your specification deal with personal information, personally-identifiable information (PII), or information derived from them?
 The feature does not handle or access personal information or PII.
@@ -229,7 +229,7 @@ No.
 No.
 
 ### 2.10 What data do the features in this specification expose to an origin? Please also document what data is identical to data exposed by other features, in the same or different contexts.
-`resourceWidth` and `resourceHeight` expose the unscaled intrinsic pixel width and height of `img.currentSrc`. This is identical to loading `img.currentSrc` in an `<img src="...">` without `w` descriptors and reading `naturalWidth` / `naturalHeight`.
+`imageWidth` and `imageHeight` expose the unscaled intrinsic pixel width and height of `img.currentSrc`. This is identical to loading `img.currentSrc` in an `<img src="...">` without `w` descriptors and reading `naturalWidth` / `naturalHeight`.
 
 ### 2.11 Do features in this specification enable new script execution/loading mechanisms?
 No.
@@ -246,12 +246,12 @@ None.
 ### 2.15 How does this specification distinguish between behavior in first-party and third-party contexts?
 Same-origin vs. cross-origin image resources follow existing HTML `<img>` security rules.
 
-### 2.16 How do the features in this specification work in the context of a browser's Private Browsing or Incognito mode?
+### 2.16 How does the features in this specification work in the context of a browser's Private Browsing or Incognito mode?
 Identically to normal browsing, with the HTTP cache isolated to the ephemeral profile. UAs may clamp `targetDensity` in Private Browsing if they clamp `devicePixelRatio` for fingerprinting protection.
 
 ### 2.17 Does this specification have both "Security Considerations" and "Privacy Considerations" sections?
 Yes:
-- **Security Considerations**: Eliminating the `concrete object size` oscillation loop (`#12248` / PR `#13053`) fixes a potential infinite-refetch resource-exhaustion bug when `sizes="auto"` is combined with `object-fit: contain`. `resourceWidth` / `resourceHeight` follow the same cross-origin availability rules as `naturalWidth` / `naturalHeight`.
+- **Security Considerations**: Eliminating the `concrete object size` oscillation loop (`#12248` / PR `#13053`) fixes a potential infinite-refetch resource-exhaustion bug when `sizes="auto"` is combined with `object-fit: contain`. `imageWidth` / `imageHeight` follow the same cross-origin availability rules as `naturalWidth` / `naturalHeight`.
 - **Privacy Considerations**: Normative source selection (`#13077`) preserves the user agent's ability to adjust `targetDensity` for explicit user privacy/anti-fingerprinting or data-saver settings.
 
 ### 2.18 Do features in your specification enable origins to downgrade default security protections?
