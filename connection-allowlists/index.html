@@ -70,30 +70,49 @@
     <p>Modeled on CSP Embedded Enforcement: the embedder sets connectionallowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by serving a subset Connection-Allowlist or returning Allow-Connection-Allowlist-From. The requirement is inherited down the frame tree.</p>
   </section>
 
-  <section class="slide" id="open-navigation">
-    <h2>Open Issues: Navigation Boundaries</h2>
+  <section class="slide" id="user-agency">
+    <h2>User Agency &amp; the Browser Boundary (<a href="https://github.com/WICG/connection-allowlists/issues/31"><code>#31</code></a>)</h2>
     <ul>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes:</strong> Should <code>mailto:</code>, <code>intent:</code>, <code>slack:</code> navigations be checked?</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus:</strong> Is “Open Link in New Tab” browser-initiated or subject to the allowlist?</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code>:</strong> Enforce the Service Worker's allowlist, the document's, or both?</li>
+      <li><strong>Core rule:</strong> Only block what the page itself can initiate or <code>preventDefault()</code></li>
+      <li><strong>Browser UI wins:</strong> Address bar, bookmarks, extensions, and context menus are <strong>not</strong> blocked</li>
+      <li><strong>The tension:</strong> What when a user gesture uses a page-crafted URL?</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>First group of open issues—where does page-initiated navigation end? (#40) Navigating to custom schemes like mailto:, intent:, or slack: can exfiltrate data via the URL. (#5) On LLM-generated pages, an anchor's href (or an oncontextmenu mutation) can exfiltrate data when a user clicks "Open Link in New Tab". (#27) HTML's navigate algorithm defaults to no policy container unless passed explicitly, and Service Worker client.navigate() has both a worker and a target document.</p>
+    <p>In #31, concerns were raised around RFC 8890 (The Internet is for End Users) and user agency. Our guiding principle is that Connection Allowlists only restrict actions the website could already initiate or block on its own (like fetch() or in-page clicks where JS can call preventDefault()). Explicit browser gestures—like context-menu "Open Link in New Tab" or extensions—remain under user control. That boundary leads directly into our open issues.</p>
+  </section>
+
+  <section class="slide" id="open-navigation">
+    <h2>Open Issues: Navigation &amp; Gestures</h2>
+    <ul>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus (“Open in New Tab”):</strong><br>
+        User gesture (out of scope) <em>vs.</em> exfiltration via LLM-generated or <code>oncontextmenu</code>-mutated <code>href</code></li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes (<code>mailto:</code>, <code>intent:</code>, <code>slack:</code>):</strong><br>
+        Not a network fetch <em>vs.</em> exfiltrates page data to external apps via URL</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code> in Service Workers:</strong><br>
+        Enforce the SW's allowlist, the target document's, or both?</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Each of these sits on the boundary of page-initiated navigation: (#5) "Open Link in New Tab" is a browser context-menu gesture, so we don't block it—but an untrusted href or oncontextmenu handler can still encode sensitive data in the URL. (#40) Custom schemes like mailto: or intent: don't go through HTTP Fetch, yet hand a page-chosen URL out of the browser. (#27) Service Worker client.navigate() crosses two environments, and HTML's navigate algorithm defaults to "browser UI" (no policy container) unless callers pass one.</p>
   </section>
 
   <section class="slide" id="open-iframes-redirects">
     <h2>Open Issues: Sandboxing &amp; Redirects</h2>
     <ul>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Dynamic originless iframes:</strong> Updating <code>connectionAllowlist</code> on <code>about:blank</code> / <code>srcdoc</code> (AI sandboxes)</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin navigation/<code>window.open</code> to an unprotected page (e.g. <code>/404</code>)</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirects:</strong> Default allow vs. block without leaking cross-site redirect targets in reports</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Dynamic originless iframes (<code>about:blank</code> / <code>srcdoc</code>):</strong><br>
+        AI sandboxes want dynamic policies <em>vs.</em> mutating after creation races with active fetches</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> same-origin escape:</strong><br>
+        Needed for same-origin fetches <em>vs.</em> <code>window.open('/404')</code> to an unprotected page + <code>eval()</code></li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Server-side redirects:</strong><br>
+        Matching redirect targets leaks cross-origin URLs in reports <em>vs.</em> coarse <code>redirection-allowed</code> flag</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second group of open issues: (#37) Sites isolating AI-generated HTML/JS in originless srcdoc/about:blank iframes want to set or tighten connectionAllowlist dynamically. (#15) Allowing response-origin lets a frame open an unprotected same-origin page like /404 and script it unless navigations or inheritance are constrained. (#7) How should server-side redirects be handled without leaking cross-origin redirect targets to parent reporting endpoints?</p>
+    <p>Second group of contentions: (#37) Developers isolating AI-generated code in srcdoc/about:blank iframes want to apply connectionAllowlist dynamically without racing initial document creation. (#15) Allowing response-origin lets a sandboxed page open an unprotected same-origin URL (like a default 404 page) and script it to exfiltrate data. (#7) Checking redirect targets against URLPatterns leaks cross-site redirect destinations via reports/blocking, whereas a boolean redirection-allowed flag avoids cross-site leaks but needs a default (allow vs. block).</p>
   </section>
 
   <section class="slide" id="upstreaming">
