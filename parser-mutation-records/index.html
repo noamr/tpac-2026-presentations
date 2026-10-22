@@ -47,14 +47,15 @@
   <section class="slide" id="parse-end-use-cases">
     <h2>Parse End: Use Cases</h2>
     <ul>
-      <li><strong>Evaluate content once</strong> (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>) — code blocks, math, JSON config</li>
-      <li><strong>Batch child setup</strong> — <code>&lt;s-select&gt;</code> indexing <code>&lt;s-option&gt;</code> children</li>
-      <li><strong>Streamed entry animations</strong> (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>) — animate only when complete</li>
+      <li><strong>Compound components</strong> (<a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>) — <code>&lt;s-select&gt;</code> indexing <code>&lt;s-option&gt;</code>s, tabs, tables, 3D scenes</li>
+      <li><strong>DOM morphing &amp; swapping</strong> (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>) — don't diff/delete children that haven't streamed in yet</li>
+      <li><strong>Island hydration</strong> — hydrate SSR component only once its full subtree is in the DOM</li>
+      <li><strong>Entry animations &amp; View Transitions</strong> (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>) — measure &amp; animate complete subtrees</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Three recurring use cases: (1) elements whose text content is evaluated once, like syntax highlighters, LaTeX math, or JSON config where a split chunk causes a syntax error; (2) components that index or validate light-DOM children like Shopify's &lt;s-select&gt;; and (3) streaming chat/UI animations that shouldn't trigger on half-rendered elements.</p>
+    <p>Four structural (non-text) use cases: (1) compound custom elements like &lt;s-select&gt;, tabs, data tables, or WebGL scenes that index/validate child elements and want to avoid O(N^2) work or false "missing child" errors mid-stream; (2) streaming DOM morphers (idiomorph, Turbo, Marko) that otherwise delete existing live DOM nodes because the incoming subtree isn't finished yet; (3) SSR island hydration that expects the component's full DOM tree; and (4) View Transitions and entry animations on complete subtrees ( plus text/code evaluation like syntax highlighters and math blocks).</p>
   </section>
 
   <section class="slide" id="parse-end-workarounds">
