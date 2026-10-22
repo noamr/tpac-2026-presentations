@@ -71,20 +71,34 @@
     <p>Today libraries choose between waiting for DOMContentLoaded (giving up incremental rendering), timers (which break on slow networks), or walking ancestors on every MutationRecord to check for a nextSibling (which costs 100ms+ on large pages and still fails for last-child chains).</p>
   </section>
 
-  <section class="slide" id="use-case-2">
-    <h2>2. Patching: <code>&lt;template for&gt;</code> (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>, <a href="https://github.com/whatwg/html/issues/13008"><code>html#13008</code></a>)</h2>
+  <section class="slide" id="patching-problem">
+    <h2>2. Patching: The Problem (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>, <a href="https://github.com/whatwg/html/issues/13008"><code>html#13008</code></a>)</h2>
     <syntax-highlight language="html">&lt;template for="results" data-turn="3"&gt;
   &lt;p&gt;Streamed response...&lt;/p&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><code>&lt;template for&gt;</code> is consumed by the parser — never enters the DOM</li>
-      <li><strong>Attribution:</strong> server patch vs. client edit; read <code>data-turn="3"</code></li>
-      <li><strong>Lifecycle:</strong> detect patch start, end, or abort</li>
+      <li>Parser consumes <code>&lt;template for&gt;</code> — never enters the DOM</li>
+      <li><code>MutationObserver</code> only sees inner nodes land in <code>#results</code></li>
+      <li>Patch wrapper, attributes, and boundaries are lost</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second core use case (WICG/declarative-partial-updates#110 from OpenAI, whatwg/html#13008): attribution, flow control, and error recovery for declarative &lt;template for&gt; patches. Because the parser consumes &lt;template for&gt; without adding it to the DOM, apps cannot tell which patch caused a mutation, when a patch finishes, or when a patch aborts due to network truncation or a missing target.</p>
+    <p>When the parser processes a &lt;template for&gt; patch, it consumes the &lt;template&gt; element itself and streams its content directly into the target region. MutationObserver only sees individual child insertions inside #results—the patch wrapper, its attributes, and its start/end boundaries are completely invisible.</p>
+  </section>
+
+  <section class="slide" id="patching-use-cases">
+    <h2>Patching: Use Cases</h2>
+    <ul>
+      <li><strong>Attribution:</strong> separate server patches from client edits</li>
+      <li><strong>Metadata:</strong> read patch attributes (<code>data-turn="3"</code>, request IDs)</li>
+      <li><strong>Lifecycle:</strong> know when a patch starts and finishes</li>
+      <li><strong>Error recovery:</strong> detect aborted patches (truncated stream / missing target)</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>What applications need from &lt;template for&gt; observation (#110 from OpenAI, html#13008): (1) attribution—telling server-streamed patches apart from local client mutations; (2) reading metadata attributes like data-turn="3" off the template; (3) lifecycle hooks for patch start and completion; and (4) error recovery when a stream truncates before &lt;/template&gt; or targets a missing marker.</p>
   </section>
 
   <section class="slide" id="objection">
