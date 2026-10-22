@@ -35,7 +35,7 @@
       <div>
         <h3>Wasted Bandwidth</h3>
         <ul>
-          <li><code>3x</code> bitmaps on tiny thumbnails</li>
+          <li><code>3x</code> bitmaps on decorative / below-fold images</li>
           <li><strong>10× over-fetch</strong> on <code>object-fit: contain</code></li>
         </ul>
       </div>
@@ -51,20 +51,20 @@
   </section>
 
   <section class="comment">
-    <p>Every responsive image trades off sharpness against bandwidth. Today users regularly get the worst of both worlds: wasted megabytes on secondary thumbnails and letterboxed banners, and blurry images on square object-fit: cover cards, upscaled scale-down icons, and zoomable hero photos.</p>
+    <p>Every responsive image trades off sharpness against bandwidth. Today users regularly get the worst of both worlds: wasted megabytes on decorative backdrops and letterboxed banners, and blurry images on square object-fit: cover cards, upscaled scale-down icons, and zoomable hero photos.</p>
   </section>
 
   <section class="slide" id="theme">
     <h2>Who Should Hold the Knobs?</h2>
     <ul>
       <li><strong>Browsers:</strong> Built for interoperability</li>
-      <li><strong>Websites:</strong> Know UX &amp; business trade-offs (hero vs. 40th thumbnail)</li>
+      <li><strong>Websites:</strong> Know UX &amp; business trade-offs (product hero vs. decorative backdrop)</li>
       <li>Missing knobs → lying in <code>srcset</code> (<code>img?w=720 800w</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>In 2014 the spec left source selection "implementation-defined" so UAs could guess bandwidth heuristics. Over a decade we learned UAs are built for interop—they can't know if an image is a conversion-critical product photo or a secondary thumbnail. And when a direct knob is missing, developers bend existing attributes backwards (like lying in w descriptors), creating subtle footguns.</p>
+    <p>In 2014 the spec left source selection "implementation-defined" so UAs could guess bandwidth heuristics. Over a decade we learned UAs are built for interop—they can't know if an image is a conversion-critical product photo or a decorative backdrop. And when a direct knob is missing, developers bend existing attributes backwards (like lying in w descriptors), creating subtle footguns.</p>
   </section>
 
   <section class="slide" id="issue-13077">
