@@ -61,21 +61,21 @@
   </section>
 
   <section class="slide" id="use-case-3">
-    <h2>3. Autoloading &amp; Polyfills in Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)</h2>
+    <h2>3. Observing Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)</h2>
     <syntax-highlight language="html">&lt;my-card&gt;
   &lt;template shadowrootmode="open"&gt;
     &lt;wa-button&gt;Lazy-loaded&lt;/wa-button&gt;
   &lt;/template&gt;
 &lt;/my-card&gt;</syntax-highlight>
     <ul>
-      <li><strong>Component autoloaders:</strong> Lazy-load custom element definitions (e.g. Web Awesome) when tags appear inside shadow trees</li>
-      <li><strong>HTML polyfills:</strong> Observe new elements or custom attributes across all shadow roots</li>
-      <li><strong>Why it fails today:</strong> Monkey-patching <code>attachShadow()</code> misses <code>&lt;template shadowrootmode&gt;</code> completely</li>
+      <li><strong>Component autoloaders:</strong> Lazy-load custom element definitions (e.g. Web Awesome / Shoelace) when tags appear inside shadow trees</li>
+      <li><strong>Accessibility &amp; DOM auditing:</strong> Run live a11y checks (e.g. Accented) across open shadow roots as markup streams in</li>
+      <li><strong>SSR shadow-root hydration:</strong> Know when a declarative shadow root attaches (<code>"start"</code>) and finishes parsing (<code>"end"</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Third objective (whatwg/dom#1287 by Lea Verou): component autoloaders (like Web Awesome) and HTML polyfills need to observe DOM mutations inside shadow roots so they can lazy-load custom element definitions or polyfill attributes. Today they monkey-patch attachShadow(), which completely misses Declarative Shadow DOM (&lt;template shadowrootmode&gt;) because the parser attaches the ShadowRoot with zero MutationRecords.</p>
+    <p>Third objective (whatwg/dom#1287): observing Declarative Shadow DOM (&lt;template shadowrootmode&gt;) for component autoloaders (like Web Awesome/Shoelace lazy-loading custom element definitions), live accessibility auditing tools (like Accented), and SSR hydration. Today libraries monkey-patch attachShadow(), which completely misses Declarative Shadow DOM because the parser attaches the ShadowRoot with zero MutationRecords.</p>
   </section>
 
   <section class="slide" id="objection">
