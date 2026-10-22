@@ -114,24 +114,51 @@ nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
     <p>If script explicitly moves focus before the microtask runs (via .focus(), showModal(), or autofocus), the pending focusreset is cancelled so fallback handlers don't override it. If both an iframe button and the iframe itself are removed, focusreset only fires on the parent Document.</p>
   </section>
 
+  <section class="slide" id="timing">
+    <h2>Timing: Microtask vs. Rendering</h2>
+    <div class="columns">
+      <div>
+        <h3>Rendering Step (Step 17)</h3>
+        <ul>
+          <li>For <strong>style/layout</strong> (<code>display: none</code>)</li>
+          <li>Updates <code>activeElement</code> &amp; fires <code>blur</code> <strong>together</strong> after layout</li>
+          <li>Misses DOM removals inside <code>rAF</code> / <code>ResizeObserver</code></li>
+        </ul>
+      </div>
+      <div>
+        <h3><code>MutationObserver</code> Microtask ✔</h3>
+        <ul>
+          <li><code>node.remove()</code> <strong>already resets <code>activeElement</code> synchronously</strong></li>
+          <li>Avoids a long gap where <code>activeElement</code> &amp; events are out of sync</li>
+          <li>Aligns with <code>MutationObserver</code> &amp; <code>slotchange</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="comment">
+    <p>Why fire in the MutationObserver microtask rather than Step 17 of "update the rendering" (#focus-fixup-rule)? Step 17 is for style/layout changes like display:none where the UA only knows the element stopped being focusable after layout—and Step 17 updates activeElement and fires blur together. On DOM removal (#node-remove-focus-fixup), activeElement is already reset synchronously. Waiting until rendering would leave activeElement and events out of sync across tasks, and any JS inside update-the-rendering (rAF, ResizeObserver) can also remove nodes. Microtask timing keeps focusreset coupled to the DOM mutation while letting compound operations (remove + focus) settle first.</p>
+  </section>
+
   <section class="slide" id="alternatives">
-    <h2>Why Not…</h2>
+    <h2>Other Alternatives Considered</h2>
     <ul>
       <li><strong>Sync <code>blur</code> on removal?</strong> Re-entrancy hazard mid-removal</li>
-      <li><strong>Async <code>blur</code> on ancestor?</strong> Ancestor was never focused</li>
-      <li><strong>Rendering-step timing?</strong> Too late if removed inside <code>rAF</code></li>
+      <li><strong>Async <code>blur</code> on ancestor?</strong> Ancestor was never focused; breaks if reparented</li>
+      <li><strong>Exposing <code>relatedTarget</code>?</strong> Leaks detached DOM subtrees &amp; closed Shadow DOM</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Synchronous events during DOM removal are unsafe. Firing blur on a parent that was never focused is semantically wrong and breaks if ancestors are reparented. Microtask timing catches removals before rendering.</p>
+    <p>Synchronous events during DOM removal are unsafe. Firing blur on a parent that was never focused is semantically wrong and breaks if ancestors are reparented. Omitting relatedTarget avoids detached DOM leaks and preserves closed Shadow DOM encapsulation.</p>
   </section>
 
   <section class="slide final" id="discussion">
     <h2>Status &amp; Discussion</h2>
     <ul>
       <li>HTML PR <a href="https://github.com/whatwg/html/pull/13050"><code>#13050</code></a> · DOM PR <a href="https://github.com/whatwg/dom/pull/1512"><code>#1512</code></a> · WPT <a href="https://github.com/web-platform-tests/wpt/pull/63595"><code>#63595</code></a></li>
-      <li>Unblocks interop on <a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a></li>
+      <li>Unblocks interop on <a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a> &amp; <a href="https://github.com/w3c/aria/issues/2920"><code>w3c/aria#2920</code></a></li>
+      <li><strong>Open question:</strong> Microtask vs. update-the-rendering timing</li>
     </ul>
   </section>
 
