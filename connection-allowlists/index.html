@@ -42,34 +42,6 @@
     <p>Connection Allowlists focuses purely on exfiltration defense-in-depth: a single Structured Field header using URLPattern syntax that blocks unauthorized connections across Fetch, navigations, WebRTC, WebTransport, Workers, Early Hints, and preconnect/dns-prefetch. Graduation to W3C WebAppSec WG is approved.</p>
   </section>
 
-  <section class="slide" id="embedded-problem">
-    <h2>Why Embedded Enforcement?</h2>
-    <ul>
-      <li><code>Connection-Allowlist</code> only governs a document's <strong>own</strong> connections</li>
-      <li>Cross-origin <code>&lt;iframe&gt;</code>s bring their own policy container</li>
-      <li>Data passed to a permissive child frame can still be exfiltrated</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>A document's Connection-Allowlist only governs its own connections. Because a cross-origin iframe gets its own policy container from its own response, data the parent can't exfiltrate directly could be handed to a permissive child frame. Embedded enforcement lets the embedder extend its guarantee across the entire embedded subtree.</p>
-  </section>
-
-  <section class="slide" id="embedded-how">
-    <h2>Embedded Enforcement (<code>&lt;iframe connectionallowlist&gt;</code>)</h2>
-    <syntax-highlight language="html">&lt;iframe connectionallowlist='("https://api.example" response-origin)'
-        src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
-    <ul>
-      <li><strong>Request:</strong> <code>Sec-Required-Connection-Allowlist</code></li>
-      <li><strong>Opt-in:</strong> Subset <code>Connection-Allowlist</code>, <code>Allow-Connection-Allowlist-From</code>, or local scheme</li>
-      <li><strong>Inherited:</strong> Applies to nested frames &amp; workers</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Modeled on CSP Embedded Enforcement: the embedder sets connectionallowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by serving a subset Connection-Allowlist or returning Allow-Connection-Allowlist-From. The requirement is inherited down the frame tree.</p>
-  </section>
-
   <section class="slide" id="user-agency">
     <h2>User Agency &amp; the Browser Boundary (<a href="https://github.com/WICG/connection-allowlists/issues/31"><code>#31</code></a>)</h2>
     <ul>
@@ -105,14 +77,42 @@
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Dynamic originless iframes (<code>about:blank</code> / <code>srcdoc</code>):</strong><br>
         AI sandboxes want dynamic policies <em>vs.</em> mutating after creation races with active fetches</li>
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> same-origin escape:</strong><br>
-        Needed for same-origin fetches <em>vs.</em> <code>window.open('/404')</code> to an unprotected page + <code>eval()</code></li>
+        Needed for same-origin fetches <em>vs.</em> opening an unprotected same-origin page (<code>/404</code>) + <code>eval()</code></li>
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Server-side redirects:</strong><br>
         Matching redirect targets leaks cross-origin URLs in reports <em>vs.</em> coarse <code>redirection-allowed</code> flag</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second group of contentions: (#37) Developers isolating AI-generated code in srcdoc/about:blank iframes want to apply connectionAllowlist dynamically without racing initial document creation. (#15) Allowing response-origin lets a sandboxed page open an unprotected same-origin URL (like a default 404 page) and script it to exfiltrate data. (#7) Checking redirect targets against URLPatterns leaks cross-site redirect destinations via reports/blocking, whereas a boolean redirection-allowed flag avoids cross-site leaks but needs a default (allow vs. block).</p>
+    <p>Second group of contentions: (#37) Developers isolating AI-generated code in srcdoc/about:blank iframes want to apply connectionAllowlist dynamically without racing initial document creation. (#15) Allowing response-origin lets a sandboxed page open or frame an unprotected same-origin URL (like a default 404 page) and script it to exfiltrate data. (#7) Checking redirect targets against URLPatterns leaks cross-site redirect destinations via reports/blocking, whereas a boolean redirection-allowed flag avoids cross-site leaks but needs a default (allow vs. block).</p>
+  </section>
+
+  <section class="slide" id="embedded-problem">
+    <h2>Why Embedded Enforcement? (<a href="https://github.com/WICG/connection-allowlists/issues/28"><code>#28</code></a>)</h2>
+    <ul>
+      <li><code>Connection-Allowlist</code> only governs a document's <strong>own</strong> connections</li>
+      <li>Every navigated <code>&lt;iframe&gt;</code> (even same-origin!) brings its own policy container</li>
+      <li>Data passed to a permissive child frame can still be exfiltrated</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>A document's Connection-Allowlist only governs its own connections. Every navigated iframe—both same-origin and cross-origin—gets its own policy container from its own HTTP response headers. Data the parent can't exfiltrate directly could be handed to a permissive child frame. Embedded enforcement lets the embedder extend its guarantee across the entire embedded subtree.</p>
+  </section>
+
+  <section class="slide" id="embedded-how">
+    <h2>Embedded Enforcement (<code>&lt;iframe connectionallowlist&gt;</code>)</h2>
+    <syntax-highlight language="html">&lt;iframe connectionallowlist='("https://api.example" response-origin)'
+        src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
+    <ul>
+      <li><strong>Request:</strong> <code>Sec-Required-Connection-Allowlist</code></li>
+      <li><strong>Opt-in:</strong> Subset <code>Connection-Allowlist</code>, <code>Allow-Connection-Allowlist-From</code>, or local scheme</li>
+      <li><strong>Inherited:</strong> Applies to nested frames &amp; workers</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Modeled on CSP Embedded Enforcement: the embedder sets connectionallowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by serving a subset Connection-Allowlist or returning Allow-Connection-Allowlist-From. The requirement is inherited down the frame tree.</p>
   </section>
 
   <section class="slide" id="upstreaming">
