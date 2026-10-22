@@ -129,10 +129,10 @@ Resolve `(width, height)` from the CSS **content box** and compute the candidate
 - `contain` / `scale-down`: `min(width, height * r)` — prevents 10× over-fetching on letterboxed boxes.
 - `fill` / `none`: `width`
 
-#### C. Extend `sizes` grammar for eager images ([PR #13053](https://github.com/whatwg/html/pull/13053))
+#### C. Extend `sizes` grammar for eager images & the preload scanner ([PR #13053](https://github.com/whatwg/html/pull/13053))
 ```html
-<img srcset="photo-400.jpg 400w 300h, photo-800.jpg 800w 600h"
-     sizes="(max-width: 600px) 100vw * 300px cover, 400px * 400px cover">
+<img srcset="s.jpg 50w 100h, l.jpg 100w 200h"
+     sizes="cover 100px 100px, 100px">
 ```
 
 #### D. Fix unexpected upscaling under `object-fit: scale-down` and `none` ([#11428](https://github.com/whatwg/html/issues/11428))

@@ -116,37 +116,38 @@
 
   <section class="slide" id="issue-12248">
     <h2>3. <code>object-fit</code> Selection (<code>#12248</code>)</h2>
-    <syntax-highlight language="html">&lt;img sizes="auto" srcset="s.jpg 50w 100h, l.jpg 100w 200h"
-  style="width: 100px; height: 100px; object-fit: contain | cover"&gt;</syntax-highlight>
-    <svg class="chart" viewBox="0 0 680 190" aria-label="100x100 container with 50x100 and 100x200 sources depending on object-fit">
+    <syntax-highlight language="html">&lt;img loading="lazy" sizes="auto" srcset="s.jpg 50w 100h, l.jpg 100w 200h"
+  style="width: 100px; height: 100px; object-fit: contain | cover"&gt;
+&lt;img sizes="cover 100px 100px" srcset="s.jpg 50w 100h, l.jpg 100w 200h"&gt;</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 168" aria-label="100x100 container with 50x100 and 100x200 sources depending on object-fit">
       <!-- Column 1: Sources -->
-      <text x="105" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Sources (1:2 portrait)</text>
-      <rect x="28" y="64" width="52" height="88" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="2"/>
-      <text x="54" y="112" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
-      <rect x="95" y="32" width="75" height="150" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="2"/>
-      <text x="132" y="112" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
+      <text x="105" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Sources (1:2 portrait)</text>
+      <rect x="28" y="56" width="52" height="84" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="2"/>
+      <text x="54" y="102" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
+      <rect x="95" y="26" width="75" height="136" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="2"/>
+      <text x="132" y="98" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
 
       <!-- Column 2: object-fit: contain -->
-      <text x="340" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: contain</text>
-      <rect x="294" y="38" width="92" height="92" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
-      <rect x="317" y="38" width="46" height="92" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
-      <text x="340" y="88" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
-      <text x="340" y="146" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container</text>
-      <text x="340" y="165" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">✔ Pick 50×100</text>
-      <text x="340" y="182" text-anchor="middle" font-size="11" fill="#f85149">(Today picks 100×200 — 4× px!)</text>
+      <text x="340" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: contain</text>
+      <rect x="296" y="28" width="88" height="84" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <rect x="318" y="28" width="44" height="84" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
+      <text x="340" y="74" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
+      <text x="340" y="128" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container</text>
+      <text x="340" y="146" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">✔ Pick 50×100</text>
+      <text x="340" y="162" text-anchor="middle" font-size="11" fill="#f85149">(Today picks 100×200 — 4× px!)</text>
 
       <!-- Column 3: object-fit: cover -->
-      <text x="565" y="20" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: cover</text>
-      <rect x="527" y="29" width="76" height="114" fill="#58a6ff" fill-opacity="0.12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
-      <rect x="527" y="48" width="76" height="76" fill="#58a6ff" fill-opacity="0.35" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
-      <text x="565" y="90" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
-      <text x="565" y="160" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container (cropped)</text>
-      <text x="565" y="180" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">✔ Pick 100×200</text>
+      <text x="565" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: cover</text>
+      <rect x="527" y="24" width="76" height="100" fill="#58a6ff" fill-opacity="0.12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="527" y="38" width="76" height="72" fill="#58a6ff" fill-opacity="0.35" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <text x="565" y="78" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
+      <text x="565" y="142" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container (cropped)</text>
+      <text x="565" y="160" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">✔ Pick 100×200</text>
     </svg>
   </section>
 
   <section class="comment">
-    <p>In a 100×100 container with 50×100 and 100×200 sources, the right source depends on object-fit: contain renders at 50×100 so it should pick 50×100, while cover renders at 100×200 so it should pick 100×200. PR #13053 adds the h descriptor and makes sizes="auto" 2D and object-fit aware.</p>
+    <p>In a 100×100 container with 50×100 and 100×200 sources, the right source depends on object-fit: contain renders at 50×100 so it should pick 50×100, while cover renders at 100×200 so it should pick 100×200. PR #13053 adds the h descriptor, makes sizes="auto" 2D and object-fit aware, and adds 2D sizes="cover 100px 100px" (or contain) for eager images and the preload scanner.</p>
   </section>
 
   <section class="slide" id="issue-11428">
