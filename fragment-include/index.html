@@ -92,12 +92,14 @@
 &lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
 &lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Self-removes when done</li>
+      <li><strong>Empty <code>for</code>:</strong> Replaces the <code>&lt;template&gt;</code> in place</li>
+      <li><strong><code>for="name"</code>:</strong> Streams into a named target</li>
+      <li><strong><code>src</code> alone:</strong> Fetches an inert <code>&lt;template&gt;</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>A &lt;template&gt; becomes active when it has for, src, or both. For in-place includes, it acts as a temporary insertion anchor and removes itself on completion. Disconnecting it mid-fetch aborts the network request.</p>
+    <p>An empty for attribute replaces the &lt;template&gt; itself in place and removes the template when done; for="name" streams into a named target range; and src without for fetches an inert &lt;template&gt; for later cloning.</p>
   </section>
 
   <section class="slide" id="out-of-order">
