@@ -162,7 +162,8 @@ if (!r.addedNodes.length &amp;&amp; !r.removedNodes.length &amp;&amp; !r.templat
     <h2>Discussion</h2>
     <ul>
       <li>Supporting SSR &amp; streaming HTML without ignoring dynamic DOM updates</li>
-      <li><code>{ parser: true }</code> on <code>MutationObserver</code> + <code>node.isParsing</code></li>
+      <li><code>{ parser: true }</code> on <code>MutationObserver</code> + <code>element.isParsing</code></li>
+      <li>Opt-in granularity: <code>parser</code> vs. separate <code>template</code> + <code>parseEnd</code></li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md"><code>parser-mutation-records-explainer.md</code></a> · <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</p>
   </section>
