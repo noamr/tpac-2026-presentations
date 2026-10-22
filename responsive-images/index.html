@@ -55,9 +55,9 @@
   <section class="slide" id="theme">
     <h2>Who Should Hold the Knobs?</h2>
     <ul>
-      <li><strong>Browsers</strong> are built for <strong>interoperability</strong></li>
-      <li><strong>Websites</strong> know the <strong>UX &amp; business trade-offs</strong> (hero vs. 40th thumbnail)</li>
-      <li>When a knob is missing, developers bend the existing ones backwards (e.g. lying in <code>srcset</code>: <code>img?w=720 800w</code>)</li>
+      <li><strong>Browsers:</strong> Built for interoperability</li>
+      <li><strong>Websites:</strong> Know UX &amp; business trade-offs (hero vs. 40th thumbnail)</li>
+      <li>Missing knobs → lying in <code>srcset</code> (<code>img?w=720 800w</code>)</li>
     </ul>
   </section>
 
@@ -68,8 +68,8 @@
   <section class="slide" id="issue-13077">
     <h2>1. Standardize Selection (<code>#13077</code>)</h2>
     <ul>
-      <li>All engines now use the same baseline: <strong>first candidate <code>&gt;= targetDensity</code></strong></li>
-      <li>Chrome also avoids downloading a lower-res source when a higher-res one is already loaded</li>
+      <li>All engines use <strong>first candidate <code>&gt;= targetDensity</code></strong></li>
+      <li>Chrome reuses already-loaded higher-res candidates</li>
       <li><strong>Proposal:</strong> Spec both normatively</li>
     </ul>
   </section>
@@ -104,7 +104,7 @@
       <text x="567" y="87" text-anchor="middle" font-size="14" font-weight="bold" fill="#a371f7">Picks 300w (extra crisp)</text>
       <text x="567" y="120" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.75">densityscale="1.5"</text>
     </svg>
-    <p class="note">Replaces lying in <code>w</code> descriptors (e.g. writing <code>img?w=720 800w</code> in production).</p>
+    <p class="note">Replaces lying in <code>w</code> descriptors (<code>img?w=720 800w</code>).</p>
   </section>
 
   <section class="comment">

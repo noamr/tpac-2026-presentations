@@ -49,8 +49,8 @@
       <text x="565" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">0 events fired (no blur/focusout!)</text>
     </svg>
     <ul>
-      <li>Focus silently drops to <code>document.body</code> with <strong>zero events</strong></li>
-      <li>Users lose their place; modal focus traps break</li>
+      <li><code>activeElement</code> resets to <code>document.body</code> with <strong>zero events</strong></li>
+      <li>Focus traps &amp; keyboard navigation break</li>
     </ul>
   </section>
 
@@ -59,13 +59,13 @@
   </section>
 
   <section class="slide" id="workarounds">
-    <h2>Bent-Backwards Workarounds Today</h2>
+    <h2>Workarounds Today</h2>
     <div class="columns">
       <div>
         <h3><code>MutationObserver</code></h3>
         <p>Radix UI, <code>focus-trap</code></p>
         <ul>
-          <li>Runs on <em>every</em> DOM edit</li>
+          <li>Runs on every DOM edit</li>
           <li>Breaks in Shadow DOM</li>
         </ul>
       </div>
@@ -90,8 +90,8 @@
   fallbackElement.focus();
 });</syntax-highlight>
     <ul>
-      <li>Fires in the <strong>mutation observer microtask</strong> (before paint)</li>
-      <li>Plain <code>Event</code> — no reference to the detached node</li>
+      <li>Fires in the <strong>mutation observer microtask</strong></li>
+      <li>Plain <code>Event</code> — no detached node reference</li>
     </ul>
   </section>
 
@@ -100,12 +100,12 @@
   </section>
 
   <section class="slide" id="cancellation">
-    <h2>Smart Auto-Cancellation</h2>
+    <h2>Auto-Cancellation</h2>
     <syntax-highlight language="js">item.remove();
-nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
+nextItem.focus();</syntax-highlight>
     <ul>
       <li>Only fires for <strong>unhandled</strong> focus loss</li>
-      <li>Nested <code>&lt;iframe&gt;</code>s: checks <code>hasFocus()</code> on removal &amp; dispatch</li>
+      <li>Tracks nested <code>&lt;iframe&gt;</code> focus</li>
       <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code></li>
     </ul>
   </section>
@@ -117,9 +117,9 @@ nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
   <section class="slide" id="timing">
     <h2>Timing: Microtask vs. Rendering</h2>
     <ul>
-      <li><strong>Rendering step (<code>display: none</code>):</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> <em>together</em> after layout</li>
-      <li><strong>DOM removal (<code>node.remove()</code>):</strong> Resets <code>activeElement</code> <em>synchronously</em></li>
-      <li><strong>Why microtask?</strong> Keeps event in sync with <code>activeElement</code> &amp; catches removals in <code>rAF</code> / <code>ResizeObserver</code></li>
+      <li><strong><code>display: none</code>:</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> after layout</li>
+      <li><strong><code>node.remove()</code>:</strong> Resets <code>activeElement</code> synchronously</li>
+      <li><strong>Microtask:</strong> Matches <code>activeElement</code> &amp; catches <code>rAF</code> / <code>ResizeObserver</code> removals</li>
     </ul>
   </section>
 
@@ -130,9 +130,9 @@ nextItem.focus(); // -&gt; Cancels pending focusreset!</syntax-highlight>
   <section class="slide" id="alternatives">
     <h2>Why Not…</h2>
     <ul>
-      <li><strong>Sync <code>blur</code> on removal?</strong> Re-entrancy hazard mid-removal</li>
-      <li><strong>Async <code>blur</code> on ancestor?</strong> Ancestor was never focused</li>
-      <li><strong>Exposing <code>relatedTarget</code>?</strong> Leaks detached DOM &amp; closed Shadow DOM</li>
+      <li><strong>Sync <code>blur</code>:</strong> Re-entrancy hazard</li>
+      <li><strong>Async <code>blur</code> on ancestor:</strong> Ancestor was never focused</li>
+      <li><strong><code>relatedTarget</code>:</strong> Leaks detached &amp; closed Shadow DOM</li>
     </ul>
   </section>
 

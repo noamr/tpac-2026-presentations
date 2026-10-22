@@ -60,9 +60,9 @@
   <section class="slide" id="why-rejected">
     <h2>Why It Stalled</h2>
     <ol>
-      <li><strong>Parser-blocking waterfalls:</strong> Sync fetching halts the parser</li>
-      <li><strong>FOUC &amp; layout shifts:</strong> Async fragments paint unstyled or push content around</li>
-      <li><strong>XSS:</strong> Injecting raw HTML without a built-in sanitizer</li>
+      <li><strong>Parser-blocking waterfalls</strong></li>
+      <li><strong>FOUC &amp; layout shifts</strong></li>
+      <li><strong>XSS</strong></li>
     </ol>
   </section>
 
@@ -73,9 +73,9 @@
   <section class="slide" id="why-now">
     <h2>What Changed?</h2>
     <ol>
-      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong> — fetch in parallel without blocking the parser</li>
-      <li><strong>Render-Blocking (<code>rel="expect"</code>) &amp; <code>buffer</code></strong> — control when fragments paint</li>
-      <li><strong>Sanitizer API</strong> — safe by default in the parser</li>
+      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong></li>
+      <li><strong>Render-Blocking (<code>rel="expect"</code>) &amp; <code>buffer</code></strong></li>
+      <li><strong>Sanitizer API</strong></li>
     </ol>
   </section>
 
@@ -92,7 +92,7 @@
 &lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
 &lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Self-removes when done — <strong>zero DOM footprint</strong></li>
+      <li>Self-removes when done</li>
     </ul>
   </section>
 
@@ -102,16 +102,14 @@
 
   <section class="slide" id="out-of-order">
     <h2>1. Breaking the Waterfall</h2>
-    <syntax-highlight language="html">&lt;!-- Kick off fetch early in &lt;head&gt; or body without blocking parser --&gt;
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
+    <syntax-highlight language="html">&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
 
-&lt;!-- Parser continues; slot updates when data arrives --&gt;
 &lt;main&gt;
   &lt;?start name="feed"&gt;&lt;p class="skeleton"&gt;Loading...&lt;/p&gt;&lt;?end&gt;
 &lt;/main&gt;</syntax-highlight>
     <ul>
-      <li><strong>Decoupled fetch &amp; placement:</strong> Start fetching early; main document keeps parsing</li>
-      <li><strong>Streams by default:</strong> Content flows straight into the target range as bytes arrive</li>
+      <li>Decouples fetch from DOM position</li>
+      <li>Streams into the target slot as bytes arrive</li>
     </ul>
   </section>
 
@@ -130,8 +128,8 @@
   &lt;main&gt;Content&lt;/main&gt;
 &lt;/body&gt;</syntax-highlight>
     <ul>
-      <li><strong>Element render-blocking waits for client-side includes:</strong> Main document EOF doesn't prematurely unblock <code>rel="expect"</code> while <code>&lt;template for src&gt;</code> fetches are in flight</li>
-      <li><strong>Parser keeps going:</strong> <code>&lt;main&gt;</code> parses in parallel and paints together with <code>#site-header</code></li>
+      <li>Element render-blocking waits for client-side includes</li>
+      <li><code>&lt;main&gt;</code> parses in parallel; paints together with <code>#site-header</code></li>
     </ul>
   </section>
 
@@ -141,14 +139,14 @@
 
   <section class="slide" id="buffer">
     <h2>2b. Buffered Includes (<code>buffer</code>)</h2>
-    <syntax-highlight language="html">&lt;!-- Default: streams straight into DOM as bytes arrive --&gt;
+    <syntax-highlight language="html">&lt;!-- Default: streams into DOM --&gt;
 &lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
 
-&lt;!-- Buffered: parses off-screen &amp; swaps atomically on EOF --&gt;
+&lt;!-- Buffered: atomic swap on EOF --&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>No half-rendered states:</strong> Placeholder stays intact until the full fragment is ready</li>
-      <li><strong>No FOUC:</strong> Waits for <code>&lt;link rel="preload"&gt;</code> styles inside the fragment before committing</li>
+      <li>Parses off-screen; swaps placeholder atomically on EOF</li>
+      <li>Waits for <code>&lt;link rel="preload"&gt;</code> styles inside the fragment</li>
     </ul>
   </section>
 
@@ -157,19 +155,16 @@
   </section>
 
   <section class="slide" id="buffer-inline">
-    <h2><code>buffer</code> Works on the Main Stream Too</h2>
-    <syntax-highlight language="html">&lt;!-- Buffer an in-place section of the main HTML stream --&gt;
-&lt;template for buffer&gt;
+    <h2><code>buffer</code> on the Main Stream</h2>
+    <syntax-highlight language="html">&lt;template for buffer&gt;
   &lt;link rel="preload" href="widget.css" as="style"&gt;
   &lt;link rel="stylesheet" href="widget.css"&gt;
   &lt;div class="widget"&gt;...&lt;/div&gt;
 &lt;/template&gt;
 
-&lt;!-- Or buffer an inline out-of-order patch --&gt;
 &lt;template for="comments" buffer&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Not just for <code>src</code>:</strong> Buffer any inline section or streamed patch in the main response</li>
-      <li>Commits atomically on <code>&lt;/template&gt;</code> once preloaded subresources are ready</li>
+      <li>Works on inline sections and patches too (no <code>src</code> needed)</li>
     </ul>
   </section>
 
@@ -179,14 +174,12 @@
 
   <section class="slide" id="security">
     <h2>3a. Safe by Default (<code>sanitize</code>)</h2>
-    <syntax-highlight language="html">&lt;!-- Default: sanitized via built-in Sanitizer API --&gt;
-&lt;template for src="widget.html"&gt;&lt;/template&gt;
+    <syntax-highlight language="html">&lt;template for src="widget.html"&gt;&lt;/template&gt;
 
-&lt;!-- Explicit opt-out when scripts are needed --&gt;
 &lt;template for src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>External includes (<code>src</code>):</strong> Sanitized by default — strips <code>&lt;script&gt;</code>, inline event handlers, and dangerous URLs</li>
-      <li><strong>Explicit opt-out:</strong> Requires <code>sanitize="unsafe"</code></li>
+      <li><code>src</code> is sanitized by default</li>
+      <li><code>sanitize="unsafe"</code> opts out</li>
     </ul>
   </section>
 
@@ -195,19 +188,16 @@
   </section>
 
   <section class="slide" id="sanitize-inline">
-    <h2><code>sanitize</code> Works on the Main Stream Too</h2>
-    <syntax-highlight language="html">&lt;!-- Sanitize an inline section of the main HTML stream --&gt;
-&lt;template for sanitize&gt;
+    <h2><code>sanitize</code> on the Main Stream</h2>
+    <syntax-highlight language="html">&lt;template for sanitize&gt;
   &lt;article class="user-comment"&gt;
     Hello! &lt;script&gt; evil() &lt;/script&gt;
   &lt;/article&gt;
 &lt;/template&gt;
 
-&lt;!-- Or sanitize an inline out-of-order patch --&gt;
 &lt;template for="comments" sanitize&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Inline <code>&lt;template for&gt;</code> (no <code>src</code>):</strong> Unsanitized by default, opt-in via <code>sanitize</code></li>
-      <li>Declarative, parser-level sanitization for user-generated content in SSR streams</li>
+      <li>Declarative sanitization for inline markup &amp; SSR patches</li>
     </ul>
   </section>
 
@@ -221,8 +211,8 @@
   fragment-src 'self' https://cdn.example;
   script-src 'self' 'nonce-r4nd0m'</syntax-highlight>
     <ul>
-      <li><strong><code>fragment-src</code>:</strong> Restricts which origins <code>&lt;template src&gt;</code> can fetch from (falls back to <code>default-src</code>)</li>
-      <li><strong><code>script-src</code> still applies:</strong> Even with <code>sanitize="unsafe"</code>, scripts inside fragments must pass the document's <code>script-src</code> policy</li>
+      <li><strong><code>fragment-src</code>:</strong> Allowed fragment origins (falls back to <code>default-src</code>)</li>
+      <li><strong><code>script-src</code>:</strong> Still governs scripts inside <code>sanitize="unsafe"</code></li>
     </ul>
   </section>
 
@@ -233,8 +223,8 @@
   <section class="slide" id="alternatives">
     <h2>Why <code>&lt;template&gt;</code>?</h2>
     <ul>
-      <li><strong>Why not <code>&lt;fragment&gt;</code>?</strong> <code>&lt;template&gt;</code> already has the “disappear from the DOM” behavior (<code>shadowrootmode</code>, <code>for</code>)</li>
-      <li><strong>Works everywhere in the parser</strong> — including inside <code>&lt;table&gt;</code> &amp; <code>&lt;select&gt;</code></li>
+      <li><strong>Why not <code>&lt;fragment&gt;</code>?</strong> <code>&lt;template&gt;</code> already disappears from the DOM (<code>shadowrootmode</code>, <code>for</code>)</li>
+      <li><strong>Valid everywhere in the parser</strong> (<code>&lt;table&gt;</code>, <code>&lt;select&gt;</code>)</li>
       <li><strong>Why not <code>&lt;script type="html"&gt;</code>?</strong> Wrong defaults, no inline HTML</li>
     </ul>
   </section>
@@ -246,11 +236,11 @@
   <section class="slide" id="dpu-ecosystem">
     <h2>Also in Declarative Partial Updates (DPU)</h2>
     <ul>
-      <li><strong>Progressive Shells (<code>&lt;?shellboundary&gt;</code>):</strong> 0ms cached shell + in-place navigation upgrades</li>
-      <li><strong>DOM Preservation &amp; Merging (<code>preserve</code>):</strong> Patch regions while keeping islands (<code>&lt;video&gt;</code>, <code>&lt;iframe&gt;</code>, state) alive</li>
-      <li><strong>Parser-Aware <code>MutationObserver</code> (<code>{ parser: true }</code>):</strong> Observe <code>&lt;template&gt;</code> patch lifecycle &amp; <code>isParsing</code></li>
+      <li><strong><code>&lt;?shellboundary&gt;</code>:</strong> Progressive shells</li>
+      <li><strong><code>preserve</code>:</strong> Keep islands (<code>&lt;video&gt;</code>, <code>&lt;iframe&gt;</code>, state) alive across patches</li>
+      <li><strong><code>{ parser: true }</code>:</strong> Parser-aware <code>MutationObserver</code></li>
     </ul>
-    <p class="note"><strong>📅 Join the Seamless Navigation Breakout — Wednesday at 9:00!</strong></p>
+    <p class="note"><strong>📅 Seamless Navigation Breakout — Wednesday at 9:00</strong></p>
   </section>
 
   <section class="comment">

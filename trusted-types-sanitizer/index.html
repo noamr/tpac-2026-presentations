@@ -43,8 +43,8 @@
       <text x="510" y="94" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">Works identically for streaming &amp; innerHTML</text>
     </svg>
     <ul>
-      <li><strong><code>createHTML(str)</code>:</strong> Needs full string up front; forces a double parse</li>
-      <li><strong><code>createParserOptions(opts)</code>:</strong> Configures the stateful HTML parser directly</li>
+      <li><strong><code>createHTML(str)</code>:</strong> Needs full string; parses twice</li>
+      <li><strong><code>createParserOptions(opts)</code>:</strong> Configures the native HTML parser</li>
     </ul>
   </section>
 
@@ -59,9 +59,8 @@
       <p class="attribution">— Anne van Kesteren (<a href="https://github.com/w3c/trusted-types/issues/594"><code>w3c/trusted-types#594</code></a>)</p>
     </blockquote>
     <ul>
-      <li>New policy callback: <strong><code>createParserOptions(options)</code></strong></li>
-      <li>Returns an opaque, immutable <strong><code>TrustedHTMLParserOptions</code></strong></li>
-      <li>Controls <strong><code>sanitizer</code></strong> and <strong><code>runScripts</code></strong> directly in the native HTML parser</li>
+      <li><code>policy.createParserOptions(options)</code> → <code>TrustedHTMLParserOptions</code></li>
+      <li>Controls <code>sanitizer</code> and <code>runScripts</code> in the HTML parser</li>
     </ul>
   </section>
 
@@ -72,9 +71,9 @@
   <section class="slide" id="what-it-covers">
     <h2>What Sinks Does It Cover?</h2>
     <ul>
-      <li><strong>Modern Unsafe Sinks:</strong> <code>setHTMLUnsafe()</code>, <code>parseHTMLUnsafe()</code>, <code>streamHTMLUnsafe()</code></li>
-      <li><strong>Legacy Fragment Sinks:</strong> <code>innerHTML</code>, <code>outerHTML</code>, <code>insertAdjacentHTML()</code>, <code>createContextualFragment()</code></li>
-      <li><strong>Safe Sinks (<code>setHTML</code>, <code>parseHTML</code>, <code>streamHTML</code>):</strong> Already safe by default — bypass Trusted Types entirely</li>
+      <li><strong>Unsafe sinks:</strong> <code>setHTMLUnsafe()</code>, <code>parseHTMLUnsafe()</code>, <code>streamHTMLUnsafe()</code></li>
+      <li><strong>Legacy sinks:</strong> <code>innerHTML</code>, <code>outerHTML</code>, <code>insertAdjacentHTML()</code>, <code>createContextualFragment()</code></li>
+      <li><strong>Safe sinks (<code>setHTML</code>, <code>parseHTML</code>, <code>streamHTML</code>):</strong> Bypass Trusted Types</li>
     </ul>
   </section>
 
@@ -90,7 +89,6 @@
   }
 });
 
-// Sanitizes while parsing — no DOMPurify needed!
 el.innerHTML = untrustedString;
 range.createContextualFragment(untrustedString);</syntax-highlight>
   </section>
@@ -118,12 +116,12 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
   </section>
 
   <section class="slide" id="scenario-3">
-    <h2>Scenario 3: Precedence &amp; Fallback Rules</h2>
+    <h2>Precedence &amp; Fallbacks</h2>
     <ul>
-      <li><strong>Explicit <code>TrustedHTMLParserOptions</code>:</strong> Satisfies TT — raw strings allowed</li>
-      <li><strong>Default policy has <code>createParserOptions</code>:</strong> Takes precedence over <code>createHTML</code></li>
-      <li><strong>No <code>createParserOptions</code>:</strong> Falls back to <code>TrustedHTML</code> / <code>createHTML</code> <em>only when not streaming</em> (streaming throws <code>TypeError</code>)</li>
-      <li><strong><code>TrustedHTML</code> + unvetted author options:</strong> Throws <code>TypeError</code> (prevents insecure blends, <a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
+      <li><strong><code>TrustedHTMLParserOptions</code>:</strong> Satisfies Trusted Types</li>
+      <li><strong><code>defaultPolicy.createParserOptions</code>:</strong> Takes precedence over <code>createHTML</code></li>
+      <li><strong>Fallback to <code>createHTML</code>:</strong> Non-streaming only (streaming throws <code>TypeError</code>)</li>
+      <li><strong><code>TrustedHTML</code> + author options:</strong> Throws <code>TypeError</code> (<a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
     </ul>
   </section>
 
@@ -132,12 +130,12 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
   </section>
 
   <section class="slide" id="future-sinks">
-    <h2>What's Not Covered Yet (Future: <code>html#13013</code>)</h2>
+    <h2>Future Sinks (<code>html#13013</code>)</h2>
     <ul>
-      <li><strong><code>iframe.srcdoc</code></strong> — Straightforward with sanitize-while-parsing (<a href="https://github.com/whatwg/html/pull/12756"><code>html#12756</code></a>)</li>
-      <li><strong><code>document.write()</code> / <code>writeln()</code></strong> — Multiple calls share one active parser, but doable via default policy</li>
-      <li><strong><code>DOMParser.parseFromString()</code></strong> &amp; <strong><code>execCommand("insertHTML")</code></strong></li>
-      <li><strong>XML documents (<code>innerHTML</code>):</strong> Sanitizer is HTML-parser-only → falls back to <code>createHTML</code></li>
+      <li><strong><code>iframe.srcdoc</code></strong> (<a href="https://github.com/whatwg/html/pull/12756"><code>html#12756</code></a>)</li>
+      <li><strong><code>document.write()</code> / <code>writeln()</code></strong></li>
+      <li><strong><code>DOMParser.parseFromString()</code> &amp; <code>execCommand("insertHTML")</code></strong></li>
+      <li><strong>XML <code>innerHTML</code>:</strong> Falls back to <code>createHTML</code></li>
     </ul>
   </section>
 
@@ -149,7 +147,7 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
     <h2>Status &amp; Discussion</h2>
     <ul>
       <li>Trusted Types PR <a href="https://github.com/w3c/trusted-types/pull/606"><code>#606</code></a> · HTML PR <a href="https://github.com/whatwg/html/pull/12583"><code>#12583</code></a> · WPTs landed</li>
-      <li>Should we extend <code>defaultPolicy.createParserOptions</code> to <code>srcdoc</code>, <code>document.write()</code>, and <code>DOMParser</code> (<a href="https://github.com/whatwg/html/issues/13013"><code>html#13013</code></a>)?</li>
+      <li>Extend <code>defaultPolicy.createParserOptions</code> to full-document sinks (<a href="https://github.com/whatwg/html/issues/13013"><code>html#13013</code></a>)?</li>
     </ul>
   </section>
 

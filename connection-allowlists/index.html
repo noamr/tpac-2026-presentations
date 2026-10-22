@@ -28,14 +28,13 @@
   </section>
 
   <section class="slide" id="recap">
-    <h2>Recap: One Job, Done Simply</h2>
-    <syntax-highlight language="js">// Structured Field HTTP response header:
-Connection-Allowlist: (response-origin "https://*.site.example"
+    <h2>Recap: Connection Allowlists</h2>
+    <syntax-highlight language="http">Connection-Allowlist: (response-origin "https://*.site.example"
   "https://cdn.example"); report-to=endpoint</syntax-highlight>
     <ul>
-      <li><strong>Why not CSP?</strong> CSP mixes XSS, framing, and subresource rules in a complex grammar</li>
-      <li><strong>One job:</strong> Block any outbound connection not matching the allowlist (<code>URLPattern</code>s + <code>response-origin</code>)</li>
-      <li>Covers <strong>Fetch, navigations, WebSockets, WebTransport, WebRTC, <code>dns-prefetch</code>, <code>preconnect</code></strong></li>
+      <li><strong>Why not CSP?</strong> CSP mixes XSS, framing, and network rules</li>
+      <li><strong>One job:</strong> Block outbound connections not matching the allowlist</li>
+      <li>Covers Fetch, navigations, WebSockets, WebTransport, WebRTC, <code>dns-prefetch</code>, <code>preconnect</code></li>
     </ul>
   </section>
 
@@ -46,10 +45,10 @@ Connection-Allowlist: (response-origin "https://*.site.example"
   <section class="slide" id="status">
     <h2>Status Update</h2>
     <ul>
-      <li><strong>Spec &amp; prototypes</strong> in <a href="https://github.com/WICG/connection-allowlists"><code>WICG/connection-allowlists</code></a> (Chromium &amp; Edge)</li>
-      <li><strong>Workers:</strong> Service/Shared Worker inheritance + <code>navigate()</code> / <code>openWindow()</code> (<a href="https://github.com/WICG/connection-allowlists/pull/26"><code>#26</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/39"><code>#39</code></a>)</li>
-      <li><strong>Pre-request plumbing:</strong> Early Hints (<code>103</code>), <code>dns-prefetch</code>, <code>preconnect</code> (<a href="https://github.com/WICG/connection-allowlists/pull/30"><code>#30</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/33"><code>#33</code></a>)</li>
-      <li><strong>Embedded Enforcement:</strong> <code>&lt;iframe connectionAllowlist&gt;</code> (<a href="https://github.com/WICG/connection-allowlists/pull/29"><code>#29</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/35"><code>#35</code></a> w/ Brandon Maslen)</li>
+      <li><strong>Spec &amp; prototypes:</strong> <a href="https://github.com/WICG/connection-allowlists"><code>WICG/connection-allowlists</code></a> (Chromium &amp; Edge)</li>
+      <li><strong>Workers:</strong> Service/Shared Workers + <code>navigate()</code> / <code>openWindow()</code> (<a href="https://github.com/WICG/connection-allowlists/pull/26"><code>#26</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/39"><code>#39</code></a>)</li>
+      <li><strong>Pre-request:</strong> Early Hints (<code>103</code>), <code>dns-prefetch</code>, <code>preconnect</code> (<a href="https://github.com/WICG/connection-allowlists/pull/30"><code>#30</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/33"><code>#33</code></a>)</li>
+      <li><strong>Embedded Enforcement:</strong> <code>&lt;iframe connectionAllowlist&gt;</code> (<a href="https://github.com/WICG/connection-allowlists/pull/29"><code>#29</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/35"><code>#35</code></a>)</li>
     </ul>
   </section>
 
@@ -74,7 +73,6 @@ Connection-Allowlist: (response-origin "https://*.site.example"
     </svg>
     <ul>
       <li>Cross-origin iframes bring their own policy container</li>
-      <li>Your exfiltration defense is only as strong as your most permissive child frame</li>
     </ul>
   </section>
 
@@ -87,9 +85,9 @@ Connection-Allowlist: (response-origin "https://*.site.example"
     <syntax-highlight language="html">&lt;iframe connectionAllowlist='("https://api.example" response-origin)'
         src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
     <ul>
-      <li><strong>Request:</strong> Sends <code>Sec-Required-Connection-Allowlist</code> header</li>
-      <li><strong>Mandatory Opt-In:</strong> Child must assert a <strong>subset <code>Connection-Allowlist</code></strong>, return <code>Allow-Connection-Allowlist-From</code>, or use a local scheme (<code>srcdoc</code> / <code>data:</code>)</li>
-      <li><strong>No Escape by Nesting:</strong> Inherited by subframes &amp; workers (can only tighten)</li>
+      <li><strong>Request:</strong> <code>Sec-Required-Connection-Allowlist</code></li>
+      <li><strong>Opt-in:</strong> Subset <code>Connection-Allowlist</code>, <code>Allow-Connection-Allowlist-From</code>, or local scheme</li>
+      <li><strong>Inherited:</strong> Applies to nested frames &amp; workers</li>
     </ul>
   </section>
 
@@ -100,10 +98,10 @@ Connection-Allowlist: (response-origin "https://*.site.example"
   <section class="slide" id="upstreaming">
     <h2>Path to W3C &amp; Upstreaming</h2>
     <ul>
-      <li><strong>1. Graduate from WICG → W3C WebAppSec WG</strong></li>
-      <li><strong>2. Upstream Fetch monkey-patches:</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> &amp; <em>obtain a connection</em> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
-      <li><strong>3. Upstream HTML monkey-patches:</strong> Policy container fields, <code>&lt;iframe connectionAllowlist&gt;</code>, <code>dns-prefetch</code> &amp; <code>preconnect</code></li>
-      <li><strong>4. WebRTC &amp; Service Workers:</strong> Candidate check + <code>navigate()</code> / <code>openWindow()</code></li>
+      <li><strong>1. Graduate WICG → W3C WebAppSec WG</strong></li>
+      <li><strong>2. Fetch:</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> / <em>obtain a connection</em> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
+      <li><strong>3. HTML:</strong> Policy container, <code>&lt;iframe connectionAllowlist&gt;</code>, <code>dns-prefetch</code>, <code>preconnect</code></li>
+      <li><strong>4. WebRTC &amp; Service Workers:</strong> ICE candidates + <code>navigate()</code> / <code>openWindow()</code></li>
     </ul>
   </section>
 
@@ -112,11 +110,11 @@ Connection-Allowlist: (response-origin "https://*.site.example"
   </section>
 
   <section class="slide final" id="discussion">
-    <h2>Discussion &amp; Open Questions</h2>
+    <h2>Discussion</h2>
     <ul>
-      <li><strong>Moving to W3C WebAppSec WG</strong> — ready for adoption?</li>
-      <li><strong>Upstreaming to Fetch &amp; HTML:</strong> Central check in <em>resolve an origin</em> / <em>obtain a connection</em> vs. per-callsite? Sharing embedded-enforcement scaffolding with CSP-EE?</li>
-      <li><strong>Edge cases:</strong> Custom URL schemes (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>) &amp; dynamic attribute updates on originless iframes (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>)</li>
+      <li><strong>W3C WebAppSec WG adoption</strong></li>
+      <li><strong>Fetch &amp; HTML upstreaming:</strong> Central check vs. per-callsite; shared CSP-EE scaffolding</li>
+      <li><strong>Edge cases:</strong> Custom schemes (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>) &amp; dynamic iframe updates (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>)</li>
     </ul>
   </section>
 

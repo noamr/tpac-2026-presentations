@@ -30,9 +30,9 @@
   <section class="slide" id="problem">
     <h2>What the Parser Knows (and the DOM Forgets)</h2>
     <ul>
-      <li><strong>Is this element finished parsing?</strong> (open vs. closed tag)</li>
-      <li><strong><code>&lt;template&gt;</code>s that don't attach to the DOM</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
-      <li><strong>Which container triggered this parse?</strong> (<code>innerHTML</code>, <code>setHTML</code>, <code>streamHTML</code>, patch)</li>
+      <li><strong>Is this element finished parsing?</strong></li>
+      <li><strong>Non-attaching <code>&lt;template&gt;</code>s</strong> (<code>shadowrootmode</code>, <code>for</code>)</li>
+      <li><strong>Which container triggered the parse?</strong></li>
     </ul>
   </section>
 
@@ -55,10 +55,6 @@
       <text x="510" y="75" text-anchor="middle" font-size="11" fill="#d29922">Never enter addedNodes — consumed by parser</text>
       <text x="510" y="94" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Zero patch attribution, end, or abort signal)</text>
     </svg>
-    <ul>
-      <li><strong>SSR &amp; Hydration:</strong> Components hydrate on start tag before children exist</li>
-      <li><strong><code>&lt;template shadowrootmode&gt;</code> &amp; <code>&lt;template for&gt;</code>:</strong> Never attach to the DOM</li>
-    </ul>
   </section>
 
   <section class="comment">
@@ -68,8 +64,8 @@
   <section class="slide" id="quotes">
     <h2>What Developers Are Saying</h2>
     <blockquote>
-      <p>“<code>MutationObserver</code> sees the resulting DOM changes, not parser intent or terminal state… Knowing <em>which patch</em> caused a mutation (and how it resolved) is way more useful than just knowing ‘the DOM changed.’”</p>
-      <p class="attribution">— @callie-openai (OpenAI, <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>WICG/declarative-partial-updates#110</code></a>)</p>
+      <p>“Knowing <em>which patch</em> caused a mutation (and how it resolved) is way more useful than just knowing ‘the DOM changed.’”</p>
+      <p class="attribution">— @callie-openai (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>WICG/declarative-partial-updates#110</code></a>)</p>
     </blockquote>
     <blockquote>
       <p>“There is no way to know within <code>connectedCallback</code> if the node has finished parsing its children or not.”</p>
@@ -82,13 +78,13 @@
   </section>
 
   <section class="slide" id="objection">
-    <h2>The Footgun Dilemma: Parsing vs. Dynamic DOM</h2>
+    <h2>Parsing vs. Dynamic DOM</h2>
     <blockquote>
       <p>“If we expose a parser-completion hook, developers will rely on it and forget to handle dynamic DOM updates.”</p>
     </blockquote>
     <ul>
-      <li><strong>With an isolated <code>parsedCallback</code>, that's a real risk</strong></li>
-      <li><strong>Put the footgun in plain sight:</strong> On <code>MutationRecord</code>, parser state sits right next to <code>addedNodes</code> — parsing is part of the story, not the whole story</li>
+      <li>An isolated <code>parsedCallback</code> hides dynamic updates</li>
+      <li>On <code>MutationRecord</code>, parser state sits right next to <code>addedNodes</code></li>
     </ul>
   </section>
 
@@ -113,7 +109,7 @@
   </section>
 
   <section class="slide" id="parsed-elements">
-    <h2>Knowing When Elements Finish: <code>parsedElements</code></h2>
+    <h2><code>parsedElements</code> &amp; <code>isParsing</code></h2>
     <syntax-highlight language="js">// Chunk 1: "&lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;"  -&gt; myCard.isParsing === true
 // Chunk 2: "&lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;"   -&gt; myCard.isParsing === false</syntax-highlight>
     <svg class="chart" viewBox="0 0 680 120" aria-label="parsedElements across two parser chunks">
@@ -138,10 +134,9 @@
   </section>
 
   <section class="slide" id="template-lifecycle">
-    <h2>Observing Non-Attaching <code>&lt;template&gt;</code>s</h2>
+    <h2>Non-Attaching <code>&lt;template&gt;</code>s</h2>
     <syntax-highlight language="js">for (const r of records) {
   if (r.templateStatus === "start") {
-    // DSD attached or &lt;template for&gt; patch started!
     console.log(r.templateAttributes.getNamedItem("for"));
   }
 }</syntax-highlight>
@@ -157,9 +152,9 @@
   <section class="slide" id="alternatives">
     <h2>Alternatives Considered</h2>
     <ul>
-      <li><strong>New record type (<code>"parsedElement"</code>)</strong> — 2× record allocations</li>
-      <li><strong>DOM events (<code>parseend</code> / <code>patch</code>)</strong> — interrupts parser / event storm</li>
-      <li><strong>Separate <code>PatchObserver</code></strong> — splits parser flow from dynamic DOM mutations</li>
+      <li><strong>New record type (<code>"parsedElement"</code>):</strong> 2× record allocations</li>
+      <li><strong>DOM events (<code>parseend</code> / <code>patch</code>):</strong> Interrupts parser</li>
+      <li><strong>Separate <code>PatchObserver</code>:</strong> Splits parser from dynamic DOM</li>
     </ul>
   </section>
 
@@ -168,10 +163,10 @@
   </section>
 
   <section class="slide final" id="discussion">
-    <h2>Discussion: Finding the Sweet Spot</h2>
+    <h2>Discussion</h2>
     <ul>
-      <li>How do we support <strong>SSR &amp; streaming HTML</strong> without pretending parsing is the only way the DOM changes?</li>
-      <li>Does putting <code>{ parser: true }</code> on <code>MutationObserver</code> + <code>node.isParsing</code> strike the right balance?</li>
+      <li>Supporting SSR &amp; streaming HTML without ignoring dynamic DOM updates</li>
+      <li><code>{ parser: true }</code> on <code>MutationObserver</code> + <code>node.isParsing</code></li>
     </ul>
   </section>
 

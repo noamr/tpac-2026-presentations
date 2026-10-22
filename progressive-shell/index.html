@@ -29,13 +29,12 @@
 
   <section class="slide" id="goal">
     <h2>Speed vs. Smoothness in Navigation</h2>
-    <p>Art-directing a seamless navigation without “everything is JS”:</p>
     <ol>
-      <li><strong>Respond at 0ms</strong> — instant shell on click or cold start</li>
-      <li><strong>Stay interactive</strong> — no long frozen frame while waiting for TTFB</li>
-      <li><strong>Keep user state</strong> — never wipe active typing, focus, or scroll</li>
+      <li><strong>Respond at 0ms</strong> — instant shell</li>
+      <li><strong>Stay interactive</strong> — no frozen frame during TTFB</li>
+      <li><strong>Keep user state</strong> — preserve typing, focus, and scroll</li>
     </ol>
-    <p class="note">And we can't full-prerender 50 product links on a grid.</p>
+    <p class="note">Without prerendering 50 full pages or forcing “everything is JS.”</p>
   </section>
 
   <section class="comment">
@@ -64,8 +63,8 @@
       <text x="560" y="80" text-anchor="middle" font-size="11" fill="#f85149">Focus &amp; scroll wiped!</text>
     </svg>
     <ul>
-      <li>❌ <strong>Still swaps <code>Document</code> at the end</strong> — wipes typing &amp; scroll</li>
-      <li>❌ <strong>Source page must know destination UI</strong> &amp; <strong>no cold-start win</strong></li>
+      <li>❌ Swaps <code>Document</code> at the end — wipes state</li>
+      <li>❌ Source page must know destination UI; no cold-start win</li>
     </ul>
   </section>
 
@@ -95,8 +94,8 @@
       <text x="554" y="79" text-anchor="middle" font-size="11" fill="#f85149">Typed "shoes" &amp; focus wiped</text>
     </svg>
     <ul>
-      <li>✅ Fixes cold starts &amp; destination owns its skeleton</li>
-      <li>❌ <strong>Double-Swap Trap:</strong> Skeleton <code>Document</code> → Real <code>Document</code> wipes state!</li>
+      <li>✅ Fixes cold starts; destination owns its skeleton</li>
+      <li>❌ <strong>Double-Swap Trap:</strong> Skeleton <code>Document</code> → Real <code>Document</code> wipes state</li>
     </ul>
   </section>
 
@@ -105,7 +104,7 @@
   </section>
 
   <section class="slide" id="insight">
-    <h2>The Insight: Don't Swap the Skeleton!</h2>
+    <h2>The Insight: Don't Swap the Skeleton</h2>
     <svg class="chart" viewBox="0 0 680 120" aria-label="Progressive shell single-document timeline">
       <rect x="10" y="16" width="660" height="84" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
       <text x="340" y="36" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Single Live Document (Never Swapped Out)</text>
@@ -121,8 +120,8 @@
       <text x="513" y="81" text-anchor="middle" font-size="11" fill="#2ea043">&lt;template for&gt; patches same Document ✔</text>
     </svg>
     <ul>
-      <li>Make the skeleton and the final page the <strong><em>same</em> <code>Document</code></strong></li>
-      <li>Paint shell at <strong>0ms</strong> → stream content into it via <code>&lt;template for&gt;</code></li>
+      <li>Skeleton and final page are the <strong>same <code>Document</code></strong></li>
+      <li>Paint shell at <strong>0ms</strong> → stream <code>&lt;template for&gt;</code> patches</li>
     </ul>
   </section>
 
@@ -152,12 +151,12 @@
     <h2>One HTML File, Two Ways to Navigate</h2>
     <div class="columns">
       <div>
-        <h3>1. Instant Shell (Cold / Cross-Shell)</h3>
-        <p>Paint cached shell at <strong>0ms</strong> → stream post-boundary patches into the <strong>same Document</strong>.</p>
+        <h3>1. Instant Shell</h3>
+        <p>Paint cached shell at <strong>0ms</strong> → stream patches into the same <code>Document</code>.</p>
       </div>
       <div>
-        <h3>2. Navigation Upgrade (Same Shell)</h3>
-        <p>Keep current Document <strong>live</strong> → skip pre-boundary bytes &amp; patch in place.</p>
+        <h3>2. Navigation Upgrade</h3>
+        <p>Keep current <code>Document</code> live → skip shell prefix &amp; patch in place.</p>
       </div>
     </div>
   </section>
@@ -169,9 +168,9 @@
   <section class="slide" id="other-alternatives">
     <h2>Why In-Band <code>&lt;?shellboundary&gt;</code>?</h2>
     <ul>
-      <li><strong>vs. HTTP Content Negotiation (<code>Vary</code>):</strong> Works on static hosts &amp; CDNs without cache fragmentation</li>
-      <li><strong>vs. DOM Morphing (<code>preserve</code>):</strong> Doesn't re-parse and diff the whole shell on every click</li>
-      <li><strong>vs. Service Worker Stitching:</strong> Simpler &amp; works before a SW is active; supports in-place upgrades</li>
+      <li><strong>vs. <code>Vary</code> header:</strong> Works on static hosts &amp; CDNs</li>
+      <li><strong>vs. DOM morphing (<code>preserve</code>):</strong> No full-shell re-parse or diff</li>
+      <li><strong>vs. Service Worker stitching:</strong> Works before SW activation; upgrades in place</li>
     </ul>
   </section>
 
