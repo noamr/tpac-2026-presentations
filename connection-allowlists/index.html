@@ -16,7 +16,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Connection Allowlists</h1>
-    <h4>Status update, embedded enforcement &amp; upstreaming</h4>
+    <h4>Embedded enforcement, open issues &amp; upstreaming</h4>
     <address>Noam Rosenthal &amp; Mike West</address>
     <p class="event">TPAC 2026<br>
       Dublin, Ireland &amp; online<br>
@@ -32,28 +32,14 @@
     <syntax-highlight language="http">Connection-Allowlist: (response-origin "https://*.site.example"
   "https://cdn.example"); report-to=endpoint</syntax-highlight>
     <ul>
-      <li><strong>Why not CSP?</strong> CSP mixes XSS, framing, and network rules</li>
       <li><strong>One job:</strong> Block outbound connections not matching the allowlist</li>
       <li>Covers Fetch, navigations, WebSockets, WebTransport, WebRTC, <code>dns-prefetch</code>, <code>preconnect</code></li>
+      <li><strong>Graduated to W3C WebAppSec WG</strong></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Sometimes the best way to design a security primitive is to do one thing clearly. Content Security Policy tries to solve content injection, framing, and network restrictions all at once. Connection Allowlists focuses purely on exfiltration defense-in-depth: a single Structured Field header using URLPattern syntax that blocks unauthorized connections before they are made across Fetch, navigations, WebRTC, WebTransport, and preconnect/dns-prefetch.</p>
-  </section>
-
-  <section class="slide" id="status">
-    <h2>Status Update</h2>
-    <ul>
-      <li><strong>W3C WebAppSec WG graduation approved</strong> (moving from <a href="https://github.com/WICG/connection-allowlists"><code>WICG/connection-allowlists</code></a>)</li>
-      <li><strong>Workers:</strong> Service/Shared Workers + <code>navigate()</code> / <code>openWindow()</code> (<a href="https://github.com/WICG/connection-allowlists/pull/26"><code>#26</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/39"><code>#39</code></a>)</li>
-      <li><strong>Pre-request:</strong> Early Hints (<code>103</code>), <code>dns-prefetch</code>, <code>preconnect</code> (<a href="https://github.com/WICG/connection-allowlists/pull/30"><code>#30</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/33"><code>#33</code></a>)</li>
-      <li><strong>Embedded Enforcement:</strong> <code>&lt;iframe connectionAllowlist&gt;</code> (<a href="https://github.com/WICG/connection-allowlists/pull/29"><code>#29</code></a>, <a href="https://github.com/WICG/connection-allowlists/pull/35"><code>#35</code></a>)</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Graduation to W3C WebAppSec WG is approved. Over the past few months we've also closed the big gaps in the spec: Service Worker and Shared Worker integration, 103 Early Hints, dns-prefetch and preconnect environment plumbing, local schemes, and—thanks to Brandon Maslen from Edge—Embedded Enforcement for iframes.</p>
+    <p>Connection Allowlists focuses purely on exfiltration defense-in-depth: a single Structured Field header using URLPattern syntax that blocks unauthorized connections across Fetch, navigations, WebRTC, WebTransport, Workers, Early Hints, and preconnect/dns-prefetch. Graduation to W3C WebAppSec WG is approved.</p>
   </section>
 
   <section class="slide" id="embedded-problem">
@@ -66,12 +52,12 @@
   </section>
 
   <section class="comment">
-    <p>A document's Connection-Allowlist only governs its own connections. But real pages embed cross-origin widgets, players, and subframes. Because a cross-origin iframe gets its own policy container from its own response, data the parent can't exfiltrate directly could be handed to a permissive child frame. Embedded enforcement lets the embedder extend its guarantee across the entire embedded subtree.</p>
+    <p>A document's Connection-Allowlist only governs its own connections. Because a cross-origin iframe gets its own policy container from its own response, data the parent can't exfiltrate directly could be handed to a permissive child frame. Embedded enforcement lets the embedder extend its guarantee across the entire embedded subtree.</p>
   </section>
 
   <section class="slide" id="embedded-how">
-    <h2>How Embedded Enforcement Works</h2>
-    <syntax-highlight language="html">&lt;iframe connectionAllowlist='("https://api.example" response-origin)'
+    <h2>Embedded Enforcement (<code>&lt;iframe connectionallowlist&gt;</code>)</h2>
+    <syntax-highlight language="html">&lt;iframe connectionallowlist='("https://api.example" response-origin)'
         src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
     <ul>
       <li><strong>Request:</strong> <code>Sec-Required-Connection-Allowlist</code></li>
@@ -81,14 +67,40 @@
   </section>
 
   <section class="comment">
-    <p>Modeled directly on CSP Embedded Enforcement: the embedder sets connectionAllowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by already serving a subset Connection-Allowlist or by returning Allow-Connection-Allowlist-From. The unresolved requirement is inherited down the frame tree, and response-origin re-resolves to each frame's own origin.</p>
+    <p>Modeled on CSP Embedded Enforcement: the embedder sets connectionallowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by serving a subset Connection-Allowlist or returning Allow-Connection-Allowlist-From. The requirement is inherited down the frame tree.</p>
+  </section>
+
+  <section class="slide" id="open-navigation">
+    <h2>Open Issues: Navigation Boundaries</h2>
+    <ul>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes:</strong> Should <code>mailto:</code>, <code>intent:</code>, <code>slack:</code> navigations be checked?</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus:</strong> Is “Open Link in New Tab” browser-initiated or subject to the allowlist?</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code>:</strong> Enforce the Service Worker's allowlist, the document's, or both?</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>First group of open issues—where does page-initiated navigation end? (#40) Navigating to custom schemes like mailto:, intent:, or slack: can exfiltrate data via the URL. (#5) On LLM-generated pages, an anchor's href (or an oncontextmenu mutation) can exfiltrate data when a user clicks "Open Link in New Tab". (#27) HTML's navigate algorithm defaults to no policy container unless passed explicitly, and Service Worker client.navigate() has both a worker and a target document.</p>
+  </section>
+
+  <section class="slide" id="open-iframes-redirects">
+    <h2>Open Issues: Sandboxing &amp; Redirects</h2>
+    <ul>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Dynamic originless iframes:</strong> Updating <code>connectionAllowlist</code> on <code>about:blank</code> / <code>srcdoc</code> (AI sandboxes)</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin navigation/<code>window.open</code> to an unprotected page (e.g. <code>/404</code>)</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirects:</strong> Default allow vs. block without leaking cross-site redirect targets in reports</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Second group of open issues: (#37) Sites isolating AI-generated HTML/JS in originless srcdoc/about:blank iframes want to set or tighten connectionAllowlist dynamically. (#15) Allowing response-origin lets a frame open an unprotected same-origin page like /404 and script it unless navigations or inheritance are constrained. (#7) How should server-side redirects be handled without leaking cross-origin redirect targets to parent reporting endpoints?</p>
   </section>
 
   <section class="slide" id="upstreaming">
     <h2>Upstreaming to Standards</h2>
     <ul>
-      <li><strong>Fetch:</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> / <em>obtain a connection</em> (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>)</li>
-      <li><strong>HTML:</strong> Policy container, <code>&lt;iframe connectionAllowlist&gt;</code>, <code>dns-prefetch</code>, <code>preconnect</code></li>
+      <li><strong>Fetch (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>):</strong> <em>Main Fetch</em> + pass <code>environment</code> into <em>resolve an origin</em> / <em>obtain a connection</em></li>
+      <li><strong>HTML (<a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>):</strong> Policy container, <code>&lt;iframe connectionallowlist&gt;</code>, <code>dns-prefetch</code>, <code>preconnect</code></li>
       <li><strong>WebRTC &amp; Service Workers:</strong> ICE candidates + <code>navigate()</code> / <code>openWindow()</code></li>
     </ul>
   </section>
@@ -100,8 +112,9 @@
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
-      <li><strong>Fetch &amp; HTML upstreaming:</strong> Central check vs. per-callsite; shared CSP-EE scaffolding</li>
-      <li><strong>Edge cases:</strong> Custom schemes (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>) &amp; dynamic iframe updates (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>)</li>
+      <li>Navigation boundaries (<a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a>)</li>
+      <li>Sandboxing &amp; redirects (<a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a>)</li>
+      <li>Fetch &amp; HTML upstreaming (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>, <a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>)</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/connection-allowlists"><code>github.com/WICG/connection-allowlists</code></a></p>
   </section>
