@@ -131,13 +131,13 @@
   &lt;main id="content"&gt;Content&lt;/main&gt;
 &lt;/body&gt;</syntax-highlight>
     <ul>
-      <li>Expecting an element blocks on any client-side include before it</li>
+      <li>Unlike <code>&lt;img src&gt;</code>, expecting <code>#content</code> also blocks on preceding <code>&lt;template src&gt;</code> fetches</li>
       <li><code>&lt;main&gt;</code> parses in parallel; paints together with <code>header.html</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 1): if element render-blocking (&lt;link rel="expect" href="#content" blocking="render"&gt;) expects an element, it also waits for any client-side includes preceding that element in tree order (while ignoring includes after it). The HTML parser continues through &lt;main&gt; without blocking, and header + main paint together.</p>
+    <p>Second mitigation (part 1): unlike media subresources such as &lt;img src&gt; (where rel="expect" only waits for the tag to be parsed, not fetched), &lt;template src&gt; expands into DOM structure—so expecting #content also waits for any client-side includes preceding #content in tree order. The HTML parser continues through &lt;main&gt; without blocking, and header + main paint together.</p>
   </section>
 
   <section class="slide" id="buffer">
