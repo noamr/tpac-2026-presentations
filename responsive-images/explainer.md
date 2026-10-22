@@ -36,8 +36,8 @@ Because websites lack proper knobs—and because `sizes` conflates 1D layout wid
 
 ### 1. No way to tune quality vs. bandwidth per image ([#13069](https://github.com/whatwg/html/issues/13069))
 When selecting from a `w`-descriptor `srcset`, the browser always targets `1.0 × devicePixelRatio` of the resolved `sizes` slot:
-- **Wasted bandwidth on low-priority images**: A `3x` phone downloads `9×` the pixels of a `1x` display. For secondary thumbnails, avatars, or far-below-the-fold cards, `0.75x` density cuts pixel count by **44%** with no noticeable degradation, freeing bandwidth for critical LCP content.
-- **Blurry high-priority or zoomable images**: Conversely, a product photo that users zoom into or a hero image that scales up during a transition may need `1.5x` density headroom to stay sharp.
+- **Wasted bandwidth on decorative or below-the-fold images**: A `3x` phone downloads `9×` the pixels of a `1x` display. For large decorative backdrops, ambient banners, or below-the-fold feed photos, `0.75x` density cuts pixel count by **44%** with negligible visual difference, freeing bandwidth for critical LCP content.
+- **Blurry high-priority or zoomable images**: Conversely, a product photo that users pinch-zoom into or a hero image that scales up during a transition may need `1.5x` density headroom to stay sharp.
 
 Today, sites must **lie in markup** to nudge selection:
 - **Lying in `sizes`** (e.g., writing `sizes="75vw"` for a `100vw` image) is **impossible with `sizes="auto"`** and corrupts `img.naturalWidth`.
@@ -97,9 +97,9 @@ Replace *"In an implementation-defined manner, choose one image source"* with a 
 Let authors explicitly tune the sharpness-vs-bandwidth trade-off per image without lying in `sizes` or `w` descriptors:
 
 ```html
-<!-- Below-the-fold thumbnail grid: save ~44% pixels with sizes="auto" -->
+<!-- Decorative backdrop or below-the-fold feed photo: save ~44% pixels with sizes="auto" -->
 <img loading="lazy" sizes="auto" densityscale="0.75"
-     srcset="thumb-400.jpg 400w, thumb-800.jpg 800w, thumb-1200.jpg 1200w">
+     srcset="card-400.jpg 400w, card-800.jpg 800w, card-1200.jpg 1200w">
 
 <!-- Conversion-critical or zoomable product hero: ask for 1.5x density headroom -->
 <img loading="lazy" sizes="auto" densityscale="1.5"
