@@ -43,39 +43,102 @@
     <p>For better and for worse, many sites adopt an SPA architecture just to control their loading sequence and avoid a flash or frozen screen between pages. How do we let developers balance speed and smoothness—without forcing them into "everything is JS" or prerendering 50 full pages?</p>
   </section>
 
-  <section class="slide" id="attempt-1">
-    <h2>1. Two-Phase View Transitions</h2>
-    <syntax-highlight language="js">navigation.addEventListener("navigate", e =&gt; {
-  e.deferPageSwap(); // or declarative intermediate VT
-  document.startViewTransition(() =&gt; showLoadingState());
+  <section class="slide" id="two-phase-imperative">
+    <h2>1a. Two-Phase VT: Imperative (<code>deferPageSwap</code>)</h2>
+    <syntax-highlight language="js">navigation.addEventListener("navigate", event =&gt; {
+  if (!event.destination.ready) {
+    event.deferPageSwap({
+      historyChange: "immediate",
+      async handler(controller) {
+        const vt = document.startViewTransition(() =&gt; showPreview());
+        controller.addRestoreCallback(() =&gt; hidePreview());
+        return vt.finished;
+      }
+    });
+  }
 });</syntax-highlight>
     <ul>
-      <li><strong>What it is:</strong> Old page transitions to an intermediate loading state (via <code>deferPageSwap()</code> or declarative VT) until the new page is ready</li>
-      <li><strong>Why not enough:</strong>
-        <ul>
-          <li>Final <code>Document</code> swap still wipes input, focus &amp; scroll</li>
-          <li>Source page must know destination UI; no cold-start win</li>
-        </ul>
-      </li>
+      <li>Delays cross-document page swap while the old page animates to a preview state</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Two-phase View Transitions (both programmatic deferPageSwap() and declarative intermediate View Transitions) let the outgoing page stay live during TTFB and animate to a loading state before the cross-document VT swap. But when the new Document arrives, the final Document swap still destroys any input focus or text typed during the wait, and it can't help cold starts or cross-origin navigations.</p>
+    <p>Imperative two-phase View Transitions add navigateEvent.deferPageSwap({ historyChange, handler }). When the destination isn't already ready, the outgoing page can run a same-document View Transition into a preview/loading state, register a BFCache/abort restore callback, and hold the cross-document page swap until the transition finishes.</p>
   </section>
 
-  <section class="slide" id="attempt-2">
+  <section class="slide" id="two-phase-declarative">
+    <h2>1b. Two-Phase VT: Declarative (<code>preview</code>)</h2>
+    <syntax-highlight language="css">@view-transition { preview: always; }
+
+@navigation (phase: preview) {
+  #skeleton { display: block; }
+}
+
+:active-view-transition-types(-ua-to-preview) {
+  .thumbnail { view-transition-name: thumb-to-hero; }
+}</syntax-highlight>
+    <ul>
+      <li>CSS-driven intermediate preview state between link click and page swap</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Declarative two-phase View Transitions use @view-transition { preview: always; }, @navigation (phase: preview), and UA view-transition types (-ua-to-preview, -ua-from-preview) so the outgoing page transitions into a preview state without manual JS or BFCache cleanup callbacks.</p>
+  </section>
+
+  <section class="slide" id="two-phase-why-not">
+    <h2>Two-Phase VT: Why It's Not Enough</h2>
+    <svg class="chart" viewBox="0 0 680 90" aria-label="Old Document swapped for New Document">
+      <rect x="20" y="15" width="240" height="60" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
+      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">0ms: Old Document</text>
+
+      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap</text>
+      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
+
+      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: New Document</text>
+    </svg>
+    <ul>
+      <li>Final <code>Document</code> swap still wipes input, focus &amp; scroll</li>
+      <li>Source page must know destination UI (<code>#skeleton</code> lives in old page)</li>
+      <li>Same-origin only — no cold-start or cross-origin win</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Whether imperative or declarative, two-phase View Transitions happen on the old Document. The old page has to know how to render the destination's preview UI, it cannot run on cold starts or cross-origin navigations, and when the new Document finally swaps in, any state or input from the preview phase is wiped out.</p>
+  </section>
+
+  <section class="slide" id="skeleton-what">
     <h2>2. Declarative Skeleton Documents</h2>
-    <syntax-highlight language="html">&lt;!-- Cached skeleton.html shown at 0ms, replaced when item.html loads --&gt;
+    <syntax-highlight language="html">&lt;!-- Cached skeleton.html shown at 0ms for /item/:id routes --&gt;
 &lt;link rel="skeleton" href="/item-skeleton.html" pattern="/item/:id"&gt;</syntax-highlight>
     <ul>
-      <li><strong>What it is:</strong> Cache a separate skeleton <code>Document</code> for a route pattern; swap to it at <strong>0ms</strong>, then swap to the real <code>Document</code> on load</li>
-      <li><strong>Why not enough:</strong>
-        <ul>
-          <li>Fixes cold starts; destination owns its skeleton</li>
-          <li><strong>Double-Swap Trap:</strong> <code>Skeleton Doc</code> → <code>Real Doc</code> wipes state</li>
-        </ul>
-      </li>
+      <li>Destination route caches a separate, lightweight skeleton <code>Document</code></li>
+      <li>Browser swaps to <code>Skeleton Doc</code> at <strong>0ms</strong>, then to <code>Real Doc</code> on load</li>
+      <li>Destination owns its skeleton; works on cold starts &amp; cross-origin</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Declarative Skeleton Documents flip ownership to the destination route: the browser caches a lightweight skeleton Document for a URL pattern, swaps to it at 0ms when navigation starts (even from the omnibox or cross-origin), and then swaps to the real Document when it finishes loading.</p>
+  </section>
+
+  <section class="slide" id="skeleton-why-not">
+    <h2>Declarative Skeletons: Why Not</h2>
+    <svg class="chart" viewBox="0 0 680 90" aria-label="Skeleton Document swapped for Real Document">
+      <rect x="20" y="15" width="240" height="60" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
+      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#2ea043">0ms: Skeleton Doc</text>
+
+      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap #2</text>
+      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
+
+      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: Real Document</text>
+    </svg>
+    <ul>
+      <li><strong>Double-Swap Trap:</strong> <code>Skeleton Doc</code> → <code>Real Doc</code> wipes focus, scroll &amp; typed text</li>
+      <li>Forcing skeleton inputs to be <code>inert</code> creates a broken "half-measure" UX</li>
     </ul>
   </section>
 
