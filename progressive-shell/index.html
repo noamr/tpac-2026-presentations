@@ -30,11 +30,11 @@
   </section>
 
   <section class="slide" id="problem">
-    <h2>The Navigation Dilemma Today</h2>
+    <h2>Navigation Today: Pick Your Poison</h2>
     <ul>
-      <li><strong>MPAs freeze &amp; reset:</strong> Paint holding freezes the UI during TTFB; document swap wipes typing, focus, scroll, and media</li>
-      <li><strong>SPAs pay a JS tax &amp; miss cold starts:</strong> Heavy client routers still wait on the network for omnibox, bookmarks, and cross-origin links</li>
-      <li><strong>Full-page prerendering doesn't scale:</strong> Too heavy in memory &amp; bandwidth to prerender every destination URL</li>
+      <li><strong>MPAs:</strong> Freeze during TTFB, then wipe out your state</li>
+      <li><strong>SPAs:</strong> Ship a ton of JS — and still wait on cold starts</li>
+      <li><strong>Prerendering:</strong> Can't prerender 50 pages just in case</li>
     </ul>
   </section>
 
@@ -44,11 +44,10 @@
 
   <section class="slide" id="what-if">
     <h2>What If…</h2>
-    <p><strong>Navigation was instant, preserved live state, and worked even on cold starts &amp; cross-origin links?</strong></p>
     <ul>
-      <li><strong>0ms response</strong> — paint the route's shell immediately, even from the omnibox or another site</li>
-      <li><strong>Zero state loss</strong> — keep typing, focus, scroll, and media alive across navigations</li>
-      <li><strong>Zero JS router</strong> — stream page content into the shell with declarative HTML</li>
+      <li><strong>Instant (0ms)</strong> — even on cold starts &amp; cross-origin links</li>
+      <li><strong>Keeps your state</strong> — typing, focus, scroll, and media stay alive</li>
+      <li><strong>No JS router</strong> — just HTML</li>
     </ul>
   </section>
 
