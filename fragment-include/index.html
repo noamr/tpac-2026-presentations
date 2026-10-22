@@ -148,27 +148,27 @@
 &lt;!-- Buffered: atomic swap on EOF --&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Parses off-screen; swaps placeholder atomically on EOF</li>
-      <li>External resources inside the fragment are fetched speculatively</li>
+      <li>Parses off-screen; swaps placeholder atomically</li>
+      <li><code>&lt;link&gt;</code> resources inside the fragment are fetched, and the buffer waits on preloads and external stylesheets</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response off-screen into template.content while speculatively fetching its external resources, then swaps the placeholder atomically on EOF.</p>
+    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response off-screen into template.content. &lt;link&gt; resources inside the fragment are fetched, and the buffer waits on preloads and external stylesheets before swapping the placeholder atomically.</p>
   </section>
 
   <section class="slide" id="buffer-inline">
     <h2><code>buffer</code> on the Main Stream</h2>
     <syntax-highlight language="html">&lt;template for buffer&gt;
   &lt;link rel="stylesheet" href="widget.css"&gt;
-  &lt;img src="avatar.jpg"&gt;
+  &lt;link rel="preload" as="image" href="avatar.jpg"&gt;
   &lt;div class="widget"&gt;...&lt;/div&gt;
 &lt;/template&gt;
 
 &lt;template for="comments" buffer&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
       <li>Works on inline sections and patches too (no <code>src</code> needed)</li>
-      <li>External resources are fetched speculatively</li>
+      <li>Waits on <code>&lt;link&gt;</code> preloads &amp; stylesheets before swapping</li>
     </ul>
   </section>
 
