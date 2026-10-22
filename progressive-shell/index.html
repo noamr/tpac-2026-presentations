@@ -222,9 +222,11 @@
   <section class="slide final" id="discussion">
     <h2>Security &amp; Discussion</h2>
     <ul>
-      <li>Path-prefix scoping + strict CSP / COOP / COEP match</li>
-      <li>Any mismatch → clean fallback to normal MPA navigation</li>
-      <li><strong>Discussion:</strong> Navigation API &amp; View Transitions integration</li>
+      <li><strong>Security:</strong> Path-prefix scoping + CSP / COOP / COEP match (mismatch → MPA fallback)</li>
+      <li><strong>Session history:</strong> Back/Forward &amp; BFCache across upgraded navigations</li>
+      <li><strong>Analytics &amp; Web Vitals:</strong> Hard vs. soft navigation reporting</li>
+      <li><strong>Flash of wrong user state:</strong> Auth / personalization drift in cached shells</li>
+      <li><strong>Integration:</strong> Navigation API &amp; View Transitions</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/progressive-shell-explainer.md"><code>progressive-shell-explainer.md</code></a>)</p>
   </section>
