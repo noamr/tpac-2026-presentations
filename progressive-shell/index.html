@@ -222,12 +222,27 @@
     <p>Whether navigating from outside (cold start / cross-shell) or between two URLs sharing the same shell (/item/1 -> /item/2), the user gets a 0ms response and zero state loss because the Document is never swapped out after the shell is shown.</p>
   </section>
 
-  <section class="slide" id="other-alternatives">
-    <h2>Why In-Band <code>&lt;?shellboundary&gt;</code>?</h2>
+  <section class="slide" id="sw-alternative">
+    <h2>Why Not Service Worker + <code>&lt;template for&gt;</code>?</h2>
+    <syntax-highlight language="js">// SW stitches cached shell + network patch stream:
+event.respondWith(new Response(concatStreams(cachedShell, fetch(patchUrl))));</syntax-highlight>
     <ul>
-      <li><strong>vs. <code>Vary</code> header:</strong> Works on static hosts &amp; CDNs</li>
-      <li><strong>vs. DOM morphing (<code>preserve</code>):</strong> No full-shell re-parse or diff</li>
-      <li><strong>vs. Service Worker stitching:</strong> Works before SW activation; upgrades in place</li>
+      <li><strong>No warm upgrade:</strong> Still swaps <code>Document</code> (or needs a separate JS router)</li>
+      <li><strong>Premature <code>200 OK</code>:</strong> Commits status &amp; <code>CSP</code> before network responds (breaks <code>404</code>, <code>302</code>, version mismatch)</li>
+      <li><strong>SW boot tax:</strong> Waking SW costs 50–150ms+ on cold start (Static Routing can't stitch streams)</li>
+      <li><strong>Split endpoints:</strong> Needs separate fragment responses or JS stream slicing</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>With &lt;template for&gt;, a Service Worker can stitch a cached shell stream and a network patch stream into a single Document on cold start. However: (1) SW sits below navigation commit so it cannot upgrade warm navigations in place without a separate client-side JS router; (2) respondWith(new Response(stream)) must commit a 200 status and CSP headers before the network responds, breaking redirects, 404/500s, and shell version checks; (3) waking a sleeping SW adds 50-150ms+ on cold starts (and Static Routing can't concatenate cache + network); and (4) it requires separate fragment endpoints instead of one self-contained HTML file.</p>
+  </section>
+
+  <section class="slide" id="other-alternatives">
+    <h2>Other Alternatives: Why Not</h2>
+    <ul>
+      <li><strong>HTTP content negotiation (<code>Vary</code>):</strong> Fragile on CDNs &amp; static hosts</li>
+      <li><strong>DOM morphing (<code>preserve</code>):</strong> Re-parses &amp; diffs the entire shell on every navigation</li>
     </ul>
   </section>
 
