@@ -224,6 +224,7 @@
 
   <section class="slide" id="sw-alternative">
     <h2>Why Not Service Worker + <code>&lt;template for&gt;</code>?</h2>
+    <p class="note">See Jake Archibald's <a href="https://jakearchibald.com/2016/streams-ftw/">2016 – the year of web streams</a></p>
     <syntax-highlight language="js">// SW stitches cached shell + network patch stream:
 event.respondWith(new Response(concatStreams(cachedShell, fetch(patchUrl))));</syntax-highlight>
     <ul>
