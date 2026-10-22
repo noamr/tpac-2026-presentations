@@ -120,21 +120,20 @@
   <section class="slide" id="render-blocking">
     <h2>Render-blocking instead of parser-blocking</h2>
     <syntax-highlight language="html">&lt;head&gt;
-  &lt;link rel="expect" href="#site-header" blocking="render"&gt;
+  &lt;link rel="expect" href="#content" blocking="render"&gt;
 &lt;/head&gt;
 &lt;body&gt;
-  &lt;!-- header.html contains &lt;header id="site-header"&gt;...&lt;/header&gt; --&gt;
   &lt;template for src="header.html"&gt;&lt;/template&gt;
-  &lt;main&gt;Content&lt;/main&gt;
+  &lt;main id="content"&gt;Content&lt;/main&gt;
 &lt;/body&gt;</syntax-highlight>
     <ul>
-      <li>Element render-blocking waits for client-side includes</li>
-      <li><code>&lt;main&gt;</code> parses in parallel; paints together with <code>#site-header</code></li>
+      <li>Expecting an element blocks on any client-side include before it</li>
+      <li><code>&lt;main&gt;</code> parses in parallel; paints together with <code>header.html</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 1): placing &lt;link rel="expect" href="#site-header" blocking="render"&gt; in &lt;head&gt; holds initial paint while pending &lt;template for src&gt; fetches are in flight, unblocking as soon as #site-header is parsed so above-the-fold chrome doesn't push &lt;main&gt; down.</p>
+    <p>Second mitigation (part 1): if element render-blocking (&lt;link rel="expect" href="#content" blocking="render"&gt;) expects an element, it also waits for any client-side includes preceding that element in tree order (while ignoring includes after it). The HTML parser continues through &lt;main&gt; without blocking, and header + main paint together.</p>
   </section>
 
   <section class="slide" id="buffer">
