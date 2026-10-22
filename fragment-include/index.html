@@ -87,12 +87,12 @@
 
   <section class="slide" id="solution">
     <h2>Proposal: <code>&lt;template src&gt;</code></h2>
-    <syntax-highlight language="html">&lt;!-- In-place include --&gt;
-&lt;template for src="header.html"&gt;&lt;/template&gt;
-
-&lt;!-- Targeted include --&gt;
+    <syntax-highlight language="html">&lt;!-- Targeted include --&gt;
 &lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
+
+&lt;!-- In-place include --&gt;
+&lt;template for src="header.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
       <li><strong><code>for="name"</code>:</strong> Fetches a <code>&lt;template&gt;</code> to replace a PI whose name matches <code>for</code></li>
       <li><strong>Empty <code>for</code>:</strong> Fetches and replaces the <code>&lt;template&gt;</code> in place</li>
