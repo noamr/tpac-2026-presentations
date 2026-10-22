@@ -99,32 +99,34 @@
   childList: true, subtree: true, parser: true
 });</syntax-highlight>
     <ul>
-      <li><code>node.isParsing</code> &amp; <code>record.parsedElements</code></li>
+      <li><code>element.isParsing</code> + cross-chunk empty <code>childList</code> record</li>
       <li><code>record.templateStatus</code> &amp; <code>record.templateAttributes</code></li>
       <li><code>record.parserContextElement</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Opt-in via parser: true on MutationObserverInit. Parser state arrives in the exact same MutationRecords as childList and characterData mutations, and never coalesces parser-patch mutations with unrelated JS DOM edits.</p>
+    <p>Opt-in via parser: true on MutationObserverInit. Paired with element.isParsing, elements that open and close in the same chunk need zero extra records; elements split across chunks emit an empty childList record with target === closedElement when popped.</p>
   </section>
 
   <section class="slide" id="parsed-elements">
-    <h2><code>parsedElements</code> &amp; <code>isParsing</code></h2>
-    <syntax-highlight language="js">// Chunk 1: "&lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;"
-//   addedNodes: [my-card, h2], parsedElements: [h2]
-//   myCard.isParsing === true
-
-// Chunk 2: "&lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;"
-//   addedNodes: [p], parsedElements: [p, my-card]
-//   myCard.isParsing === false</syntax-highlight>
+    <h2>Element Completion: <code>isParsing</code></h2>
+    <syntax-highlight language="js">// 1. Opened &amp; closed in the same chunk:
+for (const n of r.addedNodes) {
+  if (n instanceof Element &amp;&amp; !n.isParsing) enhance(n);
+}
+// 2. Opened in Chunk 1, closed in Chunk 2 (empty childList):
+if (!r.addedNodes.length &amp;&amp; !r.removedNodes.length &amp;&amp; !r.templateStatus) {
+  enhance(r.target); // r.target.isParsing === false
+}</syntax-highlight>
     <ul>
-      <li><code>parsedElements</code> coalesces onto the same <code>childList</code> record</li>
+      <li><strong>Same chunk:</strong> <code>!node.isParsing</code> in <code>addedNodes</code> (0 extra records)</li>
+      <li><strong>Cross-chunk:</strong> empty <code>childList</code> record with <code>target === closedElement</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>parsedElements lists elements that popped off the parser's stack of open elements. Whenever possible, it is coalesced onto existing childList records so no extra MutationRecords are allocated.</p>
+    <p>Because MutationObserver runs in a microtask after the chunk finishes, same-chunk elements already have isParsing === false when seen in addedNodes. Only elements still open across a chunk boundary emit an empty childList record (target === closedElement, previousSibling === el.lastChild) when their end tag arrives.</p>
   </section>
 
   <section class="slide" id="template-lifecycle">
@@ -146,9 +148,9 @@
   <section class="slide" id="alternatives">
     <h2>Alternatives Considered</h2>
     <ul>
-      <li><strong>New record type (<code>"parsedElement"</code>):</strong> 2× record allocations</li>
-      <li><strong>DOM events (<code>parseend</code> / <code>patch</code>):</strong> Interrupts parser</li>
-      <li><strong>Separate <code>PatchObserver</code>:</strong> Splits parser from dynamic DOM</li>
+      <li><strong><code>record.parsedElements</code> <code>NodeList</code>:</strong> Extra list allocation; requires observing parent</li>
+      <li><strong>New record type (<code>"parseEnd"</code>):</strong> 2× record allocations for same-chunk elements</li>
+      <li><strong>DOM events / separate <code>PatchObserver</code>:</strong> Interrupts parser or loses DOM ordering</li>
     </ul>
   </section>
 
