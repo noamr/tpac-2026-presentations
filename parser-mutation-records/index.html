@@ -30,13 +30,13 @@
   </section>
 
   <section class="slide" id="use-case-1">
-    <h2>1. Parse End: Complete Subtrees (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
+    <h2>1. Parse End (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;
 &lt;!-- Chunk 2 --&gt; &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</syntax-highlight>
     <ul>
-      <li><code>addedNodes</code> fires on the start tag — before children finish streaming</li>
-      <li>Needed to evaluate code/math once (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>), batch child setup (<code>&lt;s-select&gt;</code>), and animate complete subtrees (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>)</li>
-      <li>Today's ancestor-walk workarounds cost <strong>100ms+</strong> on the main thread</li>
+      <li><code>addedNodes</code> fires on start tag — children aren't there yet</li>
+      <li>Needed for: evaluating text/code once (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>), indexing children, entry animations (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>)</li>
+      <li>Today's workarounds: <strong>100ms+</strong> ancestor walks</li>
     </ul>
   </section>
 
@@ -50,9 +50,9 @@
   &lt;p&gt;Streamed response...&lt;/p&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>The parser consumes <code>&lt;template for&gt;</code> — it never enters the DOM</li>
-      <li><strong>Attribution:</strong> Separate server patches from client edits &amp; read <code>data-turn="3"</code></li>
-      <li><strong>Flow &amp; error control:</strong> Detect patch start, end, or abort (truncated stream / missing target)</li>
+      <li><code>&lt;template for&gt;</code> is consumed by the parser — never enters the DOM</li>
+      <li><strong>Attribution:</strong> server patch vs. client edit; read <code>data-turn="3"</code></li>
+      <li><strong>Lifecycle:</strong> detect patch start, end, or abort</li>
     </ul>
   </section>
 
@@ -63,11 +63,11 @@
   <section class="slide" id="objection">
     <h2>Parsing vs. Dynamic DOM</h2>
     <blockquote>
-      <p>“If we expose a parser-completion hook, developers will rely on it and forget to handle dynamic DOM updates.”</p>
+      <p>“If we expose a parser-completion hook, developers will rely on it and forget dynamic DOM updates.”</p>
     </blockquote>
     <ul>
-      <li>An isolated callback hides dynamic updates</li>
-      <li>On <code>MutationRecord</code>, parser state sits right next to <code>addedNodes</code></li>
+      <li>Separate callback → hides dynamic updates</li>
+      <li>On <code>MutationRecord</code> → parser state sits right next to <code>addedNodes</code></li>
     </ul>
   </section>
 
@@ -76,15 +76,15 @@
   </section>
 
   <section class="slide" id="proposal">
-    <h2>Proposal: Parser-Aware <code>MutationObserver</code></h2>
+    <h2>Proposal</h2>
     <syntax-highlight language="js">observer.observe(document, {
   childList: true, subtree: true,
   parseEnd: true,
   template: true
 });</syntax-highlight>
     <ul>
-      <li><strong><code>element.isParsing</code></strong> — is the parser still inside this element?</li>
-      <li><strong><code>parseEnd: true</code></strong> — notify when an open element closes in a later chunk</li>
+      <li><strong><code>element.isParsing</code></strong> — still open in the parser?</li>
+      <li><strong><code>parseEnd: true</code></strong> — notify when an open element closes</li>
       <li><strong><code>template: true</code></strong> — expose <code>&lt;template for&gt;</code> status &amp; attributes</li>
     </ul>
   </section>
@@ -95,16 +95,14 @@
 
   <section class="slide" id="parsed-elements">
     <h2>1. Parse End (<code>parseEnd: true</code>)</h2>
-    <syntax-highlight language="js">// 1. Opened &amp; closed in the same chunk:
+    <syntax-highlight language="js">// Closed in the same chunk:
 if (!node.isParsing) setup(node);
 
-// 2. Closed in a later chunk (empty childList record):
-if (!r.addedNodes.length &amp;&amp; !r.target.isParsing) {
-  setup(r.target);
-}</syntax-highlight>
+// Closed in a later chunk:
+if (!r.addedNodes.length &amp;&amp; !r.target.isParsing) setup(r.target);</syntax-highlight>
     <ul>
-      <li><strong>Same chunk:</strong> Zero extra records — check <code>!node.isParsing</code> on <code>addedNodes</code></li>
-      <li><strong>Split across chunks:</strong> Record fires on <code>el</code> when <code>&lt;/el&gt;</code> arrives</li>
+      <li><strong>Same chunk:</strong> check <code>!node.isParsing</code> on <code>addedNodes</code> (no extra records)</li>
+      <li><strong>Split across chunks:</strong> record fires on <code>el</code> when <code>&lt;/el&gt;</code> arrives</li>
     </ul>
   </section>
 
@@ -115,12 +113,10 @@ if (!r.addedNodes.length &amp;&amp; !r.target.isParsing) {
   <section class="slide" id="template-lifecycle">
     <h2>2. Patching (<code>template: true</code>)</h2>
     <syntax-highlight language="js">const target = r.templateAttributes?.getNamedItem("for")?.value;
-if (target) {
-  // r.templateStatus: "start" | "update" | "end" | "abort"
-}</syntax-highlight>
+// r.templateStatus: "start" | "update" | "end" | "abort"</syntax-highlight>
     <ul>
-      <li><strong><code>templateAttributes</code>:</strong> Read attributes from the active <code>&lt;template for&gt;</code></li>
-      <li><strong><code>templateStatus</code>:</strong> <code>"start"</code> → <code>"update"</code> → <code>"end"</code> | <code>"abort"</code></li>
+      <li><strong><code>templateAttributes</code></strong> — attributes of active <code>&lt;template for&gt;</code></li>
+      <li><strong><code>templateStatus</code></strong> — <code>"start"</code> → <code>"update"</code> → <code>"end"</code> | <code>"abort"</code></li>
     </ul>
   </section>
 
@@ -131,8 +127,8 @@ if (target) {
   <section class="slide" id="bonus">
     <h2>Bonus: Shadow DOM &amp; Custom Elements</h2>
     <ul>
-      <li><strong>Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>):</strong> <code>template: true</code> also reports <code>&lt;template shadowrootmode&gt;</code> attachment &amp; completion (for autoloaders, a11y tools, SSR)</li>
-      <li><strong>Custom element reactions:</strong> Same primitives can back <code>parsedCallback()</code> and <code>shadowRootAttachedCallback()</code></li>
+      <li><strong>Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>):</strong> <code>template: true</code> also reports <code>&lt;template shadowrootmode&gt;</code></li>
+      <li><strong>Custom element reactions:</strong> same primitives can back <code>parsedCallback()</code> &amp; <code>shadowRootAttachedCallback()</code></li>
     </ul>
   </section>
 
@@ -141,11 +137,11 @@ if (target) {
   </section>
 
   <section class="slide" id="alternatives">
-    <h2>Alternatives Considered</h2>
+    <h2>Why Not...</h2>
     <ul>
-      <li><strong><code>record.parsedElements</code> <code>NodeList</code>:</strong> Extra list allocation; requires observing parent</li>
-      <li><strong>New record type (<code>"parseEnd"</code>):</strong> 2× record allocations for same-chunk elements</li>
-      <li><strong>DOM events / separate <code>PatchObserver</code>:</strong> Interrupts parser or loses DOM ordering</li>
+      <li><strong><code>record.parsedElements</code> list:</strong> extra allocation; requires observing parent</li>
+      <li><strong><code>"parseEnd"</code> record type:</strong> 2× records for same-chunk elements</li>
+      <li><strong>DOM events / <code>PatchObserver</code>:</strong> pauses parser or loses mutation order</li>
     </ul>
   </section>
 
@@ -156,9 +152,9 @@ if (target) {
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
-      <li>Supporting SSR &amp; streaming HTML without ignoring dynamic DOM updates</li>
-      <li><code>{ parseEnd: true, template: true }</code> on <code>MutationObserver</code> + <code>element.isParsing</code></li>
-      <li>Opt-in granularity: <code>parseEnd</code> + <code>template</code> vs. single <code>parser: true</code></li>
+      <li><code>element.isParsing</code> + <code>{ parseEnd: true, template: true }</code></li>
+      <li>Two flags (<code>parseEnd</code>, <code>template</code>) vs. single <code>parser: true</code>?</li>
+      <li>Custom element reactions (<code>parsedCallback</code>) — separate or together?</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md"><code>parser-mutation-records-explainer.md</code></a> · <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</p>
   </section>
