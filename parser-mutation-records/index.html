@@ -43,19 +43,12 @@
 
   <section class="slide" id="pain-points">
     <h2>Why It Hurts Today</h2>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="Premature hydration and non-attaching template blind spots">
-      <rect x="10" y="10" width="320" height="100" rx="6" fill="#f85149" fill-opacity="0.12" stroke="#f85149" stroke-width="1.5"/>
-      <text x="170" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">1. Premature Hydration on Open Tag</text>
-      <text x="170" y="56" text-anchor="middle" font-size="11" fill="currentColor">Chunk 1: &lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;</text>
-      <text x="170" y="75" text-anchor="middle" font-size="11" fill="#f85149">addedNodes: [my-card] fires immediately!</text>
-      <text x="170" y="94" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Hydrates before &lt;p&gt;Body&lt;/p&gt; arrives in Chunk 2)</text>
-
-      <rect x="350" y="10" width="320" height="100" rx="6" fill="#d29922" fill-opacity="0.12" stroke="#d29922" stroke-width="1.5"/>
-      <text x="510" y="34" text-anchor="middle" font-size="13" font-weight="bold" fill="#d29922">2. Invisible Non-Attaching &lt;template&gt;s</text>
-      <text x="510" y="56" text-anchor="middle" font-size="11" fill="currentColor">&lt;template shadowrootmode&gt; / &lt;template for&gt;</text>
-      <text x="510" y="75" text-anchor="middle" font-size="11" fill="#d29922">Never enter addedNodes — consumed by parser</text>
-      <text x="510" y="94" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">(Zero patch attribution, end, or abort signal)</text>
-    </svg>
+    <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;
+&lt;!-- Chunk 2 --&gt; &lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;</syntax-highlight>
+    <ul>
+      <li><strong>Premature hydration:</strong> <code>addedNodes</code> fires on the open tag before children arrive</li>
+      <li><strong>Invisible <code>&lt;template&gt;</code>s:</strong> <code>shadowrootmode</code> &amp; <code>&lt;template for&gt;</code> never enter <code>addedNodes</code></li>
+    </ul>
   </section>
 
   <section class="comment">
@@ -111,23 +104,16 @@
 
   <section class="slide" id="parsed-elements">
     <h2><code>parsedElements</code> &amp; <code>isParsing</code></h2>
-    <syntax-highlight language="js">// Chunk 1: "&lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;"  -&gt; myCard.isParsing === true
-// Chunk 2: "&lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;"   -&gt; myCard.isParsing === false</syntax-highlight>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="parsedElements across two parser chunks">
-      <rect x="15" y="12" width="295" height="96" rx="6" fill="#d29922" fill-opacity="0.15" stroke="#d29922" stroke-width="1.5"/>
-      <text x="162" y="36" text-anchor="middle" font-size="13" font-weight="bold" fill="#d29922">Chunk 1: &lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;</text>
-      <text x="162" y="58" text-anchor="middle" font-size="12" fill="currentColor">addedNodes: [my-card, h2]</text>
-      <text x="162" y="77" text-anchor="middle" font-size="12" fill="currentColor">parsedElements: [h2]</text>
-      <text x="162" y="96" text-anchor="middle" font-size="12" font-weight="bold" fill="#d29922">myCard.isParsing === true (wait!)</text>
+    <syntax-highlight language="js">// Chunk 1: "&lt;my-card&gt;&lt;h2&gt;Title&lt;/h2&gt;"
+//   addedNodes: [my-card, h2], parsedElements: [h2]
+//   myCard.isParsing === true
 
-      <text x="340" y="64" text-anchor="middle" font-size="22" fill="currentColor">→</text>
-
-      <rect x="370" y="12" width="295" height="96" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="517" y="36" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Chunk 2: &lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;</text>
-      <text x="517" y="58" text-anchor="middle" font-size="12" fill="currentColor">addedNodes: [p]</text>
-      <text x="517" y="77" text-anchor="middle" font-size="12" fill="currentColor">parsedElements: [p, my-card]</text>
-      <text x="517" y="96" text-anchor="middle" font-size="12" font-weight="bold" fill="#2ea043">myCard.isParsing === false (hydrate ✔)</text>
-    </svg>
+// Chunk 2: "&lt;p&gt;Body&lt;/p&gt;&lt;/my-card&gt;"
+//   addedNodes: [p], parsedElements: [p, my-card]
+//   myCard.isParsing === false</syntax-highlight>
+    <ul>
+      <li><code>parsedElements</code> coalesces onto the same <code>childList</code> record</li>
+    </ul>
   </section>
 
   <section class="comment">

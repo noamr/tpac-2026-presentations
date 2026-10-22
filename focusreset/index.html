@@ -30,25 +30,9 @@
 
   <section class="slide" id="problem">
     <h2>Silent Focus Loss</h2>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="Silent focus loss when activeElement is removed from the DOM">
-      <rect x="10" y="14" width="195" height="88" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="1.5"/>
-      <text x="107" y="40" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">1. Focused Element</text>
-      <text x="107" y="63" text-anchor="middle" font-size="12" fill="#58a6ff">&lt;button&gt;Delete&lt;/button&gt;</text>
-      <text x="107" y="84" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.8">activeElement = button</text>
-
-      <text x="225" y="62" text-anchor="middle" font-size="20" fill="currentColor">→</text>
-
-      <rect x="245" y="24" width="175" height="68" rx="6" fill="#d29922" fill-opacity="0.18" stroke="#d29922" stroke-width="1.5" stroke-dasharray="4,3"/>
-      <text x="332" y="52" text-anchor="middle" font-size="13" font-weight="bold" fill="#d29922">2. button.remove()</text>
-      <text x="332" y="73" text-anchor="middle" font-size="11" fill="currentColor">Node disconnected</text>
-
-      <text x="440" y="62" text-anchor="middle" font-size="20" fill="currentColor">→</text>
-
-      <rect x="460" y="14" width="210" height="88" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="1.5"/>
-      <text x="565" y="40" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">3. Silent Reset ❌</text>
-      <text x="565" y="62" text-anchor="middle" font-size="12" fill="currentColor">activeElement → &lt;body&gt;</text>
-      <text x="565" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">0 events fired (no blur/focusout!)</text>
-    </svg>
+    <syntax-highlight language="js">deleteButton.focus();
+deleteButton.remove();
+// document.activeElement === document.body (0 events fired!)</syntax-highlight>
     <ul>
       <li><code>activeElement</code> resets to <code>document.body</code> with <strong>zero events</strong></li>
       <li>Focus traps &amp; keyboard navigation break</li>

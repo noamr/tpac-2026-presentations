@@ -44,28 +44,19 @@
 
   <section class="slide" id="attempt-1">
     <h2>1. Two-Phase View Transitions</h2>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="Two-phase view transition timeline showing Document swap wiping state">
-      <rect x="10" y="18" width="205" height="72" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
-      <text x="112" y="43" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">0ms: Old Document Live</text>
-      <text x="112" y="63" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">Transition to loading UI</text>
-      <text x="112" y="80" text-anchor="middle" font-size="11" fill="#2ea043">User types "shoes" in search</text>
+    <svg class="chart" viewBox="0 0 680 90" aria-label="Old Document swapped for New Document">
+      <rect x="20" y="15" width="240" height="60" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
+      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">0ms: Old Document</text>
 
-      <text x="235" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
+      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap</text>
+      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
 
-      <rect x="255" y="26" width="155" height="56" rx="6" fill="#d29922" fill-opacity="0.2" stroke="#d29922" stroke-width="2" stroke-dasharray="4,3"/>
-      <text x="332" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="#d29922">300ms: Page Swap!</text>
-      <text x="332" y="68" text-anchor="middle" font-size="11" fill="currentColor">Old Doc → New Doc</text>
-
-      <text x="430" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
-
-      <rect x="450" y="18" width="220" height="72" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
-      <text x="560" y="43" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">New Document Loaded ❌</text>
-      <text x="560" y="63" text-anchor="middle" font-size="11" fill="currentColor">Search input reset to ""</text>
-      <text x="560" y="80" text-anchor="middle" font-size="11" fill="#f85149">Focus &amp; scroll wiped!</text>
+      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: New Document</text>
     </svg>
     <ul>
-      <li>❌ Swaps <code>Document</code> at the end — wipes state</li>
-      <li>❌ Source page must know destination UI; no cold-start win</li>
+      <li>Swaps <code>Document</code> at the end — wipes input, focus &amp; scroll</li>
+      <li>Source page must know destination UI; no cold-start win</li>
     </ul>
   </section>
 
@@ -75,28 +66,19 @@
 
   <section class="slide" id="attempt-2">
     <h2>2. Declarative Skeleton Documents</h2>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="Declarative skeleton timeline showing the double-swap trap">
-      <rect x="10" y="18" width="180" height="72" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
-      <text x="100" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">0ms: Swap #1 (Skeleton)</text>
-      <text x="100" y="61" text-anchor="middle" font-size="11" fill="currentColor">Cached Skeleton Doc</text>
-      <text x="100" y="79" text-anchor="middle" font-size="11" fill="#2ea043">User types "shoes"</text>
+    <svg class="chart" viewBox="0 0 680 90" aria-label="Skeleton Document swapped for Real Document">
+      <rect x="20" y="15" width="240" height="60" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
+      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#2ea043">0ms: Skeleton Doc</text>
 
-      <text x="208" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
+      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap #2</text>
+      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
 
-      <rect x="226" y="26" width="175" height="56" rx="6" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="2" stroke-dasharray="4,3"/>
-      <text x="313" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">300ms: Swap #2 ❌</text>
-      <text x="313" y="68" text-anchor="middle" font-size="11" fill="currentColor">Skeleton Doc → Real Doc</text>
-
-      <text x="419" y="58" text-anchor="middle" font-size="18" fill="currentColor">→</text>
-
-      <rect x="438" y="18" width="232" height="72" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
-      <text x="554" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Double-Swap Trap ❌</text>
-      <text x="554" y="61" text-anchor="middle" font-size="11" fill="currentColor">Skeleton thrown away!</text>
-      <text x="554" y="79" text-anchor="middle" font-size="11" fill="#f85149">Typed "shoes" &amp; focus wiped</text>
+      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: Real Document</text>
     </svg>
     <ul>
-      <li>✅ Fixes cold starts; destination owns its skeleton</li>
-      <li>❌ <strong>Double-Swap Trap:</strong> Skeleton <code>Document</code> → Real <code>Document</code> wipes state</li>
+      <li>Fixes cold starts; destination owns its skeleton</li>
+      <li><strong>Double-Swap Trap:</strong> Skeleton <code>Document</code> → Real <code>Document</code> wipes state</li>
     </ul>
   </section>
 
@@ -106,19 +88,17 @@
 
   <section class="slide" id="insight">
     <h2>The Insight: Don't Swap the Skeleton</h2>
-    <svg class="chart" viewBox="0 0 680 120" aria-label="Progressive shell single-document timeline">
-      <rect x="10" y="16" width="660" height="84" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
-      <text x="340" y="36" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Single Live Document (Never Swapped Out)</text>
+    <svg class="chart" viewBox="0 0 680 95" aria-label="Single Document with 0ms shell and streamed patches">
+      <rect x="10" y="10" width="660" height="75" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
+      <text x="340" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Same Document</text>
 
-      <rect x="28" y="46" width="275" height="42" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
-      <text x="165" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Paint Cached Shell Prefix</text>
-      <text x="165" y="81" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">User types "shoes" (stays live)</text>
+      <rect x="30" y="40" width="260" height="34" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="160" y="62" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">0ms: Cached Shell</text>
 
-      <text x="335" y="72" text-anchor="middle" font-size="18" fill="#2ea043">+ Stream</text>
+      <text x="340" y="62" text-anchor="middle" font-size="18" font-weight="bold" fill="#2ea043">+</text>
 
-      <rect x="375" y="46" width="277" height="42" rx="5" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="513" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">300ms: Post-&lt;?shellboundary&gt;</text>
-      <text x="513" y="81" text-anchor="middle" font-size="11" fill="#2ea043">&lt;template for&gt; patches same Document ✔</text>
+      <rect x="390" y="40" width="260" height="34" rx="5" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="520" y="62" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">300ms: Streamed Patches</text>
     </svg>
     <ul>
       <li>Skeleton and final page are the <strong>same <code>Document</code></strong></li>
