@@ -17,7 +17,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Parser-Aware <code>MutationObserver</code></h1>
-    <h4>Bridging the HTML parser and the DOM</h4>
+    <h4>Exposing parser state on <code>MutationRecord</code></h4>
     <address>Noam Rosenthal &amp; Keith Cirkel</address>
     <div class="note">IRC: <a href="https://webirc.w3.org/?channels=whatwg"><code>#whatwg</code></a></div>
     <p class="event">TPAC 2026<br>
@@ -73,18 +73,19 @@
 
   <section class="slide" id="patching-problem">
     <h2>2. Patching: The Problem (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>, <a href="https://github.com/whatwg/html/issues/13008"><code>html#13008</code></a>)</h2>
-    <syntax-highlight language="html">&lt;template for="results" data-turn="3"&gt;
+    <syntax-highlight language="html">&lt;!-- Target: &lt;main&gt;&lt;?start name="results"&gt;...&lt;?end&gt;&lt;/main&gt; --&gt;
+&lt;template for="results" data-turn="3"&gt;
   &lt;p&gt;Streamed response...&lt;/p&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
       <li>Parser consumes <code>&lt;template for&gt;</code> — never enters the DOM</li>
-      <li><code>MutationObserver</code> only sees inner nodes land in <code>#results</code></li>
+      <li><code>MutationObserver</code> only sees inner nodes land in <code>&lt;main&gt;</code></li>
       <li>Patch wrapper, attributes, and boundaries are lost</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>When the parser processes a &lt;template for&gt; patch, it consumes the &lt;template&gt; element itself and streams its content directly into the target region. MutationObserver only sees individual child insertions inside #results—the patch wrapper, its attributes, and its start/end boundaries are completely invisible.</p>
+    <p>When the parser processes a &lt;template for&gt; patch, it consumes the &lt;template&gt; element itself and streams its content directly into the target region (&lt;?start name="results"&gt; inside &lt;main&gt;). MutationObserver only sees individual child insertions inside &lt;main&gt;—the patch wrapper, its attributes, and its start/end boundaries are completely invisible.</p>
   </section>
 
   <section class="slide" id="patching-use-cases">
@@ -102,18 +103,19 @@
   </section>
 
   <section class="slide" id="objection">
-    <h2>Parsing vs. Dynamic DOM</h2>
+    <h2>Parsing vs. Imperative &amp; Dynamic DOM</h2>
     <blockquote>
-      <p>“If we expose a parser-completion hook, developers will rely on it and forget dynamic DOM updates.”</p>
+      <p>“If we expose a parser-completion hook, developers will rely on it and break imperative DOM creation (<code>createElement</code> + <code>appendChild</code>).”</p>
     </blockquote>
     <ul>
-      <li>Separate callback → hides dynamic updates</li>
-      <li>On <code>MutationRecord</code> → parser state sits right next to <code>addedNodes</code></li>
+      <li><strong><code>connectedCallback()</code> is sync:</strong> <code>body.append(el); el.append(child);</code> runs <em>before</em> <code>child</code> is appended</li>
+      <li><strong><code>MutationObserver</code> is microtask-batched:</strong> sync <code>append(el)</code> + <code>el.append(child)</code> finish <em>before</em> the callback runs (<code>!el.isParsing</code>)</li>
+      <li><strong>Custom elements:</strong> start <code>mo.observe(this, { childList: true, parseEnd: true })</code> in <code>constructor()</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>As I wrote in "Incremental HTML Rendering &amp; The Footgun Fallacy", focusing on misuse too much can block useful primitives or push developers into bent-backwards workarounds. Sometimes the best way to prevent a footgun is to put it in plain sight: putting parser state directly on MutationRecord—right alongside addedNodes and removedNodes—reminds developers that parsing is just one source of DOM mutations.</p>
+    <p>Why MutationObserver avoids the classic connectedCallback() / parsedCallback() trap: if someone writes const el = document.createElement('s-select'); document.body.append(el); el.append(option);, connectedCallback() fires synchronously on body.append(el) before option is attached. By contrast, a MutationObserver started in constructor() (or on the document) runs at the microtask checkpoint—after both synchronous append() calls have completed—and sees el with its children and !el.isParsing, right alongside ongoing childList mutations.</p>
   </section>
 
   <section class="slide" id="proposal">
@@ -136,15 +138,23 @@
 
   <section class="slide" id="parsed-elements">
     <h2>1. Parse End (<code>parseEnd: true</code>)</h2>
-    <syntax-highlight language="js">// Closed in the same chunk:
-if (!node.isParsing) setup(node);
+    <svg class="chart" viewBox="0 0 680 78" aria-label="Two-chunk timeline showing same-chunk vs cross-chunk parseEnd">
+      <rect x="10" y="8" width="315" height="62" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="167" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">Chunk 1: &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;</text>
+      <text x="167" y="52" text-anchor="middle" font-size="12" fill="currentColor">MO #1: s-option (!isParsing), s-select (isParsing)</text>
 
-// Closed in a later chunk:
-if (!r.addedNodes.length &amp;&amp; !r.target.isParsing) setup(r.target);</syntax-highlight>
-    <ul>
-      <li><strong>Same chunk:</strong> check <code>!node.isParsing</code> on <code>addedNodes</code> (no extra records)</li>
-      <li><strong>Split across chunks:</strong> record fires on <code>el</code> when <code>&lt;/el&gt;</code> arrives</li>
-    </ul>
+      <text x="342" y="44" text-anchor="middle" font-size="18" font-weight="bold" fill="#2ea043">→</text>
+
+      <rect x="360" y="8" width="310" height="62" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="515" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Chunk 2: &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</text>
+      <text x="515" y="52" text-anchor="middle" font-size="12" fill="currentColor">MO #2: s-option (!isParsing) + s-select parseEnd</text>
+    </svg>
+    <syntax-highlight language="js">for (const r of records) {
+  for (const n of r.addedNodes)
+    if (!n.isParsing) setup(n); // closed in same chunk
+  if (!r.addedNodes.length &amp;&amp; !r.removedNodes.length &amp;&amp; !r.target.isParsing)
+    setup(r.target);            // closed in later chunk
+}</syntax-highlight>
   </section>
 
   <section class="comment">
@@ -153,28 +163,29 @@ if (!r.addedNodes.length &amp;&amp; !r.target.isParsing) setup(r.target);</synta
 
   <section class="slide" id="template-lifecycle">
     <h2>2. Patching (<code>template: true</code>)</h2>
-    <syntax-highlight language="js">const target = r.templateAttributes?.getNamedItem("for")?.value;
+    <syntax-highlight language="js">const target = r.templateAttributes?.get("for");
+const turn   = r.templateAttributes?.get("data-turn");
 // r.templateStatus: "start" | "update" | "end" | "abort"</syntax-highlight>
     <ul>
-      <li><strong><code>templateAttributes</code></strong> — attributes of active <code>&lt;template for&gt;</code></li>
+      <li><strong><code>templateAttributes</code></strong> — <code>ReadOnlyMap</code> of active <code>&lt;template for&gt;</code> attributes (shared identity per patch)</li>
       <li><strong><code>templateStatus</code></strong> — <code>"start"</code> → <code>"update"</code> → <code>"end"</code> | <code>"abort"</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Every record produced during a patch carries templateAttributes (a read-only NamedNodeMap shared across all records of that patch) and templateStatus ("start", "update", "end", or "abort" if truncated at EOF or missing its target).</p>
+    <p>Every record produced during a patch carries templateAttributes (a read-only Map shared across all records of that patch so r1.templateAttributes === r2.templateAttributes) and templateStatus ("start", "update", "end", or "abort" if truncated at EOF or missing its target).</p>
   </section>
 
   <section class="slide" id="bonus">
-    <h2>Bonus: Shadow DOM &amp; Custom Elements</h2>
+    <h2>Optional Extensions (Separate from Core)</h2>
     <ul>
-      <li><strong>Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>):</strong> <code>template: true</code> also reports <code>&lt;template shadowrootmode&gt;</code></li>
-      <li><strong>Custom element reactions:</strong> same primitives can back <code>parsedCallback()</code> &amp; <code>shadowRootAttachedCallback()</code></li>
+      <li><strong>Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>):</strong> <code>template: true</code> can also report <code>&lt;template shadowrootmode="open"&gt;</code> (never <code>closed</code>)</li>
+      <li><strong>Custom elements:</strong> <code>mo.observe(this, { childList: true, parseEnd: true })</code> in <code>constructor()</code> works without new lifecycle callbacks</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>As a bonus: because &lt;template shadowrootmode&gt; is also a parser-consumed template, template: true solves whatwg/dom#1287 (discovering declarative shadow roots without monkey-patching attachShadow()). And for custom elements, the same underlying signals can power parsedCallback() (firing after connectedCallback() or on parse end) and shadowRootAttachedCallback().</p>
+    <p>Separate from the core parseEnd and &lt;template for&gt; proposal: because &lt;template shadowrootmode="open"&gt; is also a parser-consumed template, template: true could optionally report open declarative shadow roots (never closed shadow roots) to solve whatwg/dom#1287. And custom elements can already observe their own children by calling mo.observe(this, { childList: true, parseEnd: true }) in their constructor, without needing a new parsedCallback() reaction.</p>
   </section>
 
   <section class="slide" id="alternatives">
