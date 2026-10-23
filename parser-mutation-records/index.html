@@ -17,7 +17,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Parser-Aware <code>MutationObserver</code></h1>
-    <h4>Exposing parser state on <code>MutationRecord</code></h4>
+    <h4>Client-side reflection of server-driven UI</h4>
     <address>Noam Rosenthal &amp; Keith Cirkel</address>
     <div class="note">IRC: <a href="https://webirc.w3.org/?channels=whatwg"><code>#whatwg</code></a></div>
     <p class="event">TPAC 2026<br>
@@ -26,17 +26,17 @@
   </section>
 
   <section class="comment">
-    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Proposes extending MutationObserver with { parseEnd: true, template: true } and Element/ShadowRoot with isParsing.</p>
+    <p>Explainer: https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md. Overall theme: client-side reflection of server-driven UI—parseEnd is for hydration &amp; subtree readiness, and template is for flow control &amp; error recovery.</p>
   </section>
 
   <section class="slide" id="parse-end-problem">
-    <h2>1. Parse End: The Problem (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
+    <h2>1. Hydration (<code>parseEnd</code>): The Problem (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;
 &lt;!-- Chunk 2 --&gt; &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</syntax-highlight>
     <ul>
       <li>Parser inserts elements on the <strong>start tag</strong></li>
       <li><code>addedNodes</code> &amp; <code>connectedCallback()</code> run before children exist</li>
-      <li>No signal when <code>&lt;/s-select&gt;</code> is reached</li>
+      <li>No signal when <code>&lt;/s-select&gt;</code> is ready to hydrate</li>
     </ul>
   </section>
 
@@ -45,11 +45,11 @@
   </section>
 
   <section class="slide" id="parse-end-use-cases">
-    <h2>Parse End: Use Cases</h2>
+    <h2>1. Hydration &amp; Subtree Readiness</h2>
     <ul>
       <li><strong>Compound components</strong> (<a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>) — <code>&lt;s-select&gt;</code> indexing <code>&lt;s-option&gt;</code>s, tabs, tables, 3D scenes</li>
-      <li><strong>DOM morphing &amp; swapping</strong> (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>) — don't diff/delete children that haven't streamed in yet</li>
       <li><strong>Island hydration</strong> — hydrate SSR component only once its full subtree is in the DOM</li>
+      <li><strong>DOM morphing &amp; swapping</strong> (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>) — don't diff/delete children that haven't streamed in yet</li>
       <li><strong>Entry animations &amp; View Transitions</strong> (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>) — measure &amp; animate complete subtrees</li>
     </ul>
   </section>
@@ -72,7 +72,7 @@
   </section>
 
   <section class="slide" id="patching-problem">
-    <h2>2. Patching: The Problem (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>, <a href="https://github.com/whatwg/html/issues/13008"><code>html#13008</code></a>)</h2>
+    <h2>2. Flow &amp; Error Control (<code>template</code>): The Problem (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Target: &lt;main&gt;&lt;?start name="results"&gt;...&lt;?end&gt;&lt;/main&gt; --&gt;
 &lt;template for="results" data-turn="3"&gt;
   &lt;p&gt;Streamed response...&lt;/p&gt;
@@ -80,21 +80,21 @@
     <ul>
       <li>Parser consumes <code>&lt;template for&gt;</code> — never enters the DOM</li>
       <li><code>MutationObserver</code> only sees inner nodes land in <code>&lt;main&gt;</code></li>
-      <li>Patch wrapper, attributes, and boundaries are lost</li>
+      <li>Server control envelope, metadata, and aborts are lost</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>When the parser processes a &lt;template for&gt; patch, it consumes the &lt;template&gt; element itself and streams its content directly into the target region (&lt;?start name="results"&gt; inside &lt;main&gt;). MutationObserver only sees individual child insertions inside &lt;main&gt;—the patch wrapper, its attributes, and its start/end boundaries are completely invisible.</p>
+    <p>When the parser processes a &lt;template for&gt; patch, it consumes the &lt;template&gt; element itself and streams its content directly into the target region (&lt;?start name="results"&gt; inside &lt;main&gt;). MutationObserver only sees individual child insertions inside &lt;main&gt;—the patch wrapper, its attributes, and its start/end/abort boundaries are completely invisible.</p>
   </section>
 
   <section class="slide" id="patching-use-cases">
-    <h2>Patching: Use Cases</h2>
+    <h2>2. Patch Flow Control &amp; Error Recovery</h2>
     <ul>
-      <li><strong>Attribution:</strong> separate server patches from client edits</li>
-      <li><strong>Metadata:</strong> read patch attributes (<code>data-turn="3"</code>, request IDs)</li>
-      <li><strong>Lifecycle:</strong> know when a patch starts and finishes</li>
+      <li><strong>Flow control:</strong> know when a streamed patch starts and finishes</li>
       <li><strong>Error recovery:</strong> detect aborted patches (truncated stream / missing target)</li>
+      <li><strong>Server metadata:</strong> read patch attributes (<code>data-turn="3"</code>, request IDs)</li>
+      <li><strong>Attribution:</strong> separate server patches from client edits</li>
     </ul>
   </section>
 
