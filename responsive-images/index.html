@@ -26,7 +26,7 @@
   </section>
 
   <section class="comment">
-    <p>Explainer: https://github.com/noamr/explainers/blob/main/responsive-images-explainer.md. Covers WHATWG HTML issues #13077, #13069, #12248 (PR #13053), and #12565 (PR #13046).</p>
+    <p>Explainer: https://github.com/noamr/explainers/blob/main/responsive-images-explainer.md. Covers WHATWG HTML issues #13077, #13069, #12248 (PR #13053), and #12565 (motivated by PR #13046 making naturalWidth = sourceSize).</p>
   </section>
 
   <section class="slide" id="user-problem">
@@ -35,14 +35,14 @@
       <div>
         <h3>Wasted Bandwidth</h3>
         <ul>
-          <li><code>3x</code> bitmaps on decorative / below-fold images</li>
-          <li><strong>10× over-fetch</strong> on <code>object-fit: contain</code></li>
+          <li><code>3x</code> bitmaps on decorative / below-fold images (<strong>9× pixels</strong>)</li>
+          <li><strong>2×–10× width over-fetch</strong> (<strong>4×–100× pixels</strong>) on <code>object-fit: contain</code></li>
         </ul>
       </div>
       <div>
         <h3>Blurry Images</h3>
         <ul>
-          <li><strong>33–78% under-fetch</strong> on <code>object-fit: cover</code></li>
+          <li><strong>+33–78% width needed</strong> (<strong>−44% pixels</strong>) on <code>object-fit: cover</code></li>
           <li>Soft zoomable heroes</li>
         </ul>
       </div>
@@ -83,7 +83,7 @@
   <section class="slide" id="issue-13069">
     <h2>2. Target Density Knob (<code>#13069</code>)</h2>
     <syntax-highlight language="html">&lt;img srcset="150.jpg 150w, 200.jpg 200w, 300.jpg 300w"
-  sizes="auto" densityscale="0.75" loading="lazy"&gt;</syntax-highlight>
+  sizes="auto" densityscale="0.75" loading="lazy" alt=""&gt;</syntax-highlight>
     <svg class="chart" viewBox="0 0 680 145" aria-label="Target density knob chart for a 100x100 box on 2x DPR">
       <rect x="8" y="8" width="210" height="128" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35"/>
       <text x="113" y="32" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Decorative / Feed (0.75×)</text>
@@ -110,54 +110,84 @@
   </section>
 
   <section class="comment">
-    <p>Because lying in sizes breaks sizes="auto", production sites like Airbnb literally lie in their w descriptors (writing 800w for a 720px file), which breaks CDN cache sharing and 2D aspect ratios. A densityscale (or resolutionpriority) knob gives sites direct control.</p>
+    <p>Because lying in sizes breaks sizes="auto", production sites like Airbnb literally lie in their w descriptors (writing 800w for a 720px file), which breaks CDN cache sharing and 2D aspect ratios. A densityscale knob gives sites direct control.</p>
+  </section>
+
+  <section class="slide" id="densityscale-vs-keywords">
+    <h2>Why Numeric <code>densityscale</code> vs. Keywords?</h2>
+    <ul>
+      <li><strong><code>srcset</code> rungs are discrete:</strong> Sites generate specific steps (e.g. <code>1.3×</code> or <code>1.5×</code>) and need a predictable multiplier to step down/up one rung</li>
+      <li><strong>Why UA heuristics failed:</strong> Blink removed its 3 opaque bandwidth heuristics in late 2024 because magic multipliers caused unpredictable selection</li>
+      <li><strong>Exact zoom targets:</strong> A <code>2×</code> zoomable hero needs <code>densityscale="2"</code>, not an abstract <code>resolutionpriority="high"</code></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Why a numeric multiplier (densityscale="0.75") rather than semantic keywords like resolutionpriority="low | high"? Because srcset candidates are discrete rungs chosen by the site's image CDN, a vague "low" keyword with a UA-invented multiplier either misses the rung entirely or drops two rungs unexpectedly. And for zoomable images, the author knows the exact zoom factor (e.g. 2x).</p>
+  </section>
+
+  <section class="slide" id="why-html-attribute">
+    <h2>Why an HTML Attribute Instead of CSS / <code>sizes</code>?</h2>
+    <ul>
+      <li><strong>Why not scale <code>sizes</code>?</strong> Under <a href="https://github.com/whatwg/html/pull/13046">PR <code>#13046</code></a>, <code>sizes</code> sets <code>naturalWidth</code> — scaling <code>sizes</code> changes intrinsic layout size!</li>
+      <li><strong>Why not CSS-only?</strong> CSS could work for <code>loading="lazy"</code>, but <strong>eager images</strong> are fetched by the preload scanner before CSS loads — so HTML needs <code>densityscale</code> anyway</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Two common questions: (1) Why not just write sizes="75px" on a 100px image? Because with w descriptors (and PR #13046), sizes determines the image's naturalWidth and intrinsic layout size. (2) Why an HTML attribute instead of a CSS property? While CSS could work for lazy images, eager images are fetched by the preload scanner before stylesheets are available, so we need densityscale in HTML regardless.</p>
   </section>
 
   <section class="slide" id="issue-12248">
     <h2>3. <code>object-fit</code> Selection (<code>#12248</code>)</h2>
-    <syntax-highlight language="html">&lt;img loading="lazy" sizes="auto" srcset="s.jpg 50w 100h, l.jpg 100w 200h"
-  style="width: 100px; height: 100px; object-fit: contain | cover"&gt;
-&lt;img sizes="cover 100px 100px" srcset="s.jpg 50w 100h, l.jpg 100w 200h"&gt;</syntax-highlight>
+    <syntax-highlight language="html">&lt;!-- Lazy: sizes="auto" uses width/height attributes (no h needed!) --&gt;
+&lt;img loading="lazy" sizes="auto" width="50" height="100"
+  srcset="s.jpg 50w, l.jpg 100w" style="object-fit: contain" alt=""&gt;
+
+&lt;!-- Eager: 2D sizes + h descriptor + 1D fallback --&gt;
+&lt;img sizes="cover 100px 100px, 100px"
+  srcset="s.jpg 50w 100h, l.jpg 100w 200h" alt=""&gt;</syntax-highlight>
     <svg class="chart" viewBox="0 0 680 168" aria-label="100x100 container with 50x100 and 100x200 sources depending on object-fit">
       <!-- Column 1: Sources -->
       <text x="105" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Sources (1:2 portrait)</text>
-      <rect x="28" y="56" width="52" height="84" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="2"/>
-      <text x="54" y="102" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
-      <rect x="95" y="26" width="75" height="136" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="2"/>
-      <text x="132" y="98" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
+      <rect x="28" y="56" width="42" height="84" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="2"/>
+      <text x="49" y="102" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
+      <rect x="85" y="24" width="68" height="136" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="2"/>
+      <text x="119" y="96" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
 
       <!-- Column 2: object-fit: contain -->
       <text x="340" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: contain</text>
-      <rect x="296" y="28" width="88" height="84" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
-      <rect x="318" y="28" width="44" height="84" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
+      <rect x="298" y="28" width="84" height="84" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <rect x="319" y="28" width="42" height="84" fill="#2ea043" fill-opacity="0.3" stroke="#2ea043" stroke-width="2"/>
       <text x="340" y="74" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">50×100</text>
       <text x="340" y="128" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container</text>
       <text x="340" y="146" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">✔ Pick 50×100</text>
       <text x="340" y="162" text-anchor="middle" font-size="11" fill="#f85149">(Today picks 100×200 — 4× px!)</text>
 
-      <!-- Column 3: object-fit: cover -->
+      <!-- Column 3: object-fit: cover (true 1:2 portrait 64x128 cropped to 64x64 square) -->
       <text x="565" y="18" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">object-fit: cover</text>
-      <rect x="527" y="24" width="76" height="100" fill="#58a6ff" fill-opacity="0.12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
-      <rect x="527" y="38" width="76" height="72" fill="#58a6ff" fill-opacity="0.35" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
-      <text x="565" y="78" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
-      <text x="565" y="142" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container (cropped)</text>
-      <text x="565" y="160" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">✔ Pick 100×200</text>
+      <rect x="533" y="20" width="64" height="112" fill="#58a6ff" fill-opacity="0.12" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="533" y="44" width="64" height="64" fill="#58a6ff" fill-opacity="0.35" stroke="currentColor" stroke-width="2" stroke-dasharray="5,4"/>
+      <text x="565" y="80" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100×200</text>
+      <text x="565" y="146" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">100×100 container (cropped)</text>
+      <text x="565" y="162" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">✔ Pick 100×200</text>
     </svg>
   </section>
 
   <section class="comment">
-    <p>In a 100×100 container with 50×100 and 100×200 sources, the right source depends on object-fit: contain renders at 50×100 so it should pick 50×100, while cover renders at 100×200 so it should pick 100×200. PR #13053 adds the h descriptor, makes sizes="auto" 2D and object-fit aware, and adds 2D sizes="cover 100px 100px" (or contain) for eager images and the preload scanner.</p>
+    <p>In a 100×100 container with 50×100 and 100×200 sources, the right source depends on object-fit: contain renders at 50×100 so it should pick 50×100, while cover renders at 100×200 so it should pick 100×200. PR #13053 makes sizes="auto" 2D and object-fit aware (using the img width/height attributes for aspect ratio so lazy images don't even need h descriptors!), and adds 2D sizes="cover 100px 100px, 100px" + h descriptors for eager images.</p>
   </section>
 
   <section class="slide" id="issue-12565">
     <h2>4. Expose True File Pixels (<code>#12565</code>)</h2>
-    <syntax-highlight language="js">img.naturalWidth; // 100 (just echoes layout width!)
-img.imageWidth;   // 200 (true file pixels)</syntax-highlight>
+    <syntax-highlight language="js">// &lt;img srcset="pic-200.jpg 200w" sizes="auto" width="100" height="100"&gt;
+img.naturalWidth; // 100 (sizes × density — echoes layout width!)
+img.imageWidth;   // 200 (true bitmap pixels)</syntax-highlight>
     <svg class="chart" viewBox="0 0 680 155" aria-label="naturalWidth vs imageWidth chart">
       <rect x="25" y="20" width="180" height="115" rx="8" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
       <text x="115" y="55" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Downloaded File</text>
       <text x="115" y="82" text-anchor="middle" font-size="18" font-weight="bold" fill="currentColor">200 × 200 px</text>
-      <text x="115" y="110" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">srcset="pic.jpg 200w"</text>
+      <text x="115" y="110" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">srcset="pic-200.jpg 200w"</text>
 
       <text x="235" y="82" text-anchor="middle" font-size="22" fill="currentColor">→</text>
 
@@ -169,7 +199,7 @@ img.imageWidth;   // 200 (true file pixels)</syntax-highlight>
 
       <rect x="465" y="20" width="195" height="52" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="1.5"/>
       <text x="562" y="43" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">naturalWidth → 100 ❌</text>
-      <text x="562" y="61" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">Echoes layout width</text>
+      <text x="562" y="61" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.85">sizes × density (PR #13046)</text>
 
       <rect x="465" y="83" width="195" height="52" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
       <text x="562" y="106" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">imageWidth → 200 ✔</text>
@@ -178,7 +208,7 @@ img.imageWidth;   // 200 (true file pixels)</syntax-highlight>
   </section>
 
   <section class="comment">
-    <p>With w descriptors (and PR #13046), naturalWidth always equals sourceSize—so under sizes="auto", naturalWidth just echoes clientWidth. Exposing imageWidth and imageHeight lets RUM telemetry measure over/under-fetching and lets lightboxes check real pixel headroom.</p>
+    <p>With w descriptors (standardized in PR #13046 for #3981/#3835), naturalWidth always equals sourceSize * density—so under sizes="auto", naturalWidth just echoes clientWidth. Workarounds like (await createImageBitmap(img)).width allocate a duplicate decoded bitmap and throw SecurityError on cross-origin no-cors CDN images. Exposing imageWidth and imageHeight lets RUM telemetry measure over/under-fetching and lets lightboxes check real pixel headroom.</p>
   </section>
 
   <section class="slide final" id="summary">
