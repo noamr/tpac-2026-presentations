@@ -65,7 +65,7 @@
   </section>
 
   <section class="slide" id="two-phase-imperative">
-    <h2>1a. Two-Phase VT: Imperative (<code>deferPageSwap</code>)</h2>
+    <h2><code>deferPageSwap</code></h2>
     <syntax-highlight language="js">navigation.addEventListener("navigate", event =&gt; {
   if (!event.destination.ready) {
     event.deferPageSwap({
@@ -85,7 +85,7 @@
   </section>
 
   <section class="slide" id="two-phase-declarative">
-    <h2>1b. Two-Phase VT: Declarative (<code>preview</code>)</h2>
+    <h2>Two-Phase View Transition</h2>
     <syntax-highlight language="css">@view-transition {
   navigation: auto;
   preview: always;
