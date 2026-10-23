@@ -50,14 +50,14 @@
   <section class="slide" id="problem">
     <h2>Navigation Today</h2>
     <ul>
-      <li><strong>MPA:</strong> Frozen frame while render-blocked, then full state reset</li>
-      <li><strong>SPA:</strong> Heavy JS tax; cold starts are still slow</li>
+      <li><strong>MPA:</strong> Frozen while render-blocked; resets state</li>
+      <li><strong>SPA:</strong> Heavy JS tax; slow cold starts</li>
       <li><strong>Prerendering:</strong> Big RAM budget "just in case"</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Today users pay in one of three ways: MPAs freeze during TTFB and reset state on swap; SPAs pay a heavy JS tax and are still slow on cold starts; and full-page prerendering requires a big RAM budget "just in case".</p>
+    <p>Today users pay in one of three ways: MPAs freeze while render-blocked and reset all state on swap; SPAs pay a heavy JS tax and are still slow on cold starts; and full-page prerendering requires a big RAM budget "just in case".</p>
   </section>
 
   <section class="slide" id="two-phase-imperative">
@@ -74,9 +74,6 @@
     });
   }
 });</syntax-highlight>
-    <ul>
-      <li>Old page animates to a preview before swapping documents</li>
-    </ul>
   </section>
 
   <section class="comment">
@@ -97,9 +94,6 @@
 :root:active-view-transition-type(-ua-to-preview) {
   .thumbnail { view-transition-name: thumb-to-hero; }
 }</syntax-highlight>
-    <ul>
-      <li>Same idea in pure CSS — old page styles a preview while waiting</li>
-    </ul>
   </section>
 
   <section class="comment">
@@ -127,9 +121,9 @@
       <text x="570" y="53" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">300ms: New Doc</text>
     </svg>
     <ul>
-      <li>Final swap still wipes input, focus &amp; scroll</li>
-      <li>Source page has to fake the destination's UI</li>
-      <li>Doesn't help cold starts or inbound links</li>
+      <li>Swap still resets state</li>
+      <li>Old page fakes new UI</li>
+      <li>No cold-start help</li>
     </ul>
   </section>
 
@@ -141,9 +135,8 @@
     <h2>2. Declarative Skeleton Documents</h2>
     <syntax-highlight language="html">&lt;link rel="skeleton" href="/item-skeleton.html" pattern="/item/:id"&gt;</syntax-highlight>
     <ul>
-      <li>Cache a separate skeleton <code>Document</code> per route</li>
-      <li>Swap to <code>Skeleton Doc</code> at <strong>0ms</strong>, then to <code>Real Doc</code></li>
-      <li>Destination owns UI; works on cold starts</li>
+      <li>Cache skeleton <code>Document</code> per route</li>
+      <li>Swap at <strong>0ms</strong>, then swap to real doc</li>
     </ul>
   </section>
 
@@ -170,8 +163,8 @@
       <text x="587" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">300ms: Real Doc</text>
     </svg>
     <ul>
-      <li>Second swap wipes focus, scroll &amp; typing</li>
-      <li>Making skeleton <code>inert</code> feels broken</li>
+      <li>Second swap wipes typing &amp; focus</li>
+      <li><code>inert</code> skeleton feels broken</li>
     </ul>
   </section>
 
@@ -181,41 +174,38 @@
 
   <section class="slide" id="insight">
     <h2>The Solution: An App Shell!</h2>
-    <svg class="chart" viewBox="0 0 680 95" aria-label="Single Document with 0ms shell and streamed patches">
-      <rect x="10" y="10" width="660" height="75" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
-      <text x="340" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Same Document</text>
+    <svg class="chart" viewBox="0 0 680 110" aria-label="Single Document with 0ms shell and streamed content">
+      <rect x="10" y="10" width="660" height="88" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
+      <text x="340" y="34" text-anchor="middle" font-size="14" font-weight="bold" fill="#2ea043">Same Document</text>
 
-      <rect x="30" y="40" width="260" height="34" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
-      <text x="160" y="62" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">0ms: Cached Shell</text>
+      <rect x="30" y="46" width="260" height="38" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="160" y="70" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">0ms: Cached Shell</text>
 
-      <text x="340" y="62" text-anchor="middle" font-size="18" font-weight="bold" fill="#2ea043">+</text>
+      <text x="340" y="70" text-anchor="middle" font-size="20" font-weight="bold" fill="#2ea043">+</text>
 
-      <rect x="390" y="40" width="260" height="34" rx="5" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="520" y="62" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">300ms: Streamed Content</text>
+      <rect x="390" y="46" width="260" height="38" rx="5" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="520" y="70" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">300ms: Streamed Content</text>
     </svg>
-    <ul>
-      <li>Paint cached shell at <strong>0ms</strong></li>
-      <li>Stream content into the <strong>same <code>Document</code></strong></li>
-    </ul>
   </section>
 
   <section class="comment">
-    <p>Instead of two separate Documents (skeleton + full page), keep the shell Document and stream the content right into it.</p>
+    <p>Instead of two separate Documents (skeleton + full page), paint the cached shell at 0ms and stream the content right into the same Document.</p>
   </section>
 
   <section class="slide" id="sw-history">
     <h2>Wait... Didn't We Try This in 2016?</h2>
     <p class="note">Service Worker App Shells &amp; <a href="https://jakearchibald.com/2016/streams-ftw/">stream stitching</a></p>
     <ul>
-      <li><strong>Committed <code>200 OK</code> blind</strong> — broke redirects, <code>404</code>s &amp; <code>CSP</code></li>
-      <li><strong>Top-to-bottom HTML only</strong> — <code>&lt;head&gt;</code> was already closed</li>
-      <li><strong>Frankenstein deploys</strong> — v1 shell stitched to v2 body</li>
-      <li><strong>SW boot tax + dual endpoints</strong> — and <em>still</em> tore down the page</li>
+      <li>Blind <code>200 OK</code> commit</li>
+      <li><code>&lt;head&gt;</code> already closed</li>
+      <li>"Frankenstein" v1/v2 deploys</li>
+      <li>SW boot tax + dual endpoints</li>
+      <li>Still tore down the page</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why didn't 2016 Service Worker stream stitching take off? (1) respondWith(new Response(stream)) committed 200 OK and CSP at 0ms before talking to the server—so 302 login redirects and 404s broke; (2) without out-of-order &lt;template for&gt;, &lt;head&gt; had to close before the body stream started; (3) v1 cached shells stitched with v2 server fragments; and (4) you paid SW boot latency, maintained two endpoints per URL, and still tore down the Document on every click.</p>
+    <p>Why didn't 2016 Service Worker stream stitching take off? (1) respondWith(new Response(stream)) committed 200 OK and CSP at 0ms before talking to the server—so 302 login redirects, 404s, and CSP changes broke; (2) without out-of-order &lt;template for&gt;, &lt;head&gt; had to close before the body stream started, so page-specific &lt;title&gt; or CSS couldn't go in &lt;head&gt;; (3) v1 cached shells stitched with v2 server fragments; (4) you paid 50-150ms SW wakeup latency and maintained two endpoints per URL; and (5) clicking between items still tore down the Document.</p>
   </section>
 
   <section class="slide" id="proposal">
@@ -232,13 +222,10 @@
   &lt;template for="head-meta"&gt;&lt;title&gt;Shoes&lt;/title&gt;&lt;/template&gt;
   &lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;
 &lt;/body&gt;</syntax-highlight>
-    <ul>
-      <li><strong>One HTML file</strong> · out-of-order <code>&lt;template for&gt;</code> · native <code>revision</code> check</li>
-    </ul>
   </section>
 
   <section class="comment">
-    <p>One standard HTML file works everywhere: on first visit it streams normally and caches the shell prefix up to &lt;?shellboundary&gt; (which must be a direct child of &lt;body&gt; or &lt;head&gt;). On future visits, the shell paints at 0ms and the network response streams patches into the live Document.</p>
+    <p>One standard HTML file works everywhere: on first visit it streams normally and caches the shell prefix up to &lt;?shellboundary&gt; (which must be a direct child of &lt;body&gt; or &lt;head&gt;). Out-of-order &lt;template for&gt; patches &lt;head&gt; and &lt;main&gt;, and the browser natively checks revision and status before splicing.</p>
   </section>
 
   <section class="slide" id="two-modes">
@@ -246,7 +233,6 @@
     <div class="columns">
       <div>
         <h3>1. Instant Shell</h3>
-        <p>Paint cached shell at <strong>0ms</strong> → stream patches into the same <code>Document</code>.</p>
         <svg class="chart" viewBox="0 0 310 60" aria-label="0ms Cached Shell plus 300ms Streamed Patches">
           <rect x="4" y="10" width="135" height="40" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
           <text x="71" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Cached Shell</text>
@@ -257,7 +243,6 @@
       </div>
       <div>
         <h3>2. Navigation Upgrade</h3>
-        <p>Keep current <code>Document</code> live → skip shell prefix &amp; patch in place.</p>
         <svg class="chart" viewBox="0 0 310 60" aria-label="Keep Live Document and apply patches after boundary">
           <rect x="4" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
           <text x="71" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Keep Live Doc</text>
@@ -270,49 +255,49 @@
   </section>
 
   <section class="comment">
-    <p>Whether navigating from outside (cold start / cross-shell) or between two URLs sharing the same shell (/item/1 -> /item/2), the user gets a 0ms response and zero state loss because the Document is never swapped out after the shell is shown.</p>
+    <p>1. Instant Shell (cold start): Paint cached shell at 0ms, then stream patches into the same Document. 2. Navigation Upgrade (warm navigation): Keep current Document live, skip the shell prefix, and patch in place.</p>
   </section>
 
   <section class="slide" id="cold-start-verification">
     <h2>Cold-Start Contract Verification</h2>
     <ul>
-      <li><strong>0ms:</strong> Paint cached shell under its <code>CSP</code></li>
-      <li><strong>Match (<code>200</code> + same <code>revision</code> &amp; <code>CSP</code>):</strong> Skip prefix → stream patches</li>
-      <li><strong>Mismatch (<code>302</code>, <code>404</code>, new <code>revision</code>):</strong> Fall back to normal MPA load</li>
-      <li><strong>Fast check:</strong> Verify early via <code>103 Early Hints</code> or <code>HEAD</code></li>
+      <li><strong>0ms:</strong> Paint shell under cached <code>CSP</code></li>
+      <li><strong>Match:</strong> Skip prefix → stream patches</li>
+      <li><strong>Mismatch:</strong> Fall back to full MPA</li>
+      <li><strong>Fast path:</strong> <code>103 Early Hints</code> or <code>HEAD</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>What if the server redirects to /login, returns 404, or deploys a v2 shell while a cold-start shell is already on screen? Unlike Skeleton Documents (which swapped on every 200 OK navigation), a Progressive Shell only falls back to a full MPA load when the contract actually mismatches. And servers can verify the contract even earlier using 103 Early Hints or a lightweight HEAD check.</p>
+    <p>At 0ms, the cached shell paints under its cached CSP. When response headers and &lt;meta name="shell"&gt; arrive: if status is 200 and revision + CSP match, skip the prefix and stream &lt;template for&gt; patches. On 302, 404, or revision/CSP mismatch, fall back to a normal MPA load. Servers can verify even earlier with 103 Early Hints or a lightweight HEAD check.</p>
   </section>
 
   <section class="slide" id="other-alternatives">
     <h2>Other Alternatives: Why Not</h2>
     <ul>
-      <li><strong>HTTP content negotiation (<code>Vary</code>):</strong> Fragile on CDNs &amp; static hosts</li>
-      <li><strong>DOM morphing (<code>preserve</code>):</strong> Re-parses &amp; diffs the entire shell on every navigation</li>
+      <li><strong>HTTP <code>Vary</code>:</strong> Fragile on CDNs</li>
+      <li><strong>DOM morphing (<code>preserve</code>):</strong> Re-parses &amp; diffs whole shell</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Static servers can serve the exact same file while dynamic servers can inspect Sec-Active-Shell to omit the shell bytes and save bandwidth.</p>
+    <p>Relying on HTTP content negotiation (Vary) is fragile on CDNs and static hosts (Sec-Active-Shell is only an optional bandwidth optimization). DOM morphing (preserve) has to re-parse and diff the entire shell on every navigation.</p>
   </section>
 
   <section class="slide final" id="discussion">
     <h2>Security &amp; Discussion</h2>
     <ul>
-      <li><strong>Security:</strong> Path-prefix scoping + CSP / COOP / COEP match (mismatch → MPA fallback)</li>
-      <li><strong>Session history:</strong> Back/Forward &amp; BFCache across upgraded navigations</li>
-      <li><strong>Analytics &amp; Web Vitals:</strong> Hard vs. soft navigation reporting</li>
-      <li><strong>Flash of wrong user state:</strong> Auth / personalization drift in cached shells</li>
-      <li><strong>Integration:</strong> Navigation API &amp; View Transitions</li>
+      <li>Path-prefix &amp; <code>CSP</code> scoping</li>
+      <li>History &amp; BFCache</li>
+      <li>Soft navigation metrics</li>
+      <li>Auth / personalization state</li>
+      <li>Navigation API &amp; View Transitions</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/progressive-shell-explainer.md"><code>progressive-shell-explainer.md</code></a>)</p>
   </section>
 
   <section class="comment">
-    <p>Invite feedback on the progression from two-phase view transitions / skeletons to progressive shells, and how this integrates with Navigation API and View Transitions.</p>
+    <p>Discussion topics: (1) Security: path-prefix scoping and matching CSP/COOP/COEP headers (falling back to MPA on mismatch); (2) Session history: Back/Forward and BFCache across upgraded navigations; (3) Analytics &amp; Web Vitals: hard vs. soft navigation reporting; (4) Flash of wrong user state: auth/personalization drift in cached shells; and (5) Integration with Navigation API and View Transitions.</p>
   </section>
 
 </body>
