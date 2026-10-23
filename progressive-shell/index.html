@@ -180,7 +180,7 @@
   </section>
 
   <section class="slide" id="insight">
-    <h2>The Insight: Don't Swap the Skeleton</h2>
+    <h2>The Solution: An App Shell!</h2>
     <svg class="chart" viewBox="0 0 680 95" aria-label="Single Document with 0ms shell and streamed patches">
       <rect x="10" y="10" width="660" height="75" rx="8" fill="#2ea043" fill-opacity="0.1" stroke="#2ea043" stroke-width="2"/>
       <text x="340" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Same Document</text>
@@ -191,35 +191,35 @@
       <text x="340" y="62" text-anchor="middle" font-size="18" font-weight="bold" fill="#2ea043">+</text>
 
       <rect x="390" y="40" width="260" height="34" rx="5" fill="#2ea043" fill-opacity="0.25" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="520" y="62" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">300ms: Streamed Patches</text>
+      <text x="520" y="62" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">300ms: Streamed Content</text>
     </svg>
     <ul>
-      <li>Skeleton and final page are the <strong>same <code>Document</code></strong></li>
-      <li>Paint shell at <strong>0ms</strong> → stream <code>&lt;template for&gt;</code> patches</li>
+      <li>Paint cached shell at <strong>0ms</strong></li>
+      <li>Stream content into the <strong>same <code>Document</code></strong></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Instead of two separate Documents (skeleton + full page), a Progressive Shell is a single HTML document split by a boundary marker: the shell before the boundary, and streaming &lt;template for&gt; patches after the boundary.</p>
+    <p>Instead of two separate Documents (skeleton + full page), keep the shell Document and stream the content right into it.</p>
   </section>
 
   <section class="slide" id="sw-history">
-    <h2>Wait — Didn't We Try This in 2016?</h2>
-    <p class="note">Service Worker App Shells &amp; <a href="https://jakearchibald.com/2016/streams-ftw/"><code>ReadableStream</code> stitching</a> (<code>workbox-streams</code>)</p>
+    <h2>Wait... Didn't We Try This in 2016?</h2>
+    <p class="note">Service Worker App Shells &amp; <a href="https://jakearchibald.com/2016/streams-ftw/">stream stitching</a></p>
     <ul>
-      <li><strong>Blind <code>200 OK</code> commit:</strong> Committed <code>200</code> &amp; <code>CSP</code> at 0ms before server replied — <code>302</code> redirects, <code>404</code>s &amp; v2 deploys broke</li>
-      <li><strong>Top-to-bottom HTML only:</strong> <code>&lt;head&gt;</code> was already closed before network arrived (couldn't stream <code>&lt;title&gt;</code> or page CSS into <code>&lt;head&gt;</code>)</li>
-      <li><strong>Dual endpoints &amp; SW boot tax:</strong> Separate fragment URLs + 50–150ms SW wakeup</li>
-      <li><strong>No warm upgrade:</strong> Still tore down the <code>Document</code> on every click</li>
+      <li><strong>Committed <code>200 OK</code> blind</strong> — broke redirects, <code>404</code>s &amp; <code>CSP</code></li>
+      <li><strong>Top-to-bottom HTML only</strong> — <code>&lt;head&gt;</code> was already closed</li>
+      <li><strong>Frankenstein deploys</strong> — v1 shell stitched to v2 body</li>
+      <li><strong>SW boot tax + dual endpoints</strong> — and <em>still</em> tore down the page</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why didn't 2016 Service Worker stream stitching take off? Four architectural walls: (1) respondWith(new Response(stream)) had to commit 200 OK and CSP headers at 0ms before talking to the server—so 302 login redirects, 404s, or v2 deploys produced broken "Frankenstein" pages; (2) without out-of-order &lt;template for&gt;, &lt;head&gt; had to close before the body stream started, so page-specific &lt;title&gt; or stylesheets couldn't go in &lt;head&gt;; (3) servers had to maintain separate full and fragment endpoints and pay SW thread wakeup latency; and (4) navigating between two items still tore down the Document.</p>
+    <p>Why didn't 2016 Service Worker stream stitching take off? (1) respondWith(new Response(stream)) committed 200 OK and CSP at 0ms before talking to the server—so 302 login redirects and 404s broke; (2) without out-of-order &lt;template for&gt;, &lt;head&gt; had to close before the body stream started; (3) v1 cached shells stitched with v2 server fragments; and (4) you paid SW boot latency, maintained two endpoints per URL, and still tore down the Document on every click.</p>
   </section>
 
   <section class="slide" id="proposal">
-    <h2>What's Different Now: Progressive Shells</h2>
+    <h2>2026 Edition: Progressive Shells</h2>
     <syntax-highlight language="html">&lt;head&gt;
   &lt;meta name="shell"
     content="store; revision=v1; pattern=/item/:id; upgrade=always"&gt;
@@ -228,12 +228,12 @@
 &lt;body&gt;
   &lt;header&gt;&lt;input type="search"&gt;&lt;/header&gt;
   &lt;main&gt;&lt;?start name="item"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
-  &lt;?shellboundary name="store"&gt; &lt;!-- ✂️ Cached shell ↑ | Streamed patches ↓ --&gt;
+  &lt;?shellboundary name="store"&gt; &lt;!-- ✂️ Shell ↑ | Patches ↓ --&gt;
   &lt;template for="head-meta"&gt;&lt;title&gt;Shoes&lt;/title&gt;&lt;/template&gt;
   &lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;
 &lt;/body&gt;</syntax-highlight>
     <ul>
-      <li><strong>One HTML file</strong> + out-of-order <code>&lt;template for&gt;</code> + native staged commit &amp; <code>revision</code> check</li>
+      <li><strong>One HTML file</strong> · out-of-order <code>&lt;template for&gt;</code> · native <code>revision</code> check</li>
     </ul>
   </section>
 
@@ -276,14 +276,10 @@
   <section class="slide" id="cold-start-verification">
     <h2>Cold-Start Contract Verification</h2>
     <ul>
-      <li><strong>Optimistic 0ms shell:</strong> Paints under the cached shell's <code>CSP</code></li>
-      <li><strong>When response headers + <code>&lt;meta&gt;</code> arrive:</strong>
-        <ul>
-          <li><strong>Contract matches (<code>200</code>, same <code>revision</code> &amp; <code>CSP</code>):</strong> Skip prefix → stream <code>&lt;template for&gt;</code> patches</li>
-          <li><strong>Mismatch (<code>302</code>, <code>404</code>, new <code>revision</code> / <code>CSP</code>):</strong> Clean fallback to full MPA navigation</li>
-        </ul>
-      </li>
-      <li><strong>Fast verification:</strong> Use <code>103 Early Hints</code> or a fast <code>HEAD</code> check to verify the shell contract before the body streams</li>
+      <li><strong>0ms:</strong> Paint cached shell under its <code>CSP</code></li>
+      <li><strong>Match (<code>200</code> + same <code>revision</code> &amp; <code>CSP</code>):</strong> Skip prefix → stream patches</li>
+      <li><strong>Mismatch (<code>302</code>, <code>404</code>, new <code>revision</code>):</strong> Fall back to normal MPA load</li>
+      <li><strong>Fast check:</strong> Verify early via <code>103 Early Hints</code> or <code>HEAD</code></li>
     </ul>
   </section>
 
