@@ -176,18 +176,6 @@ const turn   = r.templateAttributes?.get("data-turn");
     <p>Every record produced during a patch carries templateAttributes (a read-only Map shared across all records of that patch so r1.templateAttributes === r2.templateAttributes) and templateStatus ("start", "update", "end", or "abort" if truncated at EOF or missing its target).</p>
   </section>
 
-  <section class="slide" id="bonus">
-    <h2>Optional Extensions (Separate from Core)</h2>
-    <ul>
-      <li><strong>Declarative Shadow DOM (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>):</strong> <code>template: true</code> can also report <code>&lt;template shadowrootmode="open"&gt;</code> (never <code>closed</code>)</li>
-      <li><strong>Custom elements:</strong> <code>mo.observe(this, { childList: true, parseEnd: true })</code> in <code>constructor()</code> works without new lifecycle callbacks</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Separate from the core parseEnd and &lt;template for&gt; proposal: because &lt;template shadowrootmode="open"&gt; is also a parser-consumed template, template: true could optionally report open declarative shadow roots (never closed shadow roots) to solve whatwg/dom#1287. And custom elements can already observe their own children by calling mo.observe(this, { childList: true, parseEnd: true }) in their constructor, without needing a new parsedCallback() reaction.</p>
-  </section>
-
   <section class="slide" id="alternatives">
     <h2>Why Not...</h2>
     <ul>
@@ -206,7 +194,7 @@ const turn   = r.templateAttributes?.get("data-turn");
     <ul>
       <li><code>element.isParsing</code> + <code>{ parseEnd: true, template: true }</code></li>
       <li>Two flags (<code>parseEnd</code>, <code>template</code>) vs. single <code>parser: true</code>?</li>
-      <li>Custom element reactions (<code>parsedCallback</code>) — separate or together?</li>
+      <li>Follow-up: Should <code>template: true</code> also report <code>&lt;template shadowrootmode="open"&gt;</code> (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)?</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md"><code>parser-mutation-records-explainer.md</code></a> · <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</p>
   </section>
