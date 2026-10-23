@@ -67,13 +67,15 @@ deleteButton.remove();
   </section>
 
   <section class="comment">
-    <p>When a simple signal is missing from the platform, libraries end up inventing bent-backwards workarounds: either observing every single childList mutation on document.body or polling document.activeElement on a 200ms timer just to notice that focus silently dropped to body.</p>
+    <p>When a platform signal is missing, libraries end up inventing bent-backwards workarounds: either observing every single childList mutation on document.body or polling document.activeElement on a 200ms timer just to notice that focus silently dropped to body.</p>
   </section>
 
   <section class="slide" id="proposal">
     <h2>Proposal: <code>focusreset</code> on <code>Document</code></h2>
     <syntax-highlight language="js">document.addEventListener("focusreset", () =&gt; {
-  fallbackElement.focus();
+  if (dialog.open &amp;&amp; !dialog.contains(document.activeElement)) {
+    dialog.focus();
+  }
 });</syntax-highlight>
     <ul>
       <li>Fires in the <strong>mutation observer microtask</strong></li>
@@ -91,26 +93,45 @@ deleteButton.remove();
 nextItem.focus();</syntax-highlight>
     <ul>
       <li>Only fires for <strong>unhandled</strong> focus loss</li>
-      <li>Tracks nested <code>&lt;iframe&gt;</code> focus</li>
-      <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code></li>
+      <li>Removing a focused <code>&lt;iframe&gt;</code> fires on parent <code>Document</code> only</li>
+      <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code> (unless moved into an <code>inert</code> / hidden subtree)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>If script explicitly moves focus before the microtask runs (via .focus(), showModal(), or autofocus), the pending focusreset is cancelled so fallback handlers don't override it. If both an iframe button and the iframe itself are removed, focusreset only fires on the parent Document.</p>
+    <p>If script explicitly moves focus before the microtask runs (via .focus(), showModal(), or autofocus), the pending focusreset is cancelled so fallback handlers don't override it. If both an iframe button and the iframe itself are removed, focusreset only fires on the parent Document. And atomic reparenting via moveBefore() preserves focus unless the destination subtree is inert or hidden.</p>
   </section>
 
   <section class="slide" id="timing">
     <h2>Timing: Microtask vs. Rendering</h2>
+    <svg class="chart" viewBox="0 0 680 96" aria-label="Comparison of focus loss timing across node.remove today, display:none, and focusreset">
+      <text x="8" y="24" font-size="11" font-weight="bold" fill="currentColor">remove() today:</text>
+      <rect x="125" y="10" width="210" height="20" rx="4" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="1.5"/>
+      <text x="230" y="24" text-anchor="middle" font-size="11" fill="currentColor">Task: activeElement = body</text>
+      <text x="348" y="24" font-size="11" font-weight="bold" fill="#f85149">→ 0 events fired!</text>
+
+      <text x="8" y="54" font-size="11" font-weight="bold" fill="currentColor">display: none:</text>
+      <rect x="125" y="40" width="140" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="195" y="54" text-anchor="middle" font-size="11" fill="currentColor">Task: style change</text>
+      <text x="275" y="54" text-anchor="middle" font-size="13" fill="currentColor">→</text>
+      <rect x="285" y="40" width="275" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="422" y="54" text-anchor="middle" font-size="11" fill="currentColor">Update Rendering: activeElement = body + blur</text>
+
+      <text x="8" y="84" font-size="11" font-weight="bold" fill="#2ea043">focusreset:</text>
+      <rect x="125" y="70" width="210" height="20" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="230" y="84" text-anchor="middle" font-size="11" fill="currentColor">Task: activeElement = body</text>
+      <text x="345" y="84" text-anchor="middle" font-size="13" fill="currentColor">→</text>
+      <rect x="355" y="70" width="205" height="20" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="457" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">MO Microtask: focusreset</text>
+    </svg>
     <ul>
-      <li><strong><code>display: none</code>:</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> after layout</li>
-      <li><strong><code>node.remove()</code>:</strong> Resets <code>activeElement</code> synchronously</li>
-      <li><strong>Microtask:</strong> Matches <code>activeElement</code> &amp; catches <code>rAF</code> / <code>ResizeObserver</code> removals</li>
+      <li><strong><code>display: none</code>:</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> during <em>update the rendering</em> (before <code>rAF</code>)</li>
+      <li><strong><code>node.remove()</code>:</strong> Resets <code>activeElement</code> synchronously; <code>focusreset</code> fires in the <strong>MO microtask</strong> (catches <code>rAF</code> / <code>ResizeObserver</code> removals too)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Step 17 of update-the-rendering is for style changes (display:none) and updates activeElement + fires blur together. On DOM removal, activeElement is already reset synchronously; firing focusreset in the MutationObserver microtask keeps it in sync with activeElement and handles removals during rAF/ResizeObserver.</p>
+    <p>Step 17 of update-the-rendering is for style changes (display:none) and updates activeElement + fires blur together before rAF. On DOM removal, activeElement is already reset synchronously; firing focusreset in the MutationObserver microtask keeps it in sync with activeElement and handles removals during rAF/ResizeObserver.</p>
   </section>
 
   <section class="slide" id="alternatives">
@@ -130,14 +151,14 @@ nextItem.focus();</syntax-highlight>
     <h2>Status &amp; Discussion</h2>
     <ul>
       <li>HTML PR <a href="https://github.com/whatwg/html/pull/13050"><code>#13050</code></a> · DOM PR <a href="https://github.com/whatwg/dom/pull/1512"><code>#1512</code></a> · WPT <a href="https://github.com/web-platform-tests/wpt/pull/63595"><code>#63595</code></a></li>
-      <li>Unblocks interop on <a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a> &amp; <a href="https://github.com/w3c/aria/issues/2920"><code>w3c/aria#2920</code></a></li>
-      <li><strong>Open question:</strong> Microtask vs. update-the-rendering timing</li>
+      <li>Migration path to deprecate Blink's sync <code>blur</code> (<a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a>) &amp; <a href="https://github.com/w3c/aria/issues/2920"><code>w3c/aria#2920</code></a></li>
+      <li><strong>Open questions:</strong> Microtask vs. rendering timing · <code>Document</code>-only vs. <code>ShadowRoot</code> (or is <code>focusout</code> sufficient?)</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/noamr/explainers/blob/main/focusreset-explainer.md"><code>focusreset-explainer.md</code></a> · <a href="https://github.com/whatwg/html/pull/13050"><code>whatwg/html#13050</code></a></p>
   </section>
 
   <section class="comment">
-    <p>Invite feedback on the specification PRs and implementation status.</p>
+    <p>Since libraries like Radix and MUI already maintain fallbacks for Gecko and WebKit, shipping focusreset gives them a clean migration path so Blink can finally deprecate its legacy synchronous blur. Open questions for the room: microtask vs. update-the-rendering timing, and whether Document-only is sufficient (since shadow roots already receive focusout when focus leaves another element inside them).</p>
   </section>
 
 </body>

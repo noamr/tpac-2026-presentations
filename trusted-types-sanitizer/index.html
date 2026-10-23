@@ -17,7 +17,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Sanitizer in Trusted Types</h1>
-    <h4><code>createParserOptions</code>: Trusting the parser configuration, not just the string</h4>
+    <h4><code>createParserOptions</code>: Trusting the parser options, not the string</h4>
     <address>Noam Rosenthal &amp; Frederic Braun</address>
     <div class="note">IRC: <a href="https://webirc.w3.org/?channels=webappsec"><code>#webappsec</code></a></div>
     <p class="event">TPAC 2026<br>
@@ -76,7 +76,7 @@ await response.body.pipeTo(el.streamHTMLUnsafe());</syntax-highlight>
     <h2>Scenario 1: Default Policy</h2>
     <syntax-highlight language="js">trustedTypes.createPolicy("default", {
   createParserOptions(options) {
-    return { sanitizer: "default", runScripts: false };
+    return { sanitizer: new Sanitizer(), runScripts: false };
   }
 });
 
@@ -91,14 +91,16 @@ range.createContextualFragment(untrustedString);</syntax-highlight>
   <section class="slide" id="scenario-2">
     <h2>Scenario 2: Streaming HTML</h2>
     <syntax-highlight language="js">const policy = trustedTypes.createPolicy("stream", {
-  createParserOptions({ sanitizer }) {
-    const s = new Sanitizer(sanitizer);
+  createParserOptions(options = {}) {
+    const s = new Sanitizer(options.sanitizer);
     s.removeUnsafe();
     return { sanitizer: s, runScripts: false };
   }
 });
 
-const opts = policy.createParserOptions({ sanitizer: cfg });
+const opts = policy.createParserOptions({
+  sanitizer: { removeElements: ["img"] }
+});
 await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
   </section>
 
@@ -111,13 +113,13 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
     <ul>
       <li><strong><code>TrustedHTMLParserOptions</code>:</strong> Satisfies Trusted Types</li>
       <li><strong><code>defaultPolicy.createParserOptions</code>:</strong> Takes precedence over <code>createHTML</code></li>
-      <li><strong>Fallback to <code>createHTML</code>:</strong> Non-streaming only (streaming throws <code>TypeError</code>)</li>
+      <li><strong>Fallback to <code>createHTML</code>:</strong> Non-streaming with no options only (streaming or unblessed options throw <code>TypeError</code>)</li>
       <li><strong><code>TrustedHTML</code> + author options:</strong> Throws <code>TypeError</code> (<a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>When no TrustedHTMLParserOptions is provided and defaultPolicy.createParserOptions is missing, non-streaming sinks fall back to createHTML / TrustedHTML for backwards compatibility, whereas streaming sinks (streamHTMLUnsafe) throw a TypeError because there is no full string to pass to createHTML. Also, passing a TrustedHTML together with unvetted author options ({ runScripts: true } or a custom sanitizer) throws a TypeError.</p>
+    <p>When no TrustedHTMLParserOptions is provided and defaultPolicy.createParserOptions is missing, non-streaming sinks without author options fall back to createHTML / TrustedHTML for backwards compatibility, whereas streaming sinks (streamHTMLUnsafe) or unblessed author options throw a TypeError. Passing a TrustedHTML together with unvetted author options ({ runScripts: true } or a custom sanitizer) also throws a TypeError.</p>
   </section>
 
   <section class="slide" id="future-sinks">
@@ -125,13 +127,13 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
     <ul>
       <li><strong><code>iframe.srcdoc</code></strong> (<a href="https://github.com/whatwg/html/pull/12756"><code>html#12756</code></a>)</li>
       <li><strong><code>document.write()</code> / <code>writeln()</code></strong></li>
-      <li><strong><code>DOMParser.parseFromString()</code> &amp; <code>execCommand("insertHTML")</code></strong></li>
-      <li><strong>XML <code>innerHTML</code>:</strong> Falls back to <code>createHTML</code></li>
+      <li><strong><code>DOMParser.parseFromString(str, "text/html")</code> &amp; <code>execCommand("insertHTML")</code></strong></li>
+      <li><strong>XML <code>innerHTML</code> &amp; XML <code>DOMParser</code>:</strong> Fall back to <code>createHTML</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Tracked in whatwg/html#13013: once sanitize-while-parsing (whatwg/html#12756) lands for the full document parser, legacy full-document sinks like iframe.srcdoc, document.write(), and DOMParser can also route through defaultPolicy.createParserOptions.</p>
+    <p>Tracked in whatwg/html#13013: once sanitize-while-parsing (whatwg/html#12756) lands for the full document parser, legacy full-document HTML sinks like iframe.srcdoc, document.write(), and DOMParser("text/html") can also route through defaultPolicy.createParserOptions.</p>
   </section>
 
   <section class="slide final" id="status">
@@ -144,7 +146,7 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
   </section>
 
   <section class="comment">
-    <p>chromium prototype and WPTs are already landed behind flags; ready to discuss extending defaultPolicy.createParserOptions to legacy full-document sinks.</p>
+    <p>Chromium prototype and WPTs are already landed behind flags; ready to discuss extending defaultPolicy.createParserOptions to legacy full-document sinks.</p>
   </section>
 
 </body>
