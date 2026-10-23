@@ -86,58 +86,74 @@
   </section>
 
   <section class="slide" id="solution">
-    <h2>Proposal: <code>&lt;template src&gt;</code></h2>
-    <syntax-highlight language="html">&lt;!-- Targeted include --&gt;
+    <h2>Proposal: <code>&lt;template for src&gt;</code></h2>
+    <syntax-highlight language="html">&lt;!-- In-place include --&gt;
+&lt;template for src="header.html"&gt;&lt;/template&gt;
+
+&lt;!-- Targeted include --&gt;
 &lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
-&lt;!-- In-place include --&gt;
-&lt;template for src="header.html"&gt;&lt;/template&gt;</syntax-highlight>
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong><code>for="name"</code>:</strong> Fetches a <code>&lt;template&gt;</code> to replace a matching PI</li>
-      <li><strong>Empty <code>for</code>:</strong> Fetches and replaces the <code>&lt;template&gt;</code> in place</li>
-      <li><strong>No <code>for</code>:</strong> An ordinary <code>&lt;template&gt;</code></li>
+      <li><strong>Empty <code>for</code>:</strong> Fetches HTML and replaces <code>&lt;template&gt;</code> in place</li>
+      <li><strong><code>for="name"</code>:</strong> Fetches HTML into matching <code>&lt;?start&gt;...&lt;?end&gt;</code></li>
+      <li><strong>No <code>for</code>:</strong> Ordinary inert <code>&lt;template&gt;</code> (composes inside <code>&lt;template shadowrootmode&gt;</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>An empty for attribute replaces the &lt;template&gt; itself in place and removes the template when done; for="name" streams into a named target range; and src without for fetches an inert &lt;template&gt; for later cloning.</p>
+    <p>An empty for attribute fetches and replaces the &lt;template&gt; itself in place; for="name" streams fetched HTML into a named target range; and without for, &lt;template&gt; remains an ordinary inert template. Either for/src or shadowrootmode is used per template, and they compose cleanly (&lt;template shadowrootmode="open"&gt;&lt;template for src="widget.html"&gt;&lt;/template&gt;&lt;/template&gt;).</p>
   </section>
 
   <section class="slide" id="out-of-order">
-    <h2>1. Parser Order ≠ Document Order</h2>
-    <syntax-highlight language="html">&lt;main&gt;
+    <h2>1. Non-Blocking &amp; Out-of-Order</h2>
+    <syntax-highlight language="html">&lt;!-- Start fetch early --&gt;
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
+
+&lt;main&gt;
   &lt;?start name="feed"&gt;&lt;p class="skeleton"&gt;Loading...&lt;/p&gt;&lt;?end&gt;
 &lt;/main&gt;
-&lt;footer&gt;...&lt;/footer&gt;
-
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
+&lt;footer&gt;Renders immediately!&lt;/footer&gt;</syntax-highlight>
     <ul>
-      <li>Decouples fetch from DOM position</li>
-      <li>Streams into the target slot as bytes arrive</li>
+      <li>Non-parser-blocking; delays <code>DOMContentLoaded</code> (like <code>&lt;script defer&gt;</code>)</li>
+      <li>Relative URLs Inside fragment resolve against <code>document.baseURI</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>First mitigation: instead of blocking the HTML parser on a synchronous fetch, &lt;template src&gt; fetches asynchronously and combines with &lt;template for&gt; so fetches can start early in the document while the parser renders placeholders and the rest of the page in parallel.</p>
+    <p>First mitigation: instead of blocking the HTML parser on a synchronous fetch, &lt;template for src&gt; fetches asynchronously (delaying DOMContentLoaded like &lt;script defer&gt;) and combines with &lt;template for="name"&gt; so fetches can start early while the parser renders placeholders and &lt;footer&gt; immediately. Relative URLs inside the fetched fragment resolve against the document's base URL.</p>
   </section>
 
   <section class="slide" id="render-blocking">
     <h2>2a. Render-blocking instead of parser-blocking</h2>
-    <syntax-highlight language="html">&lt;head&gt;
-  &lt;link rel="expect" href="#content" blocking="render"&gt;
-&lt;/head&gt;
+    <svg class="chart" viewBox="0 0 680 96" aria-label="Comparison of Sync Include, Async Include, and template for src with rel=expect">
+      <text x="8" y="24" font-size="12" font-weight="bold" fill="currentColor">Sync include:</text>
+      <rect x="135" y="10" width="120" height="20" rx="4" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="1.5"/>
+      <text x="195" y="24" text-anchor="middle" font-size="11" fill="currentColor">Wait header.html</text>
+      <rect x="260" y="10" width="120" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="320" y="24" text-anchor="middle" font-size="11" fill="currentColor">Parse &lt;main&gt;</text>
+      <text x="390" y="24" font-size="11" font-weight="bold" fill="#f85149">→ Late Paint</text>
+
+      <text x="8" y="54" font-size="12" font-weight="bold" fill="currentColor">Async include:</text>
+      <rect x="135" y="40" width="120" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="195" y="54" text-anchor="middle" font-size="11" fill="currentColor">Parse &amp; Paint &lt;main&gt;</text>
+      <rect x="260" y="40" width="120" height="20" rx="4" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="1.5"/>
+      <text x="320" y="54" text-anchor="middle" font-size="11" fill="currentColor">header.html arrives</text>
+      <text x="390" y="54" font-size="11" font-weight="bold" fill="#f85149">→ Layout Shift!</text>
+
+      <text x="8" y="84" font-size="12" font-weight="bold" fill="#2ea043">src + expect:</text>
+      <rect x="135" y="70" width="245" height="20" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="257" y="84" text-anchor="middle" font-size="11" fill="currentColor">Parse &lt;main&gt; + Fetch header.html in parallel</text>
+      <text x="390" y="84" font-size="11" font-weight="bold" fill="#2ea043">→ Single Paint (0 CLS)</text>
+    </svg>
+    <syntax-highlight language="html">&lt;head&gt;&lt;link rel="expect" href="#content" blocking="render"&gt;&lt;/head&gt;
 &lt;body&gt;
   &lt;template for src="header.html"&gt;&lt;/template&gt;
   &lt;main id="content"&gt;Content&lt;/main&gt;
 &lt;/body&gt;</syntax-highlight>
-    <ul>
-      <li>Unlike <code>&lt;img src&gt;</code>, expecting <code>#content</code> also blocks on preceding <code>&lt;template src&gt;</code> fetches</li>
-      <li><code>&lt;main&gt;</code> parses in parallel; paints together with <code>header.html</code></li>
-    </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 1): unlike media subresources such as &lt;img src&gt; (where rel="expect" only waits for the tag to be parsed, not fetched), &lt;template src&gt; expands into DOM structure—so expecting #content also waits for any client-side includes preceding #content in tree order. The HTML parser continues through &lt;main&gt; without blocking, and header + main paint together.</p>
+    <p>Second mitigation (part 1): unlike media subresources such as &lt;img src&gt; (where rel="expect" only waits for the tag to be parsed, not fetched), &lt;template for src&gt; expands into DOM structure—so expecting #content also waits for any client-side includes preceding #content in tree order. The HTML parser continues through &lt;main&gt; without blocking, and header + main paint together.</p>
   </section>
 
   <section class="slide" id="buffer">
@@ -149,12 +165,12 @@
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
       <li>Parses off-screen; swaps placeholder atomically</li>
-      <li><code>&lt;link&gt;</code> resources inside the fragment are fetched, and the buffer waits on preloads and external stylesheets</li>
+      <li>Preloads <code>&lt;link&gt;</code> resources; swaps after stylesheets &amp; preloads finish</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response off-screen into template.content. &lt;link&gt; resources inside the fragment are fetched, and the buffer waits on preloads and external stylesheets before swapping the placeholder atomically.</p>
+    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response off-screen into template.content. &lt;link&gt; resources inside the fragment are fetched speculatively, and the buffer waits on preloads and external stylesheets before swapping the placeholder atomically (exact set of gating resources is an open discussion point).</p>
   </section>
 
   <section class="slide" id="buffer-inline">
@@ -179,19 +195,20 @@
   <section class="slide" id="security">
     <h2>3a. Safe by Default (<code>sanitize</code>)</h2>
     <syntax-highlight language="html">&lt;button class="icon-btn"&gt;
-  &lt;template for src="https://icons.example/star.svg" crossorigin&gt;&lt;/template&gt;
+  &lt;template for src="https://icons.example/star.svg"
+    crossorigin="anonymous"&gt;&lt;/template&gt;
   Star
 &lt;/button&gt;
 
 &lt;template for src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><code>src</code> is sanitized by default (<code>sanitize="unsafe"</code> opts out)</li>
-      <li><strong>External SVG:</strong> Fetched separately, yet as powerful as inline SVG (<code>currentColor</code>, CSS) <em>and</em> sanitized</li>
+      <li><code>src</code> is sanitized by default — strips scripts &amp; nested <code>&lt;template for&gt;</code></li>
+      <li><strong>External SVG:</strong> Fetched separately, yet stylable inline (<code>currentColor</code>, CSS) <em>and</em> sanitized</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Third mitigation (part 1): external includes (&lt;template src&gt;) are sanitized by default using the browser's built-in Sanitizer API. A great example is including a third-party SVG as an inline &lt;svg&gt; in the DOM—stylable with CSS currentColor, cached separately off the main stream, and safely sanitized without XSS risk.</p>
+    <p>Third mitigation (part 1): external includes (&lt;template for src&gt;) are sanitized by default using the browser's built-in Sanitizer API, which strips scripts, inline event handlers, and nested &lt;template for&gt; (preventing slot-hijacking or recursive includes). A great example is including a third-party SVG as an inline &lt;svg&gt; in the DOM—stylable with CSS currentColor, cached separately off the main stream, and safely sanitized without XSS risk.</p>
   </section>
 
   <section class="slide" id="sanitize-inline">
@@ -205,7 +222,7 @@
 &lt;template for="comments" sanitize&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
       <li>Declarative sanitization for inline markup &amp; SSR patches</li>
-      <li>Default is not sanitized (unlike <code>src</code>), similar to the rest of HTML in the main stream</li>
+      <li>Opt-in for inline markup (unlike external <code>src</code>, which is safe by default)</li>
     </ul>
   </section>
 
