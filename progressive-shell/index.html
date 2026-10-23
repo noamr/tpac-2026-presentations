@@ -50,14 +50,14 @@
   <section class="slide" id="problem">
     <h2>Navigation Today</h2>
     <ul>
-      <li><strong>MPA:</strong> State resets, paint-freeze</li>
-      <li><strong>SPA:</strong> Long cold-start or pre-hydration uncanny valley</li>
+      <li><strong>MPA:</strong> Frozen frame while loading, then full state reset</li>
+      <li><strong>SPA:</strong> Heavy JS tax; cold starts are still slow</li>
       <li><strong>Prerendering:</strong> Big RAM budget "just in case"</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Today users pay in one of three ways: MPAs freeze during TTFB and reset state on swap; SPAs pay a long cold-start or sit in a pre-hydration uncanny valley; and full-page prerendering requires a big RAM budget "just in case".</p>
+    <p>Today users pay in one of three ways: MPAs freeze during TTFB and reset state on swap; SPAs pay a heavy JS tax and are still slow on cold starts; and full-page prerendering requires a big RAM budget "just in case".</p>
   </section>
 
   <section class="slide" id="two-phase-imperative">
@@ -75,7 +75,7 @@
   }
 });</syntax-highlight>
     <ul>
-      <li>Delays cross-document page swap while the old page animates to a preview state</li>
+      <li>Old page animates to a preview before swapping documents</li>
     </ul>
   </section>
 
@@ -85,40 +85,51 @@
 
   <section class="slide" id="two-phase-declarative">
     <h2>1b. Two-Phase VT: Declarative (<code>preview</code>)</h2>
-    <syntax-highlight language="css">@view-transition { preview: always; }
+    <syntax-highlight language="css">@view-transition {
+  navigation: auto;
+  preview: always;
+}
 
 @navigation (phase: preview) {
   #skeleton { display: block; }
 }
 
-:active-view-transition-types(-ua-to-preview) {
+:root:active-view-transition-type(-ua-to-preview) {
   .thumbnail { view-transition-name: thumb-to-hero; }
 }</syntax-highlight>
     <ul>
-      <li>CSS-driven intermediate preview state between link click and page swap</li>
+      <li>Same idea in pure CSS — old page styles a preview while waiting</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Declarative two-phase View Transitions use @view-transition { preview: always; }, @navigation (phase: preview), and UA view-transition types (-ua-to-preview, -ua-from-preview) so the outgoing page transitions into a preview state without manual JS or BFCache cleanup callbacks.</p>
+    <p>Declarative two-phase View Transitions use @view-transition { navigation: auto; preview: always; }, @navigation (phase: preview), and UA view-transition types (-ua-to-preview, -ua-from-preview) so the outgoing page transitions into a preview state without manual JS or BFCache cleanup callbacks.</p>
   </section>
 
   <section class="slide" id="two-phase-why-not">
     <h2>Two-Phase VT: Why Not</h2>
-    <svg class="chart" viewBox="0 0 680 90" aria-label="Old Document swapped for New Document">
-      <rect x="20" y="15" width="240" height="60" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
-      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="currentColor">0ms: Old Document</text>
+    <svg class="chart" viewBox="0 0 680 95" aria-label="Old Document transitions to Preview then swaps to New Document">
+      <rect x="10" y="10" width="350" height="75" rx="8" fill="#58a6ff" fill-opacity="0.1" stroke="#58a6ff" stroke-width="2"/>
+      <text x="185" y="29" text-anchor="middle" font-size="12" font-weight="bold" fill="#58a6ff">Old Document</text>
 
-      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap</text>
-      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
+      <rect x="24" y="38" width="135" height="36" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="91" y="61" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">Old UI</text>
 
-      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
-      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: New Document</text>
+      <text x="178" y="61" text-anchor="middle" font-size="16" font-weight="bold" fill="#58a6ff">→</text>
+
+      <rect x="196" y="38" width="150" height="36" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="271" y="61" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">0ms: Preview</text>
+
+      <text x="415" y="42" text-anchor="middle" font-size="12" font-weight="bold" fill="#f85149">Doc Swap</text>
+      <text x="415" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
+
+      <rect x="470" y="18" width="200" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="570" y="53" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">300ms: New Doc</text>
     </svg>
     <ul>
       <li>Final swap still wipes input, focus &amp; scroll</li>
-      <li>Old page must know destination UI</li>
-      <li>No cold-start or cross-origin win</li>
+      <li>Source page has to fake the destination's UI</li>
+      <li>Doesn't help cold starts or inbound links</li>
     </ul>
   </section>
 
@@ -142,15 +153,21 @@
 
   <section class="slide" id="skeleton-why-not">
     <h2>Declarative Skeletons: Why Not</h2>
-    <svg class="chart" viewBox="0 0 680 90" aria-label="Skeleton Document swapped for Real Document">
-      <rect x="20" y="15" width="240" height="60" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
-      <text x="140" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#2ea043">0ms: Skeleton Doc</text>
+    <svg class="chart" viewBox="0 0 680 90" aria-label="Old Document swaps to Skeleton Document then swaps again to Real Document">
+      <rect x="10" y="15" width="145" height="60" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="2"/>
+      <text x="82" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">Old Doc</text>
 
-      <text x="340" y="42" text-anchor="middle" font-size="13" font-weight="bold" fill="#f85149">Document Swap #2</text>
-      <text x="340" y="62" text-anchor="middle" font-size="20" fill="#f85149">→</text>
+      <text x="195" y="40" text-anchor="middle" font-size="12" font-weight="bold" fill="#2ea043">Swap #1</text>
+      <text x="195" y="60" text-anchor="middle" font-size="18" fill="#2ea043">→</text>
 
-      <rect x="420" y="15" width="240" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
-      <text x="540" y="50" text-anchor="middle" font-size="15" font-weight="bold" fill="#f85149">300ms: Real Document</text>
+      <rect x="235" y="15" width="190" height="60" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="2"/>
+      <text x="330" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#2ea043">0ms: Skeleton Doc</text>
+
+      <text x="465" y="40" text-anchor="middle" font-size="12" font-weight="bold" fill="#f85149">Swap #2</text>
+      <text x="465" y="60" text-anchor="middle" font-size="18" fill="#f85149">→</text>
+
+      <rect x="505" y="15" width="165" height="60" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="2"/>
+      <text x="587" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="#f85149">300ms: Real Doc</text>
     </svg>
     <ul>
       <li>Second swap wipes focus, scroll &amp; typing</li>
@@ -195,13 +212,16 @@
 &lt;body&gt;
   &lt;header&gt;&lt;input type="search"&gt;&lt;/header&gt;
   &lt;main&gt;&lt;?start name="item"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
-  &lt;?shellboundary name="store"&gt;
+  &lt;?shellboundary name="store"&gt; &lt;!-- ✂️ Cached shell ↑ | Streamed patches ↓ --&gt;
   &lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;
 &lt;/body&gt;</syntax-highlight>
+    <ul>
+      <li><code>&lt;?shellboundary&gt;</code> is a direct child of <code>&lt;body&gt;</code> or <code>&lt;head&gt;</code></li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>One standard HTML file works everywhere: on first visit it streams normally and caches the shell prefix up to &lt;?shellboundary&gt;. On future visits, the shell paints at 0ms and the network response streams patches into the live Document.</p>
+    <p>One standard HTML file works everywhere: on first visit it streams normally and caches the shell prefix up to &lt;?shellboundary&gt; (which must be a direct child of &lt;body&gt; or &lt;head&gt;). On future visits, the shell paints at 0ms and the network response streams patches into the live Document.</p>
   </section>
 
   <section class="slide" id="two-modes">
@@ -210,10 +230,24 @@
       <div>
         <h3>1. Instant Shell</h3>
         <p>Paint cached shell at <strong>0ms</strong> → stream patches into the same <code>Document</code>.</p>
+        <svg class="chart" viewBox="0 0 310 60" aria-label="0ms Cached Shell plus 300ms Streamed Patches">
+          <rect x="4" y="10" width="135" height="40" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+          <text x="71" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Cached Shell</text>
+          <text x="155" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="#2ea043">+</text>
+          <rect x="171" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+          <text x="238" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Stream Patches</text>
+        </svg>
       </div>
       <div>
         <h3>2. Navigation Upgrade</h3>
         <p>Keep current <code>Document</code> live → skip shell prefix &amp; patch in place.</p>
+        <svg class="chart" viewBox="0 0 310 60" aria-label="Keep Live Document and apply patches after boundary">
+          <rect x="4" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
+          <text x="71" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Keep Live Doc</text>
+          <text x="155" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="#2ea043">→</text>
+          <rect x="171" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+          <text x="238" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Patch in Place</text>
+        </svg>
       </div>
     </div>
   </section>
@@ -222,16 +256,34 @@
     <p>Whether navigating from outside (cold start / cross-shell) or between two URLs sharing the same shell (/item/1 -> /item/2), the user gets a 0ms response and zero state loss because the Document is never swapped out after the shell is shown.</p>
   </section>
 
+  <section class="slide" id="cold-start-verification">
+    <h2>Cold-Start Contract Verification</h2>
+    <ul>
+      <li><strong>Optimistic 0ms shell:</strong> Paints under the cached shell's <code>CSP</code></li>
+      <li><strong>When response headers + <code>&lt;meta&gt;</code> arrive:</strong>
+        <ul>
+          <li><strong>Contract matches (<code>200</code>, same <code>revision</code> &amp; <code>CSP</code>):</strong> Skip prefix → stream <code>&lt;template for&gt;</code> patches</li>
+          <li><strong>Mismatch (<code>302</code>, <code>404</code>, new <code>revision</code> / <code>CSP</code>):</strong> Clean fallback to full MPA navigation</li>
+        </ul>
+      </li>
+      <li><strong>Fast verification:</strong> Use <code>103 Early Hints</code> or a fast <code>HEAD</code> check to verify the shell contract before the body streams</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>What if the server redirects to /login, returns 404, or deploys a v2 shell while a cold-start shell is already on screen? Unlike Skeleton Documents (which swapped on every 200 OK navigation), a Progressive Shell only falls back to a full MPA load when the contract actually mismatches. And servers can verify the contract even earlier using 103 Early Hints or a lightweight HEAD check.</p>
+  </section>
+
   <section class="slide" id="sw-alternative">
     <h2>Why Not Service Worker + <code>&lt;template for&gt;</code>?</h2>
     <p class="note">See Jake Archibald's <a href="https://jakearchibald.com/2016/streams-ftw/">2016 – the year of web streams</a></p>
     <syntax-highlight language="js">// SW stitches cached shell + network patch stream:
 event.respondWith(new Response(concatStreams(cachedShell, fetch(patchUrl))));</syntax-highlight>
     <ul>
-      <li><strong>No warm upgrade:</strong> Still swaps <code>Document</code> (or needs a separate JS router)</li>
-      <li><strong>Premature <code>200 OK</code>:</strong> Commits status &amp; <code>CSP</code> before network responds (breaks <code>404</code>, <code>302</code>, version mismatch)</li>
-      <li><strong>SW boot tax:</strong> Waking SW costs 50–150ms+ on cold start (Static Routing can't stitch streams)</li>
-      <li><strong>Split endpoints:</strong> Needs separate fragment responses or JS stream slicing</li>
+      <li><strong>No warm upgrade:</strong> Still does a full <code>Document</code> swap between items</li>
+      <li><strong>Blind commit:</strong> Must commit <code>200 OK</code> &amp; <code>CSP</code> in JS before network replies (no native fallback on <code>302</code>, <code>404</code>, or version change)</li>
+      <li><strong>SW boot tax:</strong> 50–150ms+ wakeup on cold starts</li>
+      <li><strong>Extra plumbing:</strong> Needs separate shell &amp; fragment endpoints</li>
     </ul>
   </section>
 
