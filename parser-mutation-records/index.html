@@ -119,25 +119,24 @@
   </section>
 
   <section class="slide" id="proposal">
-    <h2>Proposal</h2>
+    <h2>Proposal: Reflecting Server-Driven UI</h2>
     <syntax-highlight language="js">observer.observe(document, {
   childList: true, subtree: true,
-  parseEnd: true,
-  template: true
+  parseEnd: true, // 1. Hydration
+  template: true  // 2. Flow &amp; error control
 });</syntax-highlight>
     <ul>
-      <li><strong><code>element.isParsing</code></strong> — still open in the parser?</li>
-      <li><strong><code>parseEnd: true</code></strong> — notify when an open element closes</li>
-      <li><strong><code>template: true</code></strong> — expose <code>&lt;template for&gt;</code> status &amp; attributes</li>
+      <li><strong><code>element.isParsing</code> &amp; <code>parseEnd: true</code></strong> — hydration &amp; subtree readiness</li>
+      <li><strong><code>template: true</code></strong> — <code>&lt;template for&gt;</code> flow control, metadata &amp; error recovery</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Two opt-in flags on MutationObserverInit—parseEnd: true and template: true—plus element.isParsing (and record.parserContextElement for fragment parsing).</p>
+    <p>Two opt-in flags on MutationObserverInit matching the two concerns of server-driven UI: parseEnd: true (paired with element.isParsing) for component/island hydration, and template: true for patch flow control and error recovery.</p>
   </section>
 
   <section class="slide" id="parsed-elements">
-    <h2>1. Parse End (<code>parseEnd: true</code>)</h2>
+    <h2>1. Hydration (<code>parseEnd: true</code>)</h2>
     <svg class="chart" viewBox="0 0 680 78" aria-label="Two-chunk timeline showing same-chunk vs cross-chunk parseEnd">
       <rect x="10" y="8" width="315" height="62" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="1.5"/>
       <text x="167" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">Chunk 1: &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;</text>
@@ -162,7 +161,7 @@
   </section>
 
   <section class="slide" id="template-lifecycle">
-    <h2>2. Patching (<code>template: true</code>)</h2>
+    <h2>2. Flow &amp; Error Control (<code>template: true</code>)</h2>
     <syntax-highlight language="js">const target = r.templateAttributes?.get("for");
 const turn   = r.templateAttributes?.get("data-turn");
 // r.templateStatus: "start" | "update" | "end" | "abort"</syntax-highlight>
@@ -193,7 +192,7 @@ const turn   = r.templateAttributes?.get("data-turn");
     <h2>Discussion</h2>
     <ul>
       <li><code>element.isParsing</code> + <code>{ parseEnd: true, template: true }</code></li>
-      <li>Two flags (<code>parseEnd</code>, <code>template</code>) vs. single <code>parser: true</code>?</li>
+      <li>Two flags (<code>parseEnd</code> for hydration, <code>template</code> for flow control) vs. single <code>parser: true</code>?</li>
       <li>Follow-up: Should <code>template: true</code> also report <code>&lt;template shadowrootmode="open"&gt;</code> (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)?</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md"><code>parser-mutation-records-explainer.md</code></a> · <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</p>
