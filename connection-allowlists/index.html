@@ -32,7 +32,7 @@
   <section class="slide" id="recap">
     <h2>Recap: Connection Allowlists</h2>
     <syntax-highlight language="http">Connection-Allowlist: (response-origin "https://*.site.example"
-  "https://cdn.example"); report-to=endpoint</syntax-highlight>
+  "https://cdn.example"); redirection-allowed; report-to=endpoint</syntax-highlight>
     <ul>
       <li>Block outbound connections outside the allowlist</li>
       <li>Fetch, navigations, WebSockets, WebTransport, WebRTC, preconnect</li>
@@ -42,6 +42,18 @@
 
   <section class="comment">
     <p>Connection Allowlists focuses purely on exfiltration defense-in-depth: a single Structured Field header using URLPattern syntax that blocks unauthorized connections across Fetch, navigations, WebRTC, WebTransport, Workers, Early Hints, and preconnect/dns-prefetch. Graduation to W3C WebAppSec WG is approved.</p>
+  </section>
+
+  <section class="slide" id="special-cases">
+    <h2>Special Cases: Redirects &amp; WebRTC</h2>
+    <ul>
+      <li><strong>Redirects (<a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a>):</strong> Matching redirect targets against <code>URLPattern</code>s leaks cross-site destinations → blocked by default unless <code>; redirection-allowed</code> is set</li>
+      <li><strong>WebRTC:</strong> Only <code>stun:</code> / <code>turn:</code> URLs match patterns; direct P2P candidates (<code>host</code> / <code>srflx</code>) are raw IPs and blocked when any allowlist is active (forcing TURN relay)</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Two protocol special cases: (1) Redirects (#7): matching redirect targets against URLPatterns would leak cross-origin redirect destinations via blocking or reporting, so redirects are controlled by a coarse boolean ; redirection-allowed parameter (blocked by default; open question in #7 whether default should flip). (2) WebRTC: peer-to-peer ICE candidates (host, srflx, prflx) only have raw IP:port addresses, not URLs—so any active allowlist blocks direct P2P and forces traffic through an allowlisted TURN relay.</p>
   </section>
 
   <section class="slide" id="user-agency">
@@ -71,16 +83,16 @@
   </section>
 
   <section class="slide" id="open-iframes-redirects">
-    <h2>Open Issues: Sandboxing &amp; Redirects</h2>
+    <h2>Open Issues: Sandboxing &amp; Same-Origin</h2>
     <ul>
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Originless iframes (<code>srcdoc</code>):</strong> Dynamic policy <em>vs.</em> racing active fetches</li>
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin fetch <em>vs.</em> <code>open('/404')</code> + <code>eval()</code></li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirects:</strong> Pattern matching (leaks targets) <em>vs.</em> <code>redirection-allowed</code> flag</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirect default:</strong> Default-block (require <code>redirection-allowed</code>) <em>vs.</em> default-allow?</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second group of contentions: (#37) Developers isolating AI-generated code in srcdoc/about:blank iframes want to apply connectionAllowlist dynamically without racing initial document creation. (#15) Allowing response-origin lets a sandboxed page open or frame an unprotected same-origin URL (like a default 404 page) and script it to exfiltrate data. (#7) Checking redirect targets against URLPatterns leaks cross-site redirect destinations via reports/blocking, whereas a boolean redirection-allowed flag avoids cross-site leaks but needs a default (allow vs. block).</p>
+    <p>Second group of contentions: (#37) Developers isolating AI-generated code in srcdoc/about:blank iframes want to apply connectionAllowlist dynamically without racing initial document creation. (#15) Allowing response-origin lets a sandboxed page open or frame an unprotected same-origin URL (like a default 404 page) and script it to exfiltrate data. (#7) Whether redirection-allowed should be opt-in (default block) or opt-out.</p>
   </section>
 
   <section class="slide" id="embedded-problem">
@@ -98,26 +110,43 @@
 
   <section class="slide" id="embedded-how">
     <h2>Embedded Enforcement (<code>&lt;iframe connectionallowlist&gt;</code>)</h2>
-    <syntax-highlight language="html">&lt;iframe connectionallowlist='("https://api.example" response-origin)'
-        src="https://widget.example/"&gt;&lt;/iframe&gt;</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 62" aria-label="Embedded enforcement handshake flow">
+      <rect x="8" y="8" width="175" height="46" rx="6" fill="#0550ae" fill-opacity="0.18" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="95" y="28" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">1. Embedder &lt;iframe&gt;</text>
+      <text x="95" y="44" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">Sec-Required-Connection-Allowlist</text>
+      <text x="200" y="35" text-anchor="middle" font-size="16" fill="currentColor">→</text>
+      <rect x="218" y="8" width="225" height="46" rx="6" fill="#6639ba" fill-opacity="0.18" stroke="#a371f7" stroke-width="1.5"/>
+      <text x="330" y="28" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">2. Child Opt-In (or Block)</text>
+      <text x="330" y="44" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">Allow-...-From | subset policy | srcdoc</text>
+      <text x="460" y="35" text-anchor="middle" font-size="16" fill="currentColor">→</text>
+      <rect x="478" y="8" width="194" height="46" rx="6" fill="#116329" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="575" y="28" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">3. Enforced &amp; Inherited</text>
+      <text x="575" y="44" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">Subsumption: syntactic set match</text>
+    </svg>
+    <syntax-highlight language="http">&lt;iframe connectionallowlist='("https://api.example" response-origin)' src="https://widget.example/"&gt;
+
+GET / HTTP/1.1
+Sec-Required-Connection-Allowlist: ("https://api.example" response-origin)
+
+HTTP/1.1 200 OK
+Allow-Connection-Allowlist-From: https://embedder.example
+# OR subset policy: Connection-Allowlist: (response-origin)</syntax-highlight>
     <ul>
-      <li>Follows <strong>CSP-EE</strong> (<code>&lt;iframe csp&gt;</code>)</li>
-      <li><strong>Request:</strong> <code>Sec-Required-Connection-Allowlist</code></li>
-      <li><strong>Opt-in:</strong> Subset policy or <code>Allow-Connection-Allowlist-From</code></li>
-      <li><strong>Inherited</strong> by nested frames &amp; workers</li>
+      <li><strong>Opt-in:</strong> <code>Allow-Connection-Allowlist-From</code>, subset policy, or local scheme (<code>srcdoc</code> / <code>data:</code>)</li>
+      <li><strong>Policy subsumption:</strong> Syntactic set-membership (avoids complex <code>URLPattern</code> subsumption); <code>response-origin</code> re-resolves per frame</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Modeled on CSP Embedded Enforcement: the embedder sets connectionallowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in either by serving a subset Connection-Allowlist or returning Allow-Connection-Allowlist-From. The requirement is inherited down the frame tree.</p>
+    <p>Modeled on CSP Embedded Enforcement: the embedder sets connectionallowlist on the iframe, the browser sends Sec-Required-Connection-Allowlist, and the child must opt in via Allow-Connection-Allowlist-From, a satisfying Connection-Allowlist, or a local scheme (about:srcdoc, data:). Unlike CSP-EE's complex semantic subsumption, policy subsumption here is a conservative syntactic set-membership check (every pattern in the child's policy must appear in the required policy), while keeping response-origin unresolved so it re-resolves to each frame's own origin.</p>
   </section>
 
   <section class="slide" id="upstreaming">
     <h2>Upstreaming to Standards</h2>
     <ul>
-      <li><strong>Fetch (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>):</strong> <em>Main Fetch</em> + <code>environment</code> in <em>obtain a connection</em></li>
+      <li><strong>Fetch (<a href="https://github.com/WICG/connection-allowlists/issues/32"><code>#32</code></a>):</strong> Check in <em>Main Fetch</em> + pass <code>environment</code> to <em>obtain a connection</em></li>
       <li><strong>HTML (<a href="https://github.com/WICG/connection-allowlists/issues/36"><code>#36</code></a>):</strong> Policy container, <code>&lt;iframe connectionallowlist&gt;</code>, preconnect</li>
-      <li><strong>WebRTC &amp; Service Workers:</strong> ICE candidates, <code>navigate()</code>, <code>openWindow()</code></li>
+      <li><strong>WebRTC &amp; SW:</strong> ICE candidate filtering, <code>navigate()</code>, <code>openWindow()</code></li>
     </ul>
   </section>
 
