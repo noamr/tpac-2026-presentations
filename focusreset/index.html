@@ -152,13 +152,19 @@ nextItem?.focus(); // cancels focusreset if nextItem exists; fires if list is no
     <ul>
       <li>HTML PR <a href="https://github.com/whatwg/html/pull/13050"><code>#13050</code></a> · DOM PR <a href="https://github.com/whatwg/dom/pull/1512"><code>#1512</code></a> · WPT <a href="https://github.com/web-platform-tests/wpt/pull/63595"><code>#63595</code></a></li>
       <li>Migration path to deprecate Blink's sync <code>blur</code> (<a href="https://github.com/whatwg/html/issues/12842"><code>whatwg/html#12842</code></a>) &amp; <a href="https://github.com/w3c/aria/issues/2920"><code>w3c/aria#2920</code></a></li>
-      <li><strong>Open questions:</strong> Microtask vs. rendering timing · <code>Document</code>-only vs. <code>ShadowRoot</code> (or is <code>focusout</code> sufficient?)</li>
+      <li><strong>Open questions:</strong>
+        <ul>
+          <li>Microtask vs. rendering timing?</li>
+          <li>Also fire on style/attribute focus fixup (<code>display: none</code>, <code>inert</code>, <code>disabled</code>)?</li>
+          <li><code>Document</code>-only vs. <code>ShadowRoot</code> (or is <code>focusout</code> sufficient)?</li>
+        </ul>
+      </li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/noamr/explainers/blob/main/focusreset-explainer.md"><code>focusreset-explainer.md</code></a> · <a href="https://github.com/whatwg/html/pull/13050"><code>whatwg/html#13050</code></a></p>
   </section>
 
   <section class="comment">
-    <p>Since libraries like Radix and MUI already maintain fallbacks for Gecko and WebKit, shipping focusreset gives them a clean migration path so Blink can finally deprecate its legacy synchronous blur. Open questions for the room: microtask vs. update-the-rendering timing, and whether Document-only is sufficient (since shadow roots already receive focusout when focus leaves another element inside them).</p>
+    <p>Since libraries like Radix and MUI already maintain fallbacks for Gecko and WebKit, shipping focusreset gives them a clean migration path so Blink can finally deprecate its legacy synchronous blur. Open questions for the room: (1) microtask vs. update-the-rendering timing, (2) whether focusreset should also fire on style/attribute focus fixups like display:none/inert/disabled (even though those already fire blur/focusout, a single focusreset handler could catch all involuntary resets to body), and (3) whether Document-only is sufficient.</p>
   </section>
 
 </body>
