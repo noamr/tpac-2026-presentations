@@ -62,7 +62,8 @@ await response.body.pipeTo(el.streamHTMLUnsafe());</syntax-highlight>
   <section class="slide" id="what-it-covers">
     <h2>What Sinks Does It Cover?</h2>
     <ul>
-      <li><strong>Unsafe sinks:</strong> <code>setHTMLUnsafe()</code>, <code>parseHTMLUnsafe()</code>, <code>streamHTMLUnsafe()</code></li>
+      <li><strong>Unsafe HTML sinks:</strong> <code>setHTMLUnsafe()</code>, <code>parseHTMLUnsafe()</code></li>
+      <li><strong>Streaming incubation (<a href="https://github.com/whatwg/html/issues/2142"><code>html#2142</code></a>):</strong> <code>streamHTMLUnsafe()</code></li>
       <li><strong>Legacy sinks:</strong> <code>innerHTML</code>, <code>outerHTML</code>, <code>insertAdjacentHTML()</code>, <code>createContextualFragment()</code></li>
       <li><strong>Safe sinks (<code>setHTML</code>, <code>parseHTML</code>, <code>streamHTML</code>):</strong> Bypass Trusted Types</li>
     </ul>
@@ -74,9 +75,10 @@ await response.body.pipeTo(el.streamHTMLUnsafe());</syntax-highlight>
 
   <section class="slide" id="scenario-1">
     <h2>Scenario 1: Default Policy</h2>
-    <syntax-highlight language="js">trustedTypes.createPolicy("default", {
-  createParserOptions(options) {
-    return { sanitizer: new Sanitizer(), runScripts: false };
+    <syntax-highlight language="js">// CSP: require-trusted-types-for 'script'
+trustedTypes.createPolicy("default", {
+  createParserOptions(options, type, sink) {
+    return { sanitizer: "default", runScripts: false };
   }
 });
 
@@ -89,23 +91,23 @@ range.createContextualFragment(untrustedString);</syntax-highlight>
   </section>
 
   <section class="slide" id="scenario-2">
-    <h2>Scenario 2: Streaming HTML</h2>
+    <h2>Scenario 2: Streaming &amp; Custom Options</h2>
     <syntax-highlight language="js">const policy = trustedTypes.createPolicy("stream", {
-  createParserOptions(options = {}) {
-    const s = new Sanitizer(options.sanitizer);
-    s.removeUnsafe();
-    return { sanitizer: s, runScripts: false };
+  createParserOptions({ sanitizer = new Sanitizer({}) }) {
+    sanitizer.removeUnsafe(); // sanitizer is already a Sanitizer instance
+    return { sanitizer, runScripts: false };
   }
 });
 
 const opts = policy.createParserOptions({
   sanitizer: { removeElements: ["img"] }
 });
+el.setHTMLUnsafe(untrustedHTML, opts);
 await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
   </section>
 
   <section class="comment">
-    <p>For streaming sinks where no string exists up front, createHTML cannot be used (throwIfMissing = true). Either the caller passes a TrustedHTMLParserOptions from a named policy, or the default policy's createParserOptions supplies one.</p>
+    <p>The UA normalizes options.sanitizer into a fresh Sanitizer instance before invoking createParserOptions, so policies can mutate sanitizer directly. For streaming sinks where no string exists up front, createHTML cannot be used (throwIfMissing = true).</p>
   </section>
 
   <section class="slide" id="scenario-3">
@@ -113,13 +115,13 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
     <ul>
       <li><strong><code>TrustedHTMLParserOptions</code>:</strong> Satisfies Trusted Types</li>
       <li><strong><code>defaultPolicy.createParserOptions</code>:</strong> Takes precedence over <code>createHTML</code></li>
-      <li><strong>Fallback to <code>createHTML</code>:</strong> Non-streaming with no options only (streaming or unblessed options throw <code>TypeError</code>)</li>
-      <li><strong><code>TrustedHTML</code> + author options:</strong> Throws <code>TypeError</code> (<a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
+      <li><strong>Fallback to <code>createHTML</code>:</strong> Non-streaming only (streaming throws <code>TypeError</code>)</li>
+      <li><strong><code>TrustedHTML</code> + author sanitizer / <code>runScripts: true</code>:</strong> Uses <code>defaultPolicy.createParserOptions</code>, or throws <code>TypeError</code> if absent (<a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>When no TrustedHTMLParserOptions is provided and defaultPolicy.createParserOptions is missing, non-streaming sinks without author options fall back to createHTML / TrustedHTML for backwards compatibility, whereas streaming sinks (streamHTMLUnsafe) or unblessed author options throw a TypeError. Passing a TrustedHTML together with unvetted author options ({ runScripts: true } or a custom sanitizer) also throws a TypeError.</p>
+    <p>When no TrustedHTMLParserOptions is provided and defaultPolicy.createParserOptions is missing, non-streaming sinks fall back to createHTML / TrustedHTML for backwards compatibility, whereas streaming sinks (streamHTMLUnsafe) throw a TypeError. If TrustedHTML is passed together with unvetted author options ({ runScripts: true } or a custom sanitizer), it routes through defaultPolicy.createParserOptions if defined, or throws a TypeError if absent.</p>
   </section>
 
   <section class="slide" id="future-sinks">

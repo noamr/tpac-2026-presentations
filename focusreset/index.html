@@ -36,7 +36,7 @@ deleteButton.remove();
 // document.activeElement === document.body (0 events fired!)</syntax-highlight>
     <ul>
       <li><code>activeElement</code> resets to <code>document.body</code> with <strong>zero events</strong></li>
-      <li>Focus traps &amp; keyboard navigation break</li>
+      <li>Focus traps, roving-tabindex widgets, shortcuts &amp; AT (<a href="https://github.com/w3c/aria/issues/2920"><code>aria#2920</code></a>) break</li>
     </ul>
   </section>
 
@@ -90,16 +90,16 @@ deleteButton.remove();
   <section class="slide" id="cancellation">
     <h2>Auto-Cancellation</h2>
     <syntax-highlight language="js">item.remove();
-nextItem.focus();</syntax-highlight>
+nextItem?.focus(); // cancels focusreset if nextItem exists; fires if list is now empty!</syntax-highlight>
     <ul>
       <li>Only fires for <strong>unhandled</strong> focus loss</li>
-      <li>Removing a focused <code>&lt;iframe&gt;</code> fires on parent <code>Document</code> only</li>
-      <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code> (unless moved into an <code>inert</code> / hidden subtree)</li>
+      <li>Fires on the affected document (including <code>&lt;iframe&gt;</code>s)</li>
+      <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>If script explicitly moves focus before the microtask runs (via .focus(), showModal(), or autofocus), the pending focusreset is cancelled so fallback handlers don't override it. If both an iframe button and the iframe itself are removed, focusreset only fires on the parent Document. And atomic reparenting via moveBefore() preserves focus unless the destination subtree is inert or hidden.</p>
+    <p>If script explicitly moves focus before the microtask runs (via .focus(), showModal(), or autofocus), the pending focusreset is cancelled so fallback handlers don't override it. If both an iframe button and the iframe itself are removed, focusreset only fires on the parent Document.</p>
   </section>
 
   <section class="slide" id="timing">
@@ -115,7 +115,7 @@ nextItem.focus();</syntax-highlight>
       <text x="195" y="54" text-anchor="middle" font-size="11" fill="currentColor">Task: style change</text>
       <text x="275" y="54" text-anchor="middle" font-size="13" fill="currentColor">→</text>
       <rect x="285" y="40" width="275" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
-      <text x="422" y="54" text-anchor="middle" font-size="11" fill="currentColor">Update Rendering: activeElement = body + blur</text>
+      <text x="422" y="54" text-anchor="middle" font-size="11" fill="currentColor">After layout: activeElement = body + blur</text>
 
       <text x="8" y="84" font-size="11" font-weight="bold" fill="#2ea043">focusreset:</text>
       <rect x="125" y="70" width="210" height="20" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
@@ -125,13 +125,13 @@ nextItem.focus();</syntax-highlight>
       <text x="457" y="84" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">MO Microtask: focusreset</text>
     </svg>
     <ul>
-      <li><strong><code>display: none</code>:</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> during <em>update the rendering</em> (before <code>rAF</code>)</li>
+      <li><strong><code>display: none</code>:</strong> Resets <code>activeElement</code> &amp; fires <code>blur</code> after layout</li>
       <li><strong><code>node.remove()</code>:</strong> Resets <code>activeElement</code> synchronously; <code>focusreset</code> fires in the <strong>MO microtask</strong> (catches <code>rAF</code> / <code>ResizeObserver</code> removals too)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Step 17 of update-the-rendering is for style changes (display:none) and updates activeElement + fires blur together before rAF. On DOM removal, activeElement is already reset synchronously; firing focusreset in the MutationObserver microtask keeps it in sync with activeElement and handles removals during rAF/ResizeObserver.</p>
+    <p>Step 17 of update-the-rendering is for style changes (display:none) and updates activeElement + fires blur together. On DOM removal, activeElement is already reset synchronously; firing focusreset in the MutationObserver microtask keeps it in sync with activeElement and handles removals during rAF/ResizeObserver.</p>
   </section>
 
   <section class="slide" id="alternatives">
@@ -139,7 +139,7 @@ nextItem.focus();</syntax-highlight>
     <ul>
       <li><strong>Sync <code>blur</code>:</strong> Re-entrancy hazard</li>
       <li><strong>Async <code>blur</code> on ancestor:</strong> Ancestor was never focused</li>
-      <li><strong><code>relatedTarget</code>:</strong> Leaks detached &amp; closed Shadow DOM</li>
+      <li><strong><code>FocusEvent.relatedTarget</code> (removed node):</strong> Leaks detached &amp; closed Shadow DOM</li>
     </ul>
   </section>
 

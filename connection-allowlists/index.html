@@ -32,7 +32,7 @@
   <section class="slide" id="recap">
     <h2>Recap: Connection Allowlists</h2>
     <syntax-highlight language="http">Connection-Allowlist: (response-origin "https://*.site.example"
-  "https://cdn.example"); redirection-allowed; report-to=endpoint</syntax-highlight>
+  "https://cdn.example"); redirects=block; webrtc=block; report-to=endpoint</syntax-highlight>
     <ul>
       <li>Block outbound connections outside the allowlist</li>
       <li>Fetch, navigations, WebSockets, WebTransport, WebRTC, preconnect</li>
@@ -47,13 +47,13 @@
   <section class="slide" id="special-cases">
     <h2>Special Cases: Redirects &amp; WebRTC</h2>
     <ul>
-      <li><strong>Redirects (<a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a>):</strong> Matching redirect targets against <code>URLPattern</code>s leaks cross-site destinations → blocked by default unless <code>; redirection-allowed</code> is set</li>
-      <li><strong>WebRTC:</strong> Only <code>stun:</code> / <code>turn:</code> URLs match patterns; direct P2P candidates (<code>host</code> / <code>srflx</code>) are raw IPs and blocked when any allowlist is active (forcing TURN relay)</li>
+      <li><strong>Redirects (<a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a>):</strong> Pattern-matching redirect targets leaks cross-site URLs → governed by <code>redirects=allow|block</code> (default <code>block</code>)</li>
+      <li><strong>WebRTC:</strong> Peer candidates use raw IPs (not URLs) → governed by <code>webrtc=allow|block</code> (default <code>block</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Two protocol special cases: (1) Redirects (#7): matching redirect targets against URLPatterns would leak cross-origin redirect destinations via blocking or reporting, so redirects are controlled by a coarse boolean ; redirection-allowed parameter (blocked by default; open question in #7 whether default should flip). (2) WebRTC: peer-to-peer ICE candidates (host, srflx, prflx) only have raw IP:port addresses, not URLs—so any active allowlist blocks direct P2P and forces traffic through an allowlisted TURN relay.</p>
+    <p>Two protocol special cases: (1) Redirects (#7): matching redirect targets against URLPatterns would leak cross-origin redirect destinations via blocking or reporting, so redirects are controlled by a coarse redirects=allow|block parameter (default block). (2) WebRTC: peer-to-peer ICE candidates only have raw IP:port addresses rather than URLs, so WebRTC is controlled by a coarse webrtc=allow|block parameter (default block).</p>
   </section>
 
   <section class="slide" id="user-agency">
@@ -72,9 +72,9 @@
   <section class="slide" id="open-navigation">
     <h2>Open Issues: Navigation &amp; Gestures</h2>
     <ul>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus:</strong> User gesture <em>vs.</em> exfiltration via dynamic <code>href</code></li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes (<code>mailto:</code>, <code>intent:</code>):</strong> Non-HTTP <em>vs.</em> URL payload to apps</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code>:</strong> SW allowlist, document allowlist, or both?</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/5"><code>#5</code></a> Context menus:</strong> Browser gesture, but page can swap <code>href</code> on right-click</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/40"><code>#40</code></a> Custom schemes (<code>mailto:</code>, <code>intent:</code>):</strong> Non-HTTP, but passes page payload to external apps</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/27"><code>#27</code></a> <code>client.navigate()</code>:</strong> Enforce SW allowlist, document allowlist, or both?</li>
     </ul>
   </section>
 
@@ -85,9 +85,9 @@
   <section class="slide" id="open-iframes-redirects">
     <h2>Open Issues: Sandboxing &amp; Same-Origin</h2>
     <ul>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Originless iframes (<code>srcdoc</code>):</strong> Dynamic policy <em>vs.</em> racing active fetches</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin fetch <em>vs.</em> <code>open('/404')</code> + <code>eval()</code></li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirect default:</strong> Default-block (require <code>redirection-allowed</code>) <em>vs.</em> default-allow?</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Local-scheme iframes (<code>srcdoc</code>, <code>about:blank</code>):</strong> Dynamic policy races initial fetches</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin fetch needed, but <code>open('/404')</code> + <code>eval()</code> bypasses policy</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirect default:</strong> Keep <code>redirects=block</code> as default, or flip to <code>allow</code>?</li>
     </ul>
   </section>
 
