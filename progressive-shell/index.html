@@ -136,7 +136,7 @@
   </section>
 
   <section class="slide" id="skeleton-what">
-    <h2>2. Declarative Skeleton Documents</h2>
+    <h2>Declarative Skeleton Documents</h2>
     <syntax-highlight language="html">&lt;link rel="skeleton" href="/item-skeleton.html" pattern="/item/:id"&gt;</syntax-highlight>
     <ul>
       <li>Cache skeleton <code>Document</code> per route</li>
@@ -264,11 +264,31 @@
 
   <section class="slide" id="cold-start-verification">
     <h2>Cold-Start Contract Verification</h2>
+    <svg class="chart" viewBox="0 0 680 105" aria-label="Cold start verification branching timeline">
+      <rect x="8" y="30" width="165" height="44" rx="6" fill="#0550ae" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="90" y="49" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Paint Shell</text>
+      <text x="90" y="65" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">Under cached CSP</text>
+
+      <text x="190" y="57" text-anchor="middle" font-size="16" fill="currentColor">→</text>
+
+      <rect x="208" y="30" width="145" height="44" rx="6" fill="#6639ba" fill-opacity="0.18" stroke="#a371f7" stroke-width="1.5"/>
+      <text x="280" y="49" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Response &lt;head&gt;</text>
+      <text x="280" y="65" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">or 103 Early Hints</text>
+
+      <text x="372" y="34" text-anchor="middle" font-size="14" fill="#2ea043">↗</text>
+      <text x="372" y="80" text-anchor="middle" font-size="14" fill="#f85149">↘</text>
+
+      <rect x="392" y="6" width="280" height="40" rx="6" fill="#116329" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="532" y="23" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ea043">✔ Match (200 + rev=v1 + CSP)</text>
+      <text x="532" y="38" text-anchor="middle" font-size="10" fill="currentColor">Skip prefix → stream patches into same Doc</text>
+
+      <rect x="392" y="58" width="280" height="40" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="1.5"/>
+      <text x="532" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">✘ Mismatch (302 / 404 / rev=v2)</text>
+      <text x="532" y="90" text-anchor="middle" font-size="10" fill="currentColor">Fall back to clean MPA swap</text>
+    </svg>
     <ul>
-      <li><strong>0ms:</strong> Paint shell under cached <code>CSP</code></li>
-      <li><strong>Match:</strong> Skip prefix → stream patches</li>
-      <li><strong>Mismatch:</strong> Fall back to full MPA</li>
-      <li><strong>Fast path:</strong> <code>103 Early Hints</code> or <code>HEAD</code></li>
+      <li><strong><code>Sec-Active-Shell</code> header:</strong> Dynamic servers can omit the shell prefix</li>
+      <li><strong>Path-prefix scoped:</strong> <code>&lt;meta name="shell"&gt;</code> is scoped to its directory (like SW <code>scope</code>)</li>
     </ul>
   </section>
 

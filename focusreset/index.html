@@ -45,21 +45,21 @@ deleteButton.remove();
   </section>
 
   <section class="slide" id="workarounds">
-    <h2>Workarounds Today</h2>
+    <h2>What We Force Libraries to Ship Today</h2>
     <div class="columns">
       <div>
-        <h3><code>MutationObserver</code></h3>
+        <h3><code>MutationObserver</code> on <code>body</code></h3>
         <p>Radix UI, <code>focus-trap</code></p>
         <ul>
-          <li>Runs on every DOM edit</li>
-          <li>Breaks in Shadow DOM</li>
+          <li>Runs on every single DOM edit</li>
+          <li>Breaks inside Shadow DOM</li>
         </ul>
       </div>
       <div>
         <h3><code>setInterval</code> Polling</h3>
         <p>Material UI, Tridactyl</p>
         <ul>
-          <li>Polls every 200ms</li>
+          <li>Polls <code>activeElement</code> every 200ms</li>
           <li>Wastes CPU &amp; lags</li>
         </ul>
       </div>
@@ -93,7 +93,7 @@ deleteButton.remove();
 nextItem?.focus(); // cancels focusreset if nextItem exists; fires if list is now empty!</syntax-highlight>
     <ul>
       <li>Only fires for <strong>unhandled</strong> focus loss</li>
-      <li>Fires on the affected document (including <code>&lt;iframe&gt;</code>s)</li>
+      <li>Fires on the affected <code>Document</code> (iframe's <code>contentDocument</code>, or parent if <code>&lt;iframe&gt;</code> removed)</li>
       <li><code>moveBefore()</code> preserves focus → no <code>focusreset</code></li>
     </ul>
   </section>

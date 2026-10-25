@@ -59,8 +59,8 @@
   <section class="slide" id="user-agency">
     <h2>User Agency (<a href="https://github.com/WICG/connection-allowlists/issues/31"><code>#31</code></a>)</h2>
     <ul>
-      <li>Only block what the page can initiate or <code>preventDefault()</code></li>
-      <li>Browser UI is never blocked (address bar, extensions, context menus)</li>
+      <li>Rule of thumb: if page JS could <code>preventDefault()</code> it, we can block it</li>
+      <li>If it's browser chrome (address bar, extensions, context menus), hands off</li>
       <li><strong>Tension:</strong> User gesture + page-crafted URL</li>
     </ul>
   </section>
@@ -86,7 +86,7 @@
     <h2>Open Issues: Sandboxing &amp; Same-Origin</h2>
     <ul>
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/37"><code>#37</code></a> Local-scheme iframes (<code>srcdoc</code>, <code>about:blank</code>):</strong> Dynamic policy races initial fetches</li>
-      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin fetch needed, but <code>open('/404')</code> + <code>eval()</code> bypasses policy</li>
+      <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/15"><code>#15</code></a> <code>response-origin</code> escape:</strong> Same-origin fetch needed, but <code>window.open('/404').fetch(...)</code> bypasses policy</li>
       <li><strong><a href="https://github.com/WICG/connection-allowlists/issues/7"><code>#7</code></a> Redirect default:</strong> Keep <code>redirects=block</code> as default, or flip to <code>allow</code>?</li>
     </ul>
   </section>

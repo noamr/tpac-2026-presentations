@@ -62,9 +62,9 @@
   <section class="slide" id="why-rejected">
     <h2>Why It Stalled</h2>
     <ol>
-      <li><strong>Parser-blocking waterfalls</strong></li>
-      <li><strong>FOUC &amp; layout shifts</strong></li>
-      <li><strong>XSS</strong></li>
+      <li>Wait for network → <strong>blocks the parser</strong></li>
+      <li>Don't wait → <strong>FOUC &amp; layout shift</strong></li>
+      <li>Trust remote HTML → <strong>XSS</strong></li>
     </ol>
   </section>
 
@@ -75,9 +75,9 @@
   <section class="slide" id="why-now">
     <h2>What Changed?</h2>
     <ol>
-      <li><strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong></li>
-      <li><strong>Render-Blocking (<code>rel="expect"</code>) &amp; a new proposed <code>buffer</code> attribute</strong></li>
-      <li><strong>Sanitizer API</strong></li>
+      <li><s>Blocks the parser</s> → <strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong></li>
+      <li><s>FOUC &amp; layout shift</s> → <strong>Render-Blocking (<code>rel="expect"</code>) &amp; <code>buffer</code></strong></li>
+      <li><s>XSS</s> → <strong>Sanitizer API (<code>sanitize</code>)</strong></li>
     </ol>
   </section>
 
@@ -87,21 +87,20 @@
 
   <section class="slide" id="solution">
     <h2>Proposal: <code>&lt;template for src&gt;</code></h2>
-    <syntax-highlight language="html">&lt;!-- In-place include --&gt;
-&lt;template for src="header.html"&gt;&lt;/template&gt;
+    <syntax-highlight language="html">&lt;main&gt;
+  &lt;?start name="feed"&gt;Loading...&lt;?end&gt;
+&lt;/main&gt;
 
-&lt;!-- Targeted include --&gt;
-&lt;main&gt;&lt;?start name="feed"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
+&lt;!-- Out-of-order stream from an external URL --&gt;
 &lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Empty <code>for</code>:</strong> Fetches HTML and replaces <code>&lt;template&gt;</code> in place</li>
-      <li><strong><code>for="name"</code>:</strong> Fetches HTML into matching <code>&lt;?start&gt;...&lt;?end&gt;</code></li>
-      <li><strong>No <code>for</code>:</strong> Ordinary inert <code>&lt;template&gt;</code> (composes inside <code>&lt;template shadowrootmode&gt;</code>)</li>
+      <li>Extends out-of-order <code>&lt;template for="name"&gt;</code> with <code>src</code></li>
+      <li>Fetches and streams HTML into <code>&lt;?start name="feed"&gt;...&lt;?end&gt;</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>An empty for attribute fetches and replaces the &lt;template&gt; itself in place; for="name" streams fetched HTML into a named target range; and without for, &lt;template&gt; remains an ordinary inert template. Either for/src or shadowrootmode is used per template, and they compose cleanly (&lt;template shadowrootmode="open"&gt;&lt;template for src="widget.html"&gt;&lt;/template&gt;&lt;/template&gt;).</p>
+    <p>Building directly on out-of-order streaming (&lt;template for="name"&gt;), adding a src attribute fetches an external HTML fragment and streams it into the matching &lt;?start&gt;...&lt;?end&gt; marker range.</p>
   </section>
 
   <section class="slide" id="out-of-order">
@@ -114,13 +113,13 @@
 &lt;/main&gt;
 &lt;footer&gt;Renders immediately!&lt;/footer&gt;</syntax-highlight>
     <ul>
-      <li>Non-parser-blocking; delays <code>DOMContentLoaded</code> (like <code>&lt;script defer&gt;</code>)</li>
-      <li>Relative URLs Inside fragment resolve against <code>document.baseURI</code></li>
+      <li>Doesn't block the parser (delays <code>DOMContentLoaded</code> like <code>&lt;script defer&gt;</code>)</li>
+      <li>Fetches early; streams into place when ready</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>First mitigation: instead of blocking the HTML parser on a synchronous fetch, &lt;template for src&gt; fetches asynchronously (delaying DOMContentLoaded like &lt;script defer&gt;) and combines with &lt;template for="name"&gt; so fetches can start early while the parser renders placeholders and &lt;footer&gt; immediately. Relative URLs inside the fetched fragment resolve against the document's base URL.</p>
+    <p>First mitigation: instead of blocking the HTML parser on a synchronous fetch, &lt;template for src&gt; fetches asynchronously (delaying DOMContentLoaded like &lt;script defer&gt;) so fetches can start early while the parser renders placeholders and &lt;footer&gt; immediately.</p>
   </section>
 
   <section class="slide" id="render-blocking">
@@ -147,7 +146,8 @@
     </svg>
     <syntax-highlight language="html">&lt;head&gt;&lt;link rel="expect" href="#content" blocking="render"&gt;&lt;/head&gt;
 &lt;body&gt;
-  &lt;template for src="header.html"&gt;&lt;/template&gt;
+  &lt;header&gt;&lt;?start name="nav"&gt;&lt;?end&gt;&lt;/header&gt;
+  &lt;template for="nav" src="header.html"&gt;&lt;/template&gt;
   &lt;main id="content"&gt;Content&lt;/main&gt;
 &lt;/body&gt;</syntax-highlight>
   </section>
@@ -158,99 +158,134 @@
 
   <section class="slide" id="buffer">
     <h2>2b. Buffered Includes (<code>buffer</code>)</h2>
+    <svg class="chart" viewBox="0 0 680 68" aria-label="Streaming default vs Buffered atomic swap">
+      <text x="8" y="24" font-size="12" font-weight="bold" fill="currentColor">Default:</text>
+      <rect x="95" y="10" width="260" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="225" y="24" text-anchor="middle" font-size="11" fill="currentColor">Streams chunks directly into DOM</text>
+      <text x="368" y="24" font-size="11" font-weight="bold" fill="#f85149">→ Half-rendered UI</text>
+
+      <text x="8" y="54" font-size="12" font-weight="bold" fill="#2ea043">buffer:</text>
+      <rect x="95" y="40" width="260" height="20" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="225" y="54" text-anchor="middle" font-size="11" fill="currentColor">Parses into the template</text>
+      <text x="368" y="54" font-size="11" font-weight="bold" fill="#2ea043">→ Atomic swap on EOF</text>
+    </svg>
     <syntax-highlight language="html">&lt;!-- Default: streams into DOM --&gt;
 &lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
 
 &lt;!-- Buffered: atomic swap on EOF --&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Parses off-screen; swaps placeholder atomically</li>
-      <li>Preloads <code>&lt;link&gt;</code> resources; swaps after stylesheets &amp; preloads finish</li>
+      <li>Parses into the template; swaps placeholder atomically</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response off-screen into template.content. &lt;link&gt; resources inside the fragment are fetched speculatively, and the buffer waits on preloads and external stylesheets before swapping the placeholder atomically (exact set of gating resources is an open discussion point).</p>
+    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response into the template and swaps the placeholder atomically when ready.</p>
   </section>
 
   <section class="slide" id="buffer-inline">
     <h2><code>buffer</code> on the Main Stream</h2>
-    <syntax-highlight language="html">&lt;template for buffer&gt;
-  &lt;link rel="stylesheet" href="widget.css"&gt;
-  &lt;link rel="preload" as="image" href="avatar.jpg"&gt;
-  &lt;div class="widget"&gt;...&lt;/div&gt;
-&lt;/template&gt;
+    <syntax-highlight language="html">&lt;main&gt;&lt;?start name="comments"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
 
-&lt;template for="comments" buffer&gt;...&lt;/template&gt;</syntax-highlight>
+&lt;template for="comments" buffer&gt;
+  &lt;article class="comment"&gt;...&lt;/article&gt;
+  &lt;article class="comment"&gt;...&lt;/article&gt;
+&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Works on inline sections and patches too (no <code>src</code> needed)</li>
-      <li>Waits on <code>&lt;link&gt;</code> preloads &amp; stylesheets before swapping</li>
+      <li>Works on inline patches too (no <code>src</code> needed)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Because buffer is a general &lt;template&gt; primitive rather than a fetch-only flag, you can also use &lt;template for buffer&gt; on the incoming main HTML stream. External resources inside the buffered template are fetched speculatively by the preload scanner while buffering.</p>
+    <p>Because buffer is a general &lt;template&gt; primitive rather than a fetch-only flag, you can also use &lt;template for="comments" buffer&gt; on the incoming main HTML stream so streamed patches swap in atomically.</p>
+  </section>
+
+  <section class="slide" id="buffer-waiting">
+    <h2><code>buffer</code> Waits for Subresources</h2>
+    <syntax-highlight language="html">&lt;template for="widget" buffer&gt;
+  &lt;link rel="stylesheet" href="widget.css"&gt;
+  &lt;link rel="preload" as="image" href="avatar.jpg"&gt;
+  &lt;div class="widget"&gt;&lt;?start name="icon"&gt;&lt;?end&gt;&lt;/div&gt;
+  &lt;template for="icon" src="star.svg"&gt;&lt;/template&gt;
+&lt;/template&gt;</syntax-highlight>
+    <ul>
+      <li>Preload scanner fetches subresources while buffering</li>
+      <li>Waits on stylesheets, <code>&lt;link rel="preload"&gt;</code>, and internal <code>&lt;template for src&gt;</code></li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>While buffering into the template, the speculative preload scanner initiates subresource fetches. The atomic swap waits for external stylesheets, &lt;link rel="preload"&gt;, and any internal &lt;template for src&gt; includes inside the buffered template to finish.</p>
   </section>
 
   <section class="slide" id="security">
-    <h2>3a. Safe by Default (<code>sanitize</code>)</h2>
-    <syntax-highlight language="html">&lt;button class="icon-btn"&gt;
-  &lt;template for src="https://icons.example/star.svg"
-    crossorigin="anonymous"&gt;&lt;/template&gt;
-  Star
-&lt;/button&gt;
+    <h2>3. Safe by Default (<code>sanitize</code>)</h2>
+    <syntax-highlight language="html">&lt;!-- Safe by default: sanitized with Sanitizer API --&gt;
+&lt;template for="promo" src="https://ads.example/banner.html"&gt;&lt;/template&gt;
 
-&lt;template for src="trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
+&lt;!-- Opt-out for trusted code --&gt;
+&lt;template for="app" src="/trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
       <li><code>src</code> is sanitized by default — strips scripts &amp; nested <code>&lt;template for&gt;</code></li>
-      <li><strong>External SVG:</strong> Fetched separately, yet stylable inline (<code>currentColor</code>, CSS) <em>and</em> sanitized</li>
+      <li><code>sanitize="unsafe"</code> opts out for trusted fragments</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Third mitigation (part 1): external includes (&lt;template for src&gt;) are sanitized by default using the browser's built-in Sanitizer API, which strips scripts, inline event handlers, and nested &lt;template for&gt; (preventing slot-hijacking or recursive includes). A great example is including a third-party SVG as an inline &lt;svg&gt; in the DOM—stylable with CSS currentColor, cached separately off the main stream, and safely sanitized without XSS risk.</p>
+    <p>Third mitigation: external includes (&lt;template for src&gt;) are sanitized by default using the browser's built-in Sanitizer API, which strips scripts, inline event handlers, and nested &lt;template for&gt; (preventing slot-hijacking or recursive includes).</p>
   </section>
 
   <section class="slide" id="sanitize-inline">
     <h2><code>sanitize</code> on the Main Stream</h2>
-    <syntax-highlight language="html">&lt;template for sanitize&gt;
-  &lt;article class="user-comment"&gt;
-    Hello! &lt;script&gt; evil() &lt;/script&gt;
-  &lt;/article&gt;
-&lt;/template&gt;
-
-&lt;template for="comments" sanitize&gt;...&lt;/template&gt;</syntax-highlight>
+    <syntax-highlight language="html">&lt;template for="comments" sanitize&gt;
+  &lt;article&gt;Hello! &lt;script&gt; evil() &lt;/script&gt;&lt;/article&gt;
+&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Declarative sanitization for inline markup &amp; SSR patches</li>
-      <li>Opt-in for inline markup (unlike external <code>src</code>, which is safe by default)</li>
+      <li>Opt-in sanitization for inline SSR markup &amp; patches</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Just like buffer, sanitize works without src too. While inline &lt;template for&gt; is unsanitized by default because it's part of the main document stream, adding sanitize lets server-rendered pages declaratively sanitize untrusted regions or streamed patches directly in the HTML parser.</p>
+    <p>Just like buffer, sanitize works without src too. While inline &lt;template for&gt; is unsanitized by default because it's part of the main document stream, adding sanitize lets server-rendered pages declaratively sanitize untrusted regions directly in the HTML parser.</p>
   </section>
 
-  <section class="slide" id="csp">
-    <h2>3b. Defense in Depth with CSP</h2>
-    <syntax-highlight language="http">Content-Security-Policy:
-  fragment-src 'self' https://cdn.example;
-  script-src 'self' 'nonce-r4nd0m'</syntax-highlight>
+  <section class="slide" id="empty-for">
+    <h2>In-Place Shorthand: Empty <code>for</code></h2>
+    <syntax-highlight language="html">&lt;!-- Replaces &lt;template&gt; in place (no &lt;?start&gt;/&lt;?end&gt; needed) --&gt;
+&lt;template for src="header.html"&gt;&lt;/template&gt;
+
+&lt;template for buffer&gt;...&lt;/template&gt;
+&lt;template for sanitize&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong><code>fragment-src</code>:</strong> Allowed <code>&lt;template src&gt;</code> origins (falls back to <code>default-src</code>)</li>
-      <li><strong><code>script-src</code>:</strong> Still governs scripts inside <code>sanitize="unsafe"</code></li>
+      <li><strong>Empty <code>for</code>:</strong> Replaces the <code>&lt;template&gt;</code> itself in place</li>
+      <li>Works with <code>src</code>, <code>buffer</code>, and <code>sanitize</code> (and inside <code>&lt;template shadowrootmode&gt;</code>)</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Third mitigation (part 2): CSP provides defense in depth. A new fragment-src directive (falling back to default-src) restricts where fragments can be fetched from, and even when sanitize="unsafe" is set, any scripts inside the fragment remain governed by the document's script-src policy.</p>
+    <p>When you don't need out-of-order targeting, an empty for attribute (&lt;template for src="header.html"&gt;, &lt;template for buffer&gt;, &lt;template for sanitize&gt;) acts in place—replacing the &lt;template&gt; element itself without needing &lt;?start&gt;/&lt;?end&gt; markers, and composing cleanly inside &lt;template shadowrootmode="open"&gt;.</p>
+  </section>
+
+  <section class="slide" id="details">
+    <h2>Additional Details</h2>
+    <ul>
+      <li><strong>Always CORS:</strong> <code>&lt;template src&gt;</code> always uses CORS</li>
+      <li><strong>CSP:</strong> New <code>fragment-src</code> directive; <code>script-src</code> governs <code>sanitize="unsafe"</code></li>
+      <li><strong>Relative URLs:</strong> Resolve against the page, just like inline HTML</li>
+      <li><strong>Inline SVG icons:</strong> <code>&lt;template for src="star.svg"&gt;</code> — cached separately, stylable with <code>currentColor</code>, and sanitized</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Additional details: &lt;template src&gt; is always CORS; CSP adds fragment-src (falling back to default-src) while script-src still governs sanitize="unsafe"; relative URLs inside fragments resolve against document.baseURI; and external SVGs can be included inline with CSS currentColor styling and built-in sanitization.</p>
   </section>
 
   <section class="slide" id="alternatives">
     <h2>Why <code>&lt;template&gt;</code>?</h2>
     <ul>
-      <li><strong>Why not <code>&lt;fragment&gt;</code>?</strong> <code>&lt;template&gt;</code> already disappears from the DOM (<code>shadowrootmode</code>, <code>for</code>)</li>
-      <li><strong>Valid everywhere in the parser</strong> (<code>&lt;head&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;select&gt;</code>)</li>
-      <li><strong>Why not <code>&lt;script type="html"&gt;</code>?</strong> No inline HTML</li>
+      <li><strong>It already vanishes from the DOM</strong> (like <code>shadowrootmode</code> and <code>for</code>)</li>
+      <li><strong>The parser allows it everywhere</strong> — <code>&lt;head&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;select&gt;</code></li>
+      <li><strong>Unlike <code>&lt;script&gt;</code>,</strong> it actually parses HTML children</li>
     </ul>
   </section>
 
@@ -258,7 +293,22 @@
     <p>A new &lt;fragment&gt; element is rejected because &lt;template&gt; already has the self-consuming "disappear from the DOM" behavior and is valid everywhere in the HTML parser without foster-parenting.</p>
   </section>
 
-  <section class="slide" id="dpu-ecosystem">
+  <section class="slide" id="discussion">
+    <h2>Discussion</h2>
+    <ul>
+      <li><code>&lt;template&gt;</code> vs. a new element</li>
+      <li>Empty <code>for</code> shorthand (<code>&lt;template for src&gt;</code>)</li>
+      <li>What should <code>buffer</code> wait for?</li>
+      <li>Error handling &amp; fallbacks (<code>404</code> / <code>500</code>)</li>
+    </ul>
+    <p class="note"><strong>Try it:</strong> Chrome Canary flag · <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a></p>
+  </section>
+
+  <section class="comment">
+    <p>Open the floor for feedback on &lt;template src&gt;, buffer, sanitize, and rel="expect" integration.</p>
+  </section>
+
+  <section class="slide final" id="dpu-ecosystem">
     <h2>Also in Declarative Partial Updates (DPU)</h2>
     <ul>
       <li><strong><code>&lt;?shellboundary&gt;</code>:</strong> Progressive shells <em>(📅 Wednesday 9:00 Breakout)</em></li>
@@ -269,22 +319,6 @@
 
   <section class="comment">
     <p>Quickly highlight sibling developments in WICG/declarative-partial-updates: progressive shells (&lt;?shellboundary&gt;), DOM preservation/merging (preserve attribute for islands inside patched ranges), and parser-aware MutationObserver. Invite everyone to the Seamless Navigation breakout on Wednesday at 9:00 and the WHATWG session.</p>
-  </section>
-
-  <section class="slide final" id="discussion">
-    <h2>Discussion</h2>
-    <ul>
-      <li><code>&lt;template&gt;</code> vs. <code>&lt;fragment&gt;</code> / <code>&lt;script&gt;</code></li>
-      <li>Empty <code>for</code> syntax (<code>&lt;template for src="..."&gt;</code>) for in-place replacement</li>
-      <li>Waterfalls &amp; preload scanning for subresources inside fragments</li>
-      <li>Non-OK responses (<code>404</code> / <code>500</code> / network errors) &amp; fallbacks</li>
-      <li>Do the defaults &amp; trade-offs make sense?</li>
-    </ul>
-    <p class="note"><strong>Try it:</strong> Available behind a flag in Chrome Canary · <strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md"><code>fragment-include-explainer.md</code></a>) · <strong>📅 WHATWG Session</strong></p>
-  </section>
-
-  <section class="comment">
-    <p>Open the floor for feedback on &lt;template src&gt;, buffer, sanitize, and rel="expect" integration.</p>
   </section>
 
 </body>

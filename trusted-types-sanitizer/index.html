@@ -33,9 +33,23 @@
     <h2>Why Streaming Broke <code>createHTML</code></h2>
     <syntax-highlight language="js">// Chunk 1: "&lt;scr"   Chunk 2: "ipt&gt;evil()&lt;/script&gt;"
 await response.body.pipeTo(el.streamHTMLUnsafe());</syntax-highlight>
+    <svg class="chart" viewBox="0 0 680 68" aria-label="createHTML double parse vs createParserOptions single pass">
+      <text x="8" y="24" font-size="11" font-weight="bold" fill="currentColor">createHTML:</text>
+      <rect x="145" y="10" width="160" height="20" rx="4" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="1.5"/>
+      <text x="225" y="24" text-anchor="middle" font-size="11" fill="currentColor">1. JS Parse &amp; Serialize</text>
+      <text x="315" y="24" text-anchor="middle" font-size="12" fill="currentColor">→</text>
+      <rect x="325" y="10" width="145" height="20" rx="4" fill="#f85149" fill-opacity="0.2" stroke="#f85149" stroke-width="1.5"/>
+      <text x="397" y="24" text-anchor="middle" font-size="11" fill="currentColor">2. Browser Parse</text>
+      <text x="480" y="24" font-size="11" font-weight="bold" fill="#f85149">→ Breaks on chunks</text>
+
+      <text x="8" y="54" font-size="11" font-weight="bold" fill="#2ea043">createParserOptions:</text>
+      <rect x="145" y="40" width="325" height="20" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="307" y="54" text-anchor="middle" font-size="11" fill="currentColor">Browser HTML Parser + Native Sanitizer</text>
+      <text x="480" y="54" font-size="11" font-weight="bold" fill="#2ea043">→ Single stateful pass</text>
+    </svg>
     <ul>
-      <li><strong><code>createHTML(chunk)</code>:</strong> Per-chunk sanitization is unsafe; buffering breaks streaming &amp; parses twice</li>
-      <li><strong><code>createParserOptions(opts)</code>:</strong> Configures the stateful HTML parser directly</li>
+      <li>You can't sanitize half a <code>&lt;script&gt;</code> tag</li>
+      <li>Buffering breaks streaming and parses twice</li>
     </ul>
   </section>
 
@@ -64,7 +78,7 @@ await response.body.pipeTo(el.streamHTMLUnsafe());</syntax-highlight>
     <ul>
       <li><strong>Unsafe HTML sinks:</strong> <code>setHTMLUnsafe()</code>, <code>parseHTMLUnsafe()</code></li>
       <li><strong>Streaming incubation (<a href="https://github.com/whatwg/html/issues/2142"><code>html#2142</code></a>):</strong> <code>streamHTMLUnsafe()</code></li>
-      <li><strong>Legacy sinks:</strong> <code>innerHTML</code>, <code>outerHTML</code>, <code>insertAdjacentHTML()</code>, <code>createContextualFragment()</code></li>
+      <li><strong>Legacy sinks (via <code>default</code> policy):</strong> <code>innerHTML</code>, <code>outerHTML</code>, <code>insertAdjacentHTML()</code>, <code>createContextualFragment()</code></li>
       <li><strong>Safe sinks (<code>setHTML</code>, <code>parseHTML</code>, <code>streamHTML</code>):</strong> Bypass Trusted Types</li>
     </ul>
   </section>
@@ -93,7 +107,7 @@ range.createContextualFragment(untrustedString);</syntax-highlight>
   <section class="slide" id="scenario-2">
     <h2>Scenario 2: Streaming &amp; Custom Options</h2>
     <syntax-highlight language="js">const policy = trustedTypes.createPolicy("stream", {
-  createParserOptions({ sanitizer = new Sanitizer({}) }) {
+  createParserOptions({ sanitizer = new Sanitizer() }) {
     sanitizer.removeUnsafe(); // sanitizer is already a Sanitizer instance
     return { sanitizer, runScripts: false };
   }
@@ -112,12 +126,27 @@ await response.body.pipeTo(el.streamHTMLUnsafe(opts));</syntax-highlight>
 
   <section class="slide" id="scenario-3">
     <h2>Precedence &amp; Fallbacks</h2>
-    <ul>
-      <li><strong><code>TrustedHTMLParserOptions</code>:</strong> Satisfies Trusted Types</li>
-      <li><strong><code>defaultPolicy.createParserOptions</code>:</strong> Takes precedence over <code>createHTML</code></li>
-      <li><strong>Fallback to <code>createHTML</code>:</strong> Non-streaming only (streaming throws <code>TypeError</code>)</li>
-      <li><strong><code>TrustedHTML</code> + author sanitizer / <code>runScripts: true</code>:</strong> Uses <code>defaultPolicy.createParserOptions</code>, or throws <code>TypeError</code> if absent (<a href="https://github.com/w3c/trusted-types/issues/615"><code>#615</code></a>)</li>
-    </ul>
+    <svg class="chart" viewBox="0 0 680 120" aria-label="Decision flowchart for TrustedHTMLParserOptions precedence and fallbacks">
+      <rect x="8" y="12" width="195" height="42" rx="6" fill="#116329" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
+      <text x="105" y="30" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">1. TrustedHTMLParserOptions?</text>
+      <text x="105" y="46" text-anchor="middle" font-size="10" fill="#2ea043">✔ Parse with blessed options</text>
+
+      <text x="218" y="37" text-anchor="middle" font-size="14" fill="currentColor">→</text>
+
+      <rect x="233" y="12" width="215" height="42" rx="6" fill="#0550ae" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="340" y="30" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">2. defaultPolicy.createParserOptions?</text>
+      <text x="340" y="46" text-anchor="middle" font-size="10" fill="#58a6ff">✔ Invoke defaultPolicy</text>
+
+      <text x="463" y="37" text-anchor="middle" font-size="14" fill="currentColor">→</text>
+
+      <rect x="478" y="12" width="194" height="42" rx="6" fill="#6639ba" fill-opacity="0.18" stroke="#a371f7" stroke-width="1.5"/>
+      <text x="575" y="30" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">3. Fallback: createHTML</text>
+      <text x="575" y="46" text-anchor="middle" font-size="10" fill="#f85149">Non-streaming only (stream throws)</text>
+
+      <rect x="8" y="68" width="664" height="40" rx="6" fill="#f85149" fill-opacity="0.14" stroke="#f85149" stroke-width="1.5"/>
+      <text x="340" y="86" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor">TrustedHTML + unblessed { sanitizer } or { runScripts: true } (#615):</text>
+      <text x="340" y="101" text-anchor="middle" font-size="10" fill="currentColor">Routes through defaultPolicy.createParserOptions (or throws TypeError if absent)</text>
+    </svg>
   </section>
 
   <section class="comment">
