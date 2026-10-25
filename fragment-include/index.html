@@ -32,9 +32,9 @@
   <section class="slide" id="history">
     <h2>30 Years of Trying</h2>
     <ul>
-      <li><strong>1995–2001:</strong> SSI, PHP, ESI — server-only</li>
-      <li><strong>2008–2016:</strong> <code>&lt;iframe seamless&gt;</code> — not really an include</li>
-      <li><strong>2013–2018:</strong> <code>&lt;link rel="import"&gt;</code> — gone</li>
+      <li><strong>1995–2001:</strong> Server-only (SSI, PHP, ESI)</li>
+      <li><strong>2008–2018:</strong> <code>&lt;iframe seamless&gt;</code> and <code>&lt;link rel="import"&gt;</code> — not
+        really it</li>
       <li><strong>2017–Today:</strong> <a href="https://github.com/whatwg/html/issues/2791"><code>whatwg/html#2791</code></a> — 280+ comments, 225+ 👍</li>
     </ul>
   </section>
@@ -62,9 +62,9 @@
   <section class="slide" id="why-rejected">
     <h2>Why It Stalled</h2>
     <ol>
-      <li>Wait for network → <strong>blocks the parser</strong></li>
-      <li>Don't wait → <strong>FOUC &amp; layout shift</strong></li>
-      <li>Trust remote HTML → <strong>XSS</strong></li>
+      <li>Parser-blocking</li>
+      <li>Layout shift / FOUC</li>
+      <li>XSS</li>
     </ol>
   </section>
 
@@ -75,9 +75,9 @@
   <section class="slide" id="why-now">
     <h2>What Changed?</h2>
     <ol>
-      <li><s>Blocks the parser</s> → <strong>Out-of-Order Streaming (<code>&lt;template for&gt;</code>)</strong></li>
-      <li><s>FOUC &amp; layout shift</s> → <strong>Render-Blocking (<code>rel="expect"</code>) &amp; <code>buffer</code></strong></li>
-      <li><s>XSS</s> → <strong>Sanitizer API (<code>sanitize</code>)</strong></li>
+      <li>Parser blocking → <code>&lt;template for&gt;</code></li>
+      <li>Layout shift / FOUC → render blocking &amp; <code>buffer</code> (see later...)</li>
+      <li>XSS → sanitizer</li>
     </ol>
   </section>
 
@@ -93,10 +93,7 @@
 
 &lt;!-- Out-of-order stream from an external URL --&gt;
 &lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;</syntax-highlight>
-    <ul>
-      <li>Extends out-of-order <code>&lt;template for="name"&gt;</code> with <code>src</code></li>
-      <li>Fetches and streams HTML into <code>&lt;?start name="feed"&gt;...&lt;?end&gt;</code></li>
-    </ul>
+    <p>Streams from a URL into a location in the DOM</p>
   </section>
 
   <section class="comment">
@@ -106,15 +103,15 @@
   <section class="slide" id="out-of-order">
     <h2>1. Non-Blocking &amp; Out-of-Order</h2>
     <syntax-highlight language="html">&lt;!-- Start fetch early --&gt;
-&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
 
 &lt;main&gt;
   &lt;?start name="feed"&gt;&lt;p class="skeleton"&gt;Loading...&lt;/p&gt;&lt;?end&gt;
 &lt;/main&gt;
+&lt;template for="feed" src="feed.html"&gt;&lt;/template&gt;
 &lt;footer&gt;Renders immediately!&lt;/footer&gt;</syntax-highlight>
     <ul>
-      <li>Doesn't block the parser (delays <code>DOMContentLoaded</code> like <code>&lt;script defer&gt;</code>)</li>
-      <li>Fetches early; streams into place when ready</li>
+      <li>Delays <code>DOMContentLoaded</code> but not the parser</li>
+      <li>Fetch early; stream into place when ready</li>
     </ul>
   </section>
 
@@ -175,7 +172,7 @@
 &lt;!-- Buffered: atomic swap on EOF --&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Parses into the template; swaps placeholder atomically</li>
+      <li>Parses into the template; swaps at end</li>
     </ul>
   </section>
 
@@ -192,7 +189,7 @@
   &lt;article class="comment"&gt;...&lt;/article&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Works on inline patches too (no <code>src</code> needed)</li>
+      <li>Works on inline patches too</li>
     </ul>
   </section>
 
@@ -209,8 +206,8 @@
   &lt;template for="icon" src="star.svg"&gt;&lt;/template&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Preload scanner fetches subresources while buffering</li>
-      <li>Waits on stylesheets, <code>&lt;link rel="preload"&gt;</code>, and internal <code>&lt;template for src&gt;</code></li>
+      <li>Scan links and includes while buffering</li>
+      <li>Wait for their contents to fetch before applying buffer</li>
     </ul>
   </section>
 
@@ -226,7 +223,7 @@
 &lt;!-- Opt-out for trusted code --&gt;
 &lt;template for="app" src="/trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><code>src</code> is sanitized by default — strips scripts &amp; nested <code>&lt;template for&gt;</code></li>
+      <li><code>src</code> is sanitized by default</li>
       <li><code>sanitize="unsafe"</code> opts out for trusted fragments</li>
     </ul>
   </section>
@@ -241,7 +238,8 @@
   &lt;article&gt;Hello! &lt;script&gt; evil() &lt;/script&gt;&lt;/article&gt;
 &lt;/template&gt;</syntax-highlight>
     <ul>
-      <li>Opt-in sanitization for inline SSR markup &amp; patches</li>
+      <li>Opt-in sanitization for inline SSR markup</li>
+      <li>Standard sanitizer instead of downstream libs on the server</li>
     </ul>
   </section>
 
@@ -257,8 +255,8 @@
 &lt;template for buffer&gt;...&lt;/template&gt;
 &lt;template for sanitize&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><strong>Empty <code>for</code>:</strong> Replaces the <code>&lt;template&gt;</code> itself in place</li>
-      <li>Works with <code>src</code>, <code>buffer</code>, and <code>sanitize</code> (and inside <code>&lt;template shadowrootmode&gt;</code>)</li>
+      <li><strong>Empty <code>for</code>:</strong> Patch "in place" of the template</li>
+      <li>Allows <code>src</code>, <code>buffer</code>, and <code>sanitize</code> without PIs</li>
     </ul>
   </section>
 
@@ -269,10 +267,10 @@
   <section class="slide" id="details">
     <h2>Additional Details</h2>
     <ul>
-      <li><strong>Always CORS:</strong> <code>&lt;template src&gt;</code> always uses CORS</li>
-      <li><strong>CSP:</strong> New <code>fragment-src</code> directive; <code>script-src</code> governs <code>sanitize="unsafe"</code></li>
-      <li><strong>Relative URLs:</strong> Resolve against the page, just like inline HTML</li>
-      <li><strong>Inline SVG icons:</strong> <code>&lt;template for src="star.svg"&gt;</code> — cached separately, stylable with <code>currentColor</code>, and sanitized</li>
+      <li><code>&lt;template src&gt;</code> always uses CORS</li>
+      <li>(Maybe) a new <code>fragment-src</code> directive when sanitized; <code>script-src</code> when unsafe</li>
+      <li>Relative URLs resolve against the document</li>
+      <li>Fun use case: include SVGs as inline SVGs</li>
     </ul>
   </section>
 
@@ -283,9 +281,9 @@
   <section class="slide" id="alternatives">
     <h2>Why <code>&lt;template&gt;</code>?</h2>
     <ul>
-      <li><strong>It already vanishes from the DOM</strong> (like <code>shadowrootmode</code> and <code>for</code>)</li>
-      <li><strong>The parser allows it everywhere</strong> — <code>&lt;head&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;select&gt;</code></li>
-      <li><strong>Unlike <code>&lt;script&gt;</code>,</strong> it actually parses HTML children</li>
+      <li>It's already the "burn after use" element</li>
+      <li>Can be used anywhere in the DOM</li>
+      <li>Unlike <code>&lt;script&gt;</code>, can be used with inline content</li>
     </ul>
   </section>
 
