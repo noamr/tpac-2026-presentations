@@ -59,6 +59,20 @@
     <p>Developers in whatwg/html#2791 repeatedly highlight both the beginner/static-site ergonomics and the caching win of client-side includes. GitHub has used its &lt;include-fragment&gt; custom element in production for over a decade as a client-evaluated &lt;esi:include&gt;.</p>
   </section>
 
+  <section class="slide" id="benefits">
+    <h2>Benefits</h2>
+    <ul>
+      <li>Buildless DRY HTML</li>
+      <li>Split caching</li>
+      <li>Async subsections</li>
+      <li>Composition</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Client-side includes unlock four main benefits: buildless DRY HTML on static hosts without a server or build step; split caching between shared chrome or CDN-cached shells and dynamic user islands; loading async subsections (comments, feeds, recommendations) without delaying the main page; and composing fragments across separate services with native sanitization instead of iframes.</p>
+  </section>
+
   <section class="slide" id="why-rejected">
     <h2>Why It Stalled</h2>
     <ol>
