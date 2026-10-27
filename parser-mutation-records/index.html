@@ -121,59 +121,74 @@
       <text x="183" y="58" text-anchor="middle" font-size="11" fill="currentColor">Sync task: 1. body.append(el) + 2. el.append(child)</text>
       <text x="372" y="58" text-anchor="middle" font-size="13" fill="#2ea043">→</text>
       <rect x="386" y="42" width="286" height="24" rx="4" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="529" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ea043">MO Microtask: sees child + !el.isParsing ✔</text>
+      <text x="529" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ea043">MO Microtask: sees complete subtree ✔</text>
     </svg>
     <ul>
       <li><strong><code>MutationObserver</code> is microtask-batched:</strong> unifies parser completion &amp; dynamic edits</li>
-      <li><strong>Custom elements:</strong> call <code>mo.observe(this, { childList: true, parseEnd: true })</code> in <code>constructor()</code></li>
+      <li><strong>Custom elements:</strong> can observe <code>this</code> in <code>constructor()</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Why MutationObserver avoids the classic connectedCallback() / parsedCallback() trap: if someone writes const el = document.createElement('s-select'); document.body.append(el); el.append(option);, connectedCallback() fires synchronously on body.append(el) before option is attached. By contrast, a MutationObserver started in constructor() (or on the document) runs at the microtask checkpoint—after both synchronous append() calls have completed—and sees el with its children and !el.isParsing, right alongside ongoing childList mutations.</p>
+    <p>Why MutationObserver avoids the classic connectedCallback() / parsedCallback() trap: if someone writes const el = document.createElement('s-select'); document.body.append(el); el.append(option);, connectedCallback() fires synchronously on body.append(el) before option is attached. By contrast, a MutationObserver runs at the microtask checkpoint—after both synchronous append() calls have completed—unifying parser completion and dynamic DOM mutations.</p>
   </section>
 
-  <section class="slide" id="proposal">
-    <h2>Proposal: Reflecting Server-Driven UI</h2>
+  <section class="slide" id="option-a-buffer">
+    <h2>1. Parse-End — Option A: Buffer Until <code>&lt;/el&gt;</code></h2>
     <syntax-highlight language="js">observer.observe(document, {
   childList: true, subtree: true,
-  parseEnd: true, // 1. Hydration
-  template: true  // 2. Flow &amp; error control
-});</syntax-highlight>
+  waitForParseEnd: true // Hold parser insertions until &lt;/el&gt;
+});
+
+for (const r of records)
+  for (const n of r.addedNodes)
+    if (n instanceof Element &amp;&amp; n.matches("s-select"))
+      setup(n); // Full parsed subtree is already in the DOM</syntax-highlight>
     <ul>
-      <li><strong><code>element.isParsing</code> &amp; <code>parseEnd: true</code></strong> — hydration &amp; subtree readiness</li>
-      <li><strong><code>template: true</code></strong> — <code>&lt;template for&gt;</code> flow control, metadata &amp; error recovery</li>
+      <li><strong>Pros:</strong> Existing <code>addedNodes</code> loop works unchanged; no new record types</li>
+      <li><strong>Trade-offs:</strong> Bottom-up order on <code>subtree: true</code> (<code>&lt;s-option&gt;</code> before <code>&lt;s-select&gt;</code>); interleaving with mid-parse JS edits</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Two opt-in flags on MutationObserverInit matching the two concerns of server-driven UI: parseEnd: true (paired with element.isParsing) for component/island hydration, and template: true for patch flow control and error recovery.</p>
+    <p>Option A: instead of introducing a new record shape, tell the MutationObserver to buffer parser-inserted elements until their closing tag is popped from the stack of open elements (and if observing a specific root element, buffer child mutations until that root closes). Pros: standard addedNodes loops work unchanged across single-chunk, multi-chunk, and dynamic appendChild. Trade-offs: on subtree: true, inner elements close and fire before outer ancestors (bottom-up order), and open containers aren't reported to the observer until they close.</p>
   </section>
 
-  <section class="slide" id="parsed-elements">
-    <h2>1. Hydration (<code>parseEnd: true</code>)</h2>
-    <svg class="chart" viewBox="0 0 680 78" aria-label="Two-chunk timeline showing same-chunk vs cross-chunk parseEnd">
-      <rect x="10" y="8" width="315" height="62" rx="6" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="1.5"/>
-      <text x="167" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#58a6ff">Chunk 1: &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;</text>
-      <text x="167" y="52" text-anchor="middle" font-size="12" fill="currentColor">MO #1: s-option (!isParsing), s-select (isParsing)</text>
-
-      <text x="342" y="44" text-anchor="middle" font-size="18" font-weight="bold" fill="#2ea043">→</text>
-
-      <rect x="360" y="8" width="310" height="62" rx="6" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="515" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#2ea043">Chunk 2: &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</text>
-      <text x="515" y="52" text-anchor="middle" font-size="12" fill="currentColor">MO #2: s-option (!isParsing) + s-select parseEnd</text>
-    </svg>
+  <section class="slide" id="option-b-is-parsing">
+    <h2>1. Parse-End — Option B: <code>isParsing</code> + Completion Record</h2>
     <syntax-highlight language="js">for (const r of records) {
   for (const n of r.addedNodes)
-    if (n.isParsing === false) setup(n); // closed in same chunk
-  if (!r.addedNodes.length &amp;&amp; !r.removedNodes.length &amp;&amp;
-      !r.templateStatus &amp;&amp; !r.target.isParsing)
-    setup(r.target);                     // closed in later chunk
+    if (!n.isParsing) setup(n);        // Closed in same chunk
+  if (r.type === "parseEnd")           // (or empty childList on r.target)
+    setup(r.target);                   // Closed in later chunk
 }</syntax-highlight>
+    <ul>
+      <li><strong>Pros:</strong> Preserves top-down start-tag order; zero extra records when closed in same chunk</li>
+      <li><strong>Trade-offs:</strong> Requires two branches in callback (same-chunk vs. cross-chunk)</li>
+    </ul>
   </section>
 
   <section class="comment">
-    <p>Because MutationObserver runs in a microtask after the chunk finishes, same-chunk elements already have isParsing === false when seen in addedNodes. Only elements still open across a chunk boundary emit an empty childList record (target === closedElement, previousSibling === el.lastChild) when their end tag arrives.</p>
+    <p>Option B: keep addedNodes firing on the start tag as today, expose element.isParsing (true while open on the parser stack, false once popped), and emit a completion record only when an element that was still open at the end of an earlier chunk closes in a later chunk. Pros: preserves top-down ordering and lets observers see open containers immediately. Trade-offs: callbacks need two branches to handle same-chunk addedNodes vs. cross-chunk completion.</p>
+  </section>
+
+  <section class="slide" id="option-c-list">
+    <h2>1. Parse-End — Option C: <code>record.parsedElements</code></h2>
+    <syntax-highlight language="js">observer.observe(document, {
+  childList: true, subtree: true, parseEnd: true
+});
+
+for (const r of records)
+  for (const el of r.parsedElements)
+    if (el.matches("s-select")) setup(el);</syntax-highlight>
+    <ul>
+      <li><strong>Pros:</strong> Explicit list of closed elements; doesn't alter <code>addedNodes</code> timing</li>
+      <li><strong>Trade-offs:</strong> Extra list allocation; separate from dynamic <code>addedNodes</code> loop</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Option C: attach a parsedElements NodeList to MutationRecord listing elements whose closing tags were popped during that batch (or pair with a Custom Element parsedCallback()). Pros: explicit and doesn't change addedNodes timing. Trade-offs: allocates an extra list and separates parser completion from the addedNodes loop used for imperative DOM insertions.</p>
   </section>
 
   <section class="slide" id="template-lifecycle">
@@ -183,39 +198,32 @@ const turn   = r.templateAttributes?.get("data-turn");
 // r.templateStatus: "start" | "update" | "end" | "abort"</syntax-highlight>
     <ul>
       <li><strong><code>templateAttributes</code></strong> — <code>ReadOnlyMap</code> of active <code>&lt;template for&gt;</code> attributes (shared identity per patch)</li>
-      <li><strong><code>templateStatus</code></strong> — <code>"start"</code> → <code>"update"</code> → <code>"end"</code> | <code>"abort"</code></li>
+      <li><strong>Streaming vs. buffered:</strong> emit <code>"start" | "update" | "end" | "abort"</code> per chunk, or buffer patch records until <code>&lt;/template&gt;</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Every record produced during a patch carries templateAttributes (a read-only Map shared across all records of that patch so r1.templateAttributes === r2.templateAttributes) and templateStatus ("start", "update", "end", or "abort" if truncated at EOF or missing its target).</p>
-  </section>
-
-  <section class="slide" id="alternatives">
-    <h2>Why Not...</h2>
-    <ul>
-      <li><strong><code>record.parsedElements</code> list:</strong> extra allocation; requires observing parent</li>
-      <li><strong><code>"parseEnd"</code> record type:</strong> 2× records for same-chunk elements</li>
-      <li><strong>DOM events / <code>PatchObserver</code>:</strong> pauses parser or loses mutation order</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>As discussed in #110, synchronous events pause the parser, and a separate observer loses ordering with ordinary DOM mutations. Enriched MutationRecords deliver microtask-batched metadata in lockstep with DOM changes.</p>
+    <p>For &lt;template for&gt; patches, MutationRecord carries templateAttributes (a shared ReadOnlyMap of the template's attributes) and templateStatus ("start", "update", "end", or "abort" on stream truncation / missing target). This also composes with buffering if an observer wants to receive the patch only when &lt;/template&gt; finishes or aborts.</p>
   </section>
 
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
-      <li><code>element.isParsing</code> + <code>{ parseEnd: true, template: true }</code></li>
-      <li>Two flags (<code>parseEnd</code> for hydration, <code>template</code> for flow control) vs. single <code>parser: true</code>?</li>
-      <li>Follow-up: Should <code>template: true</code> also report <code>&lt;template shadowrootmode="open"&gt;</code> (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)?</li>
+      <li><strong>Parse-End shape:</strong>
+        <ul>
+          <li><strong>A:</strong> Buffer <code>addedNodes</code> until <code>&lt;/el&gt;</code></li>
+          <li><strong>B:</strong> <code>element.isParsing</code> + cross-chunk completion record</li>
+          <li><strong>C:</strong> <code>record.parsedElements</code> list</li>
+        </ul>
+      </li>
+      <li><strong><code>&lt;template for&gt;</code> metadata:</strong> <code>templateAttributes</code> + <code>templateStatus</code></li>
+      <li>Also report <code>&lt;template shadowrootmode="open"&gt;</code> (<a href="https://github.com/whatwg/dom/issues/1287"><code>dom#1287</code></a>)?</li>
     </ul>
     <p class="note"><strong>Participate:</strong> <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a> (<a href="https://github.com/WICG/declarative-partial-updates/blob/main/parser-mutation-records-explainer.md"><code>parser-mutation-records-explainer.md</code></a> · <a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</p>
   </section>
 
   <section class="comment">
-    <p>Open discussion on how { parseEnd: true, template: true } and element.isParsing hit the balance between ergonomic server-driven/streaming HTML observation and reminding developers that DOM trees also mutate dynamically after parsing.</p>
+    <p>Open the floor for discussion on the three design options for surfacing parse-end (buffering addedNodes vs. isParsing + completion record vs. parsedElements) and &lt;template for&gt; lifecycle metadata.</p>
   </section>
 
 </body>
