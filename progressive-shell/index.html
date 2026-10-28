@@ -17,7 +17,7 @@
 
   <section class="slide cover clear" id="cover">
     <h1>Progressive Shells</h1>
-    <h4>Instant, seamless navigations — MPA or SPA</h4>
+    <h4>Instant, seamless navigations</h4>
     <address>Noam Rosenthal &amp; Vladimir Levin</address>
     <div class="note">IRC: <a href="https://webirc.w3.org/?channels=seamless-nav"><code>#seamless-nav</code></a></div>
     <p class="event">TPAC 2026<br>
@@ -30,12 +30,12 @@
   </section>
 
   <section class="slide" id="goal">
-    <h2>We Want Navigations to Be:</h2>
+    <h2>Navigations should Be:</h2>
     <ul>
       <li><strong>Instant</strong> — no waiting</li>
       <li><strong>Seamless</strong> — no state resets</li>
     </ul>
-    <h3>We Want This For:</h3>
+    <h3>Which navigations?</h3>
     <ul>
       <li>Same-origin</li>
       <li>Cross-origin</li>
@@ -64,12 +64,25 @@
     <p>Today users pay in one of three ways: MPAs freeze while render-blocked and reset all state on swap; SPAs pay a heavy JS tax and are still slow on cold starts; and full-page prerendering requires a big RAM budget "just in case".</p>
   </section>
 
+  <section class="slide" id="two-phase-intro">
+    <h2>Two-Phase Navigation</h2>
+    <ul>
+      <li><strong>Instantly:</strong> Preview of new page in old doc</li>
+      <li><strong>When Ready:</strong> Swap to new document</li>
+    </ul>
+  </section>
+  
+  <section class="comment">
+    <p>First idea we explored: Two-Phase View Transitions—transitioning immediately to a preview state inside the outgoing
+      page while the destination page loads in the background, then transitioning from that preview to the new document
+      once ready.</p>
+  </section>
+
   <section class="slide" id="two-phase-imperative">
     <h2><code>deferPageSwap</code></h2>
     <syntax-highlight language="js">navigation.addEventListener("navigate", event =&gt; {
   if (!event.destination.ready) {
     event.deferPageSwap({
-      historyChange: "immediate",
       async handler(controller) {
         const vt = document.startViewTransition(() =&gt; showPreview());
         controller.addRestoreCallback(() =&gt; hidePreview());
@@ -105,7 +118,7 @@
   </section>
 
   <section class="slide" id="two-phase-why-not">
-    <h2>Two-Phase VT: Why Not</h2>
+    <h2>Two-Phase: Why Not</h2>
     <svg class="chart" viewBox="0 0 680 95" aria-label="Old Document transitions to Preview then swaps to New Document">
       <rect x="10" y="10" width="350" height="75" rx="8" fill="#58a6ff" fill-opacity="0.1" stroke="#58a6ff" stroke-width="2"/>
       <text x="185" y="29" text-anchor="middle" font-size="12" font-weight="bold" fill="#58a6ff">Old Document</text>
@@ -200,9 +213,9 @@
     <h2>Wait... Didn't We Try This in 2016?</h2>
     <p class="note">Service Worker App Shells &amp; <a href="https://jakearchibald.com/2016/streams-ftw/">stream stitching</a></p>
     <ul>
-      <li>Blind <code>200 OK</code> commit</li>
+      <li>Status & header mismatch</li>
       <li><code>&lt;head&gt;</code> already closed</li>
-      <li>Unenforced shell contract</li>
+      <li>No shell contract</li>
       <li>SW boot</li>
       <li>Dual endpoints</li>
     </ul>
@@ -212,95 +225,122 @@
     <p>Why didn't 2016 Service Worker stream stitching take off? (1) respondWith(new Response(stream)) committed 200 OK and CSP at 0ms before talking to the server—so 302 login redirects, 404s, and CSP changes broke; (2) without out-of-order &lt;template for&gt;, &lt;head&gt; had to close before the body stream started, so page-specific &lt;title&gt; or CSS couldn't go in &lt;head&gt;; (3) v1 cached shells stitched with v2 server fragments; (4) you paid 50-150ms SW wakeup latency and maintained two endpoints per URL; and (5) clicking between items still tore down the Document.</p>
   </section>
 
-  <section class="slide" id="proposal">
+  <section class="slide" id="flow">
     <h2>2026 Edition: Progressive Shells</h2>
-    <syntax-highlight language="html">&lt;head&gt;
-  &lt;meta name="shell"
-    content="store; revision=v1; pattern=/item/:id; upgrade=always"&gt;
-  &lt;?start name="head-meta"&gt;&lt;title&gt;Store&lt;/title&gt;&lt;?end&gt;
-&lt;/head&gt;
+    <ol>
+      <li><strong>Single HTML response:</strong> Shell → boundary → patches
+      </li>
+      <li><strong>First visit:</strong> Streams normally; caches shell prefix for URL pattern</li>
+      <li><strong>Subsequent navigation:</strong> Paints cached shell at <strong>0ms</strong> → verifies <code>200</code>
+        &amp;
+        revision → streams patches</li>
+    </ol>
+    </section>
+    
+    <section class="comment">
+      <p>Before looking at the markup, here is the end-to-end flow: the server sends one normal HTML stream split by
+        &lt;?shellboundary&gt; into a reusable shell prefix and route-specific &lt;template for&gt; patches. On first visit
+        it renders as a normal streaming page and caches the prefix. On cold navigations it paints the cached shell at 0ms
+        and streams the patches after the boundary; on warm navigations it keeps the current Document and applies only the
+        patches after the boundary.</p>
+    </section>
+    <section class="slide" id="proposal">
+      <h2>Progressive Shell Markup</h2>
+      <syntax-highlight language="html">&lt;!-- 1. Reusable shell &amp; slots --&gt;
+        &lt;meta name="shell" content="store; revision=v1; pattern=/item/:id"&gt;
+        &lt;?start name="title"&gt;&lt;title&gt;Store&lt;/title&gt;&lt;?end&gt;
 &lt;body&gt;
-  &lt;header&gt;&lt;input type="search"&gt;&lt;/header&gt;
-  &lt;main&gt;&lt;?start name="item"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
-  &lt;?shellboundary name="store"&gt; &lt;!-- ✂️ Shell ↑ | Patches ↓ --&gt;
-  &lt;template for="head-meta"&gt;&lt;title&gt;Shoes&lt;/title&gt;&lt;/template&gt;
-  &lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;
-&lt;/body&gt;</syntax-highlight>
+&lt;header&gt;&lt;input type="search"&gt;&lt;/header&gt;
+&lt;main&gt;&lt;?start name="item"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
+&lt;!-- 2. Markup up to here is cached by URLPattern --&gt;
+&lt;?shellboundary name="store"&gt;
+
+&lt;!-- 3. Route patches (streamed into slots above) --&gt;
+&lt;template for="title"&gt;&lt;title&gt;Shoes&lt;/title&gt;&lt;/template&gt;
+&lt;template for="item"&gt;&lt;h1&gt;Shoes&lt;/h1&gt;&lt;/template&gt;</syntax-highlight>
   </section>
 
   <section class="comment">
     <p>One standard HTML file works everywhere: on first visit it streams normally and caches the shell prefix up to &lt;?shellboundary&gt; (which must be a direct child of &lt;body&gt; or &lt;head&gt;). Out-of-order &lt;template for&gt; patches &lt;head&gt; and &lt;main&gt;, and the browser natively checks revision and status before splicing.</p>
   </section>
 
-  <section class="slide" id="two-modes">
-    <h2>One HTML File, Two Ways to Navigate</h2>
-    <div class="columns">
-      <div>
-        <h3>1. Instant Shell</h3>
-        <svg class="chart" viewBox="0 0 310 60" aria-label="0ms Cached Shell plus 300ms Streamed Patches">
-          <rect x="4" y="10" width="135" height="40" rx="5" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
-          <text x="71" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Cached Shell</text>
-          <text x="155" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="#2ea043">+</text>
-          <rect x="171" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
-          <text x="238" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Stream Patches</text>
-        </svg>
-      </div>
-      <div>
-        <h3>2. Navigation Upgrade</h3>
-        <svg class="chart" viewBox="0 0 310 60" aria-label="Keep Live Document and apply patches after boundary">
-          <rect x="4" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.15" stroke="#2ea043" stroke-width="1.5"/>
-          <text x="71" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Keep Live Doc</text>
-          <text x="155" y="35" text-anchor="middle" font-size="16" font-weight="bold" fill="#2ea043">→</text>
-          <rect x="171" y="10" width="135" height="40" rx="5" fill="#2ea043" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
-          <text x="238" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Patch in Place</text>
-        </svg>
-      </div>
-    </div>
-  </section>
-
-  <section class="comment">
-    <p>1. Instant Shell (cold start): Paint cached shell at 0ms, then stream patches into the same Document. 2. Navigation Upgrade (warm navigation): Keep current Document live, skip the shell prefix, and patch in place.</p>
-  </section>
-
   <section class="slide" id="cold-start-verification">
-    <h2>Cold-Start Contract Verification</h2>
-    <svg class="chart" viewBox="0 0 680 105" aria-label="Cold start verification branching timeline">
-      <rect x="8" y="30" width="165" height="44" rx="6" fill="#0550ae" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
-      <text x="90" y="49" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">0ms: Paint Shell</text>
-      <text x="90" y="65" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">Per-pattern cache</text>
-
-      <text x="190" y="57" text-anchor="middle" font-size="16" fill="currentColor">→</text>
-
-      <rect x="208" y="30" width="145" height="44" rx="6" fill="#6639ba" fill-opacity="0.18" stroke="#a371f7" stroke-width="1.5"/>
-      <text x="280" y="49" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Response &lt;head&gt;</text>
-      <text x="280" y="65" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.85">or header / 103 Early
-        Hints</text>
-
-      <text x="372" y="34" text-anchor="middle" font-size="14" fill="#2ea043">↗</text>
-      <text x="372" y="80" text-anchor="middle" font-size="14" fill="#f85149">↘</text>
-
-      <rect x="392" y="6" width="280" height="40" rx="6" fill="#116329" fill-opacity="0.2" stroke="#2ea043" stroke-width="1.5"/>
-      <text x="532" y="23" text-anchor="middle" font-size="11" font-weight="bold" fill="#2ea043">✔ Match (200 + rev)</text>
-      <text x="532" y="38" text-anchor="middle" font-size="10" fill="currentColor">Skip prefix → stream patches</text>
-
-      <rect x="392" y="58" width="280" height="40" rx="6" fill="#f85149" fill-opacity="0.15" stroke="#f85149" stroke-width="1.5"/>
-      <text x="532" y="75" text-anchor="middle" font-size="11" font-weight="bold" fill="#f85149">✘ Mismatch or non-OK</text>
-      <text x="532" y="90" text-anchor="middle" font-size="10" fill="currentColor">Fall back to clean MPA swap</text>
-    </svg>
+    <h2>Shell Contract Verification</h2>
     <ul>
-      <li><strong><code>Sec-Active-Shell</code> header:</strong> Dynamic servers can omit the shell prefix</li>
-      <li><strong>Path-prefix scoped:</strong> <code>&lt;meta name="shell"&gt;</code> is scoped to its directory (like SW <code>scope</code>)</li>
+      <li>Matching revision</li>
+      <li>OK status only</li>
+      <li>Optional early verification in headers / early hints</li>
+      <li>Some headers have to match</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>At 0ms, the cached shell paints under its cached CSP. When response headers and &lt;meta name="shell"&gt; arrive: if status is 200 and revision + CSP match, skip the prefix and stream &lt;template for&gt; patches. On 302, 404, or revision/CSP mismatch, fall back to a normal MPA load. Servers can verify even earlier with 103 Early Hints or a lightweight HEAD check.</p>
+    <p>At 0ms, the cached shell paints under its cached CSP. When response headers and &lt;meta name="shell"&gt; arrive: if
+      status is 200 and revision + CSP match, skip the prefix and stream &lt;template for&gt; patches. On 302, 404, or
+      revision/CSP mismatch, fall back to a normal MPA load. Servers can verify even earlier with 103 Early Hints or a
+      lightweight HEAD check.</p>
+  </section>
+
+  <section class="slide" id="declarative-spa">
+    <h2>Maybe We Can Use This for Declarative SPAs?</h2>
+    <ul>
+      <li>What if we navigate between two URLs that share the same shell?</li>
+      <li>No need to swap documents or re-create the shell</li>
+      <li>Keep the live <code>Document</code> and apply only the patches!</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Once a page is already split into a reusable shell prefix and route-specific &lt;template for&gt; patches, what
+      happens when the user clicks from /item/1 to /item/2 while that shell is already live? We don't need to swap
+      documents at all—we can use the exact same HTML file for a declarative SPA navigation!</p>
+  </section>
+
+  <section class="slide" id="navigation-upgrade">
+    <h2>Navigation Upgrade</h2>
+    <syntax-highlight language="html">&lt;meta name="shell"
+      content="store; revision=v1; pattern=/item/:id; upgrade=always"&gt;</syntax-highlight>
+    <ul>
+      <li>Declarative MPA->SPA when current &amp; target shell match</li>
+      <li>Keeps live doc, skips to <code>&lt;?shellboundary&gt;</code>, streams patches in place</li>
+      <li>Updates URL &amp; history; falls back to MPA on mismatch</li>
+      <li>May need multiple shells in single doc</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Adding upgrade=always opts into Navigation Upgrade: when navigating between two URLs with the same active shell,
+      the browser intercepts the navigation into a same-document navigation (like a declarative
+      navigateEvent.intercept()), skips the response prefix up to &lt;?shellboundary&gt;, and streams the &lt;template
+      for&gt; patches into the live Document.</p>
+  </section>
+
+  <section class="slide" id="alternatives">
+    <h2>Alternatives</h2>
+    <ul>
+      <li><strong>Full-DOM merge / <code>preserve</code></strong>: complex, weaker caching story</li>
+      <li><strong>Parse only <code>&lt;template for&gt;</code> in continuation</strong>: same</li>
+      <li><strong>Content negotiation</strong>: See "why no conneg"</li>
+    </ul>
+  </section>
+  
+  <section class="comment">
+    <p>How does this compare to nearby alternatives? (1) DOM merging / preserve attributes keep islands alive across
+      navigations, but don't give you a 0ms cached shell on cold starts and still require parsing and reconciling the
+      entire outer document; (2) simply parsing only &lt;template for&gt; tags from the stream without
+      &lt;?shellboundary&gt; doesn't tell the browser what prefix to cache as the shell on first visit (or distinguish
+      shell-level templates from route patches); and (3) relying on HTTP content negotiation to return only the shell or
+      only the continuation from the same URL breaks static hosting, creates Vary/CDN cache-poisoning bugs (e.g. serving
+      raw patches on hard reload), and forces servers to maintain two endpoints—whereas in-band &lt;?shellboundary&gt;
+      works from a single cacheable HTML file (with Sec-Active-Shell as an optional byte-saving hint).</p>
   </section>
 
   <section class="slide final" id="discussion">
     <h2>Discussion</h2>
     <ul>
+      <li>Resume / preserve / stitch</li>
       <li>Scope / security / CSP</li>
+      <li>Contract details</li>
       <li>Back / forward</li>
       <li>Metrics</li>
     </ul>
