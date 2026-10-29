@@ -30,7 +30,8 @@
   </section>
 
   <section class="slide" id="parse-end-problem">
-    <h2>1. Hydration (<code>parseEnd</code>): The Problem (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
+    <h2>1. Hydration (<a href="https://github.com/whatwg/dom/issues/662"><code>dom#662</code></a>, <a
+        href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Chunk 1 --&gt; &lt;s-select&gt;&lt;s-option&gt;A&lt;/s-option&gt;
 &lt;!-- Chunk 2 --&gt; &lt;s-option&gt;B&lt;/s-option&gt;&lt;/s-select&gt;</syntax-highlight>
     <ul>
@@ -47,10 +48,12 @@
   <section class="slide" id="parse-end-use-cases">
     <h2>1. Hydration &amp; Subtree Readiness</h2>
     <ul>
-      <li><strong>Compound components</strong> (<a href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>) — <code>&lt;s-select&gt;</code> indexing <code>&lt;s-option&gt;</code>s, tabs, tables, 3D scenes</li>
-      <li><strong>Island hydration</strong> — hydrate SSR component only once its full subtree is in the DOM</li>
-      <li><strong>DOM morphing &amp; swapping</strong> (<a href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>) — don't diff/delete children that haven't streamed in yet</li>
-      <li><strong>Entry animations &amp; View Transitions</strong> (<a href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>) — measure &amp; animate complete subtrees</li>
+      <li><strong>Compound components</strong> (<a
+          href="https://github.com/WICG/webcomponents/issues/809"><code>wc#809</code></a>)</li>
+      <li><strong>DOM morphing &amp; swapping</strong> (<a
+          href="https://github.com/whatwg/dom/issues/1116"><code>dom#1116</code></a>)</li>
+      <li><strong>Imperative entry animations</strong> (<a
+          href="https://github.com/whatwg/html/issues/12200"><code>html#12200</code></a>)</li>
     </ul>
   </section>
 
@@ -59,11 +62,12 @@
   </section>
 
   <section class="slide" id="parse-end-workarounds">
-    <h2>Parse End: Workarounds Today</h2>
+    <h2>Workarounds Today</h2>
     <ul>
-      <li><strong>Wait for <code>DOMContentLoaded</code></strong> — kills streaming UX</li>
-      <li><strong><code>setTimeout</code> / <code>rAF</code></strong> — races with slow network chunks</li>
-      <li><strong><code>nextSibling</code> ancestor walks</strong> — <strong>100ms+</strong> main-thread cost</li>
+      <li><strong>Wait for <code>DOMContentLoaded</code></strong></li>
+      <li><strong>Polling <code>setTimeout</code> / <code>rAF</code></strong></li>
+      <li><strong><code>nextSibling</code> ancestor walks</strong></li>
+      <li>Sentinel comments</li>
     </ul>
   </section>
 
@@ -72,7 +76,8 @@
   </section>
 
   <section class="slide" id="patching-problem">
-    <h2>2. Flow &amp; Error Control (<code>template</code>): The Problem (<a href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</h2>
+    <h2>2. Flow &amp; Error Control (<a
+        href="https://github.com/WICG/declarative-partial-updates/issues/110"><code>#110</code></a>)</h2>
     <syntax-highlight language="html">&lt;!-- Target: &lt;main&gt;&lt;?start name="results"&gt;...&lt;?end&gt;&lt;/main&gt; --&gt;
 &lt;template for="results" data-turn="3"&gt;
   &lt;p&gt;Streamed response...&lt;/p&gt;
