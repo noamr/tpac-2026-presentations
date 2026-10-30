@@ -278,26 +278,6 @@
       shadowrootmode="open"&gt;.</p>
   </section>
 
-  <section class="slide" id="summary">
-    <h2>Putting It All Together</h2>
-    <syntax-highlight language="html">&lt;template
-  &lt;!-- fetch external HTML fragment (CORS) --&gt;
-  src="/widget.html"
-  &lt;!-- stage in template &amp; swap. Some subresources block --&gt;
-  buffer
-  &lt;!-- src sanitized by default; "unsafe" opts out --&gt;
-  sanitize="unsafe"
-  &lt;!-- in-place --&gt;
-  for
-&gt;
-  &lt;!-- inline HTML can also be buffered --&gt;
-&lt;/template&gt;</syntax-highlight>
-  </section>
-
-  <section class="comment">
-    <p>Summary of all the new &lt;template&gt; attributes in one place: for (named slot or empty for in-place), src (external CORS fetch), buffer (atomic swap after stylesheets/preloads/nested includes), and sanitize (safe by default with Sanitizer API; sanitize="unsafe" opts out).</p>
-  </section>
-
   <section class="slide" id="mutation-observer">
     <h2>Observing Patches &amp; Errors (<code>MutationObserver</code>)</h2>
     <syntax-highlight language="js">observer.observe(main, {
@@ -326,7 +306,7 @@ const src = r.activeTemplateAttributes?.get("src");
   <section class="slide" id="details">
     <h2>Additional Details</h2>
     <ul>
-      <li><code>&lt;template src&gt;</code> always uses CORS</li>
+      <li><code>&lt;template src&gt;</code> always uses CORS and <code>text/html</code></li>
       <li>CSP adds <code>fragment-src</code>, falls back to <code>script-src</code></li>
       <li>Relative URLs resolve against the document</li>
     </ul>
@@ -347,6 +327,26 @@ const src = r.activeTemplateAttributes?.get("src");
 
   <section class="comment">
     <p>A new &lt;fragment&gt; element is rejected because &lt;template&gt; already has the self-consuming "disappear from the DOM" behavior and is valid everywhere in the HTML parser without foster-parenting.</p>
+  </section>
+
+  <section class="slide" id="summary">
+    <h2>Putting It All Together</h2>
+    <syntax-highlight language="html">&lt;template
+  &lt;!-- fetch external HTML fragment (CORS) --&gt;
+  src="/widget.html"
+  &lt;!-- stage in template &amp; swap. Some subresources block --&gt;
+  buffer
+  &lt;!-- src sanitized by default; "unsafe" opts out --&gt;
+  sanitize="unsafe"
+  &lt;!-- in-place --&gt;
+  for
+&gt;
+  &lt;!-- inline HTML can also be buffered --&gt;
+&lt;/template&gt;</syntax-highlight>
+  </section>
+
+  <section class="comment">
+    <p>Summary of all the new &lt;template&gt; attributes in one place: for (named slot or empty for in-place), src (external CORS fetch), buffer (atomic swap after stylesheets/preloads/nested includes), and sanitize (safe by default with Sanitizer API; sanitize="unsafe" opts out).</p>
   </section>
 
   <section class="slide" id="discussion">
