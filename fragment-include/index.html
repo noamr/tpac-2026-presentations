@@ -168,7 +168,7 @@
   </section>
 
   <section class="slide" id="buffer">
-    <h2>2b. Buffered Includes (<code>buffer</code>)</h2>
+    <h2>2b. To stream or not to stream</h2>
     <svg class="chart" viewBox="0 0 680 68" aria-label="Streaming default vs Buffered atomic swap">
       <text x="8" y="24" font-size="12" font-weight="bold" fill="currentColor">Default:</text>
       <rect x="95" y="10" width="260" height="20" rx="4" fill="#58a6ff" fill-opacity="0.2" stroke="#58a6ff" stroke-width="1.5"/>
@@ -185,26 +185,37 @@
 
 &lt;!-- Buffered: atomic swap on EOF --&gt;
 &lt;template for="feed" src="feed.html" buffer&gt;&lt;/template&gt;</syntax-highlight>
+  </section>
+  
+  <section class="comment">
+    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the
+      response into the template and swaps the placeholder atomically when ready.</p>
+  </section>
+  
+  <section class="slide" id="buffer-mechanics">
+    <h2>How <code>buffer</code> Works in Practice</h2>
     <ul>
-      <li>Parses into the template; swaps at end</li>
+      <li><code>&lt;template&gt;</code> stays in the DOM while receiving content</li>
+      <li>Incoming chunks stream into the <code>&lt;template&gt;</code></li>
+      <li>When done: moves <code>&lt;template&gt;</code> contents to the destination and removes the
+        <code>&lt;template&gt;</code></li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>Second mitigation (part 2): for async fragments that shouldn't block initial page render, adding buffer parses the response into the template and swaps the placeholder atomically when ready.</p>
+    <p>In practice, a buffered &lt;template&gt; isn't consumed immediately on its start tag: it stays in the DOM while
+      chunks stream into its inert template contents, and once complete, its contents are moved into the target destination
+      and the &lt;template&gt; element is removed.</p>
   </section>
 
   <section class="slide" id="buffer-inline">
-    <h2><code>buffer</code> on the Main Stream</h2>
+    <h2><code>buffer</code> on inline HTML</h2>
     <syntax-highlight language="html">&lt;main&gt;&lt;?start name="comments"&gt;Loading...&lt;?end&gt;&lt;/main&gt;
 
 &lt;template for="comments" buffer&gt;
   &lt;article class="comment"&gt;...&lt;/article&gt;
   &lt;article class="comment"&gt;...&lt;/article&gt;
 &lt;/template&gt;</syntax-highlight>
-    <ul>
-      <li>Works on inline patches too</li>
-    </ul>
   </section>
 
   <section class="comment">
@@ -230,15 +241,16 @@
   </section>
 
   <section class="slide" id="security">
-    <h2>3. Safe by Default (<code>sanitize</code>)</h2>
+    <h2>3. Safe by Default</h2>
     <syntax-highlight language="html">&lt;!-- Safe by default: sanitized with Sanitizer API --&gt;
 &lt;template for="promo" src="https://ads.example/banner.html"&gt;&lt;/template&gt;
 
 &lt;!-- Opt-out for trusted code --&gt;
 &lt;template for="app" src="/trusted-app.html" sanitize="unsafe"&gt;&lt;/template&gt;</syntax-highlight>
     <ul>
-      <li><code>src</code> is sanitized by default</li>
-      <li><code>sanitize="unsafe"</code> opts out for trusted fragments</li>
+      <li><code>src</code> is sanitized by default (<code>removeUnsafe</code>)</li>
+      <li><code>sanitize="unsafe"</code> opts out</li>
+      <li>Can be extended to named sanitizer presets</li>
     </ul>
   </section>
 
@@ -246,45 +258,77 @@
     <p>Third mitigation: external includes (&lt;template for src&gt;) are sanitized by default using the browser's built-in Sanitizer API, which strips scripts, inline event handlers, and nested &lt;template for&gt; (preventing slot-hijacking or recursive includes).</p>
   </section>
 
-  <section class="slide" id="sanitize-inline">
-    <h2><code>sanitize</code> on the Main Stream</h2>
-    <syntax-highlight language="html">&lt;template for="comments" sanitize&gt;
-  &lt;article&gt;Hello! &lt;script&gt; evil() &lt;/script&gt;&lt;/article&gt;
-&lt;/template&gt;</syntax-highlight>
-    <ul>
-      <li>Opt-in sanitization for inline SSR markup</li>
-      <li>Standard sanitizer instead of downstream libs on the server</li>
-    </ul>
-  </section>
-
-  <section class="comment">
-    <p>Just like buffer, sanitize works without src too. While inline &lt;template for&gt; is unsanitized by default because it's part of the main document stream, adding sanitize lets server-rendered pages declaratively sanitize untrusted regions directly in the HTML parser.</p>
-  </section>
-
   <section class="slide" id="empty-for">
     <h2>In-Place Shorthand: Empty <code>for</code></h2>
-    <syntax-highlight language="html">&lt;!-- Replaces &lt;template&gt; in place (no &lt;?start&gt;/&lt;?end&gt; needed) --&gt;
-&lt;template for src="header.html"&gt;&lt;/template&gt;
-
-&lt;template for buffer&gt;...&lt;/template&gt;
-&lt;template for sanitize&gt;...&lt;/template&gt;</syntax-highlight>
+    <syntax-highlight language="html">&lt;!-- Replaces &lt;template&gt; in place (no &lt;?start&gt;/&lt;?end&gt; needed)
+      --&gt;
+      &lt;template for src="header.html"&gt;&lt;/template&gt;
+  
+      &lt;template for buffer&gt;...&lt;/template&gt;</syntax-highlight>
     <ul>
       <li><strong>Empty <code>for</code>:</strong> Patch "in place" of the template</li>
-      <li>Allows <code>src</code>, <code>buffer</code>, and <code>sanitize</code> without PIs</li>
+      <li>Allows <code>src</code> and <code>buffer</code> without PIs</li>
     </ul>
   </section>
 
   <section class="comment">
-    <p>When you don't need out-of-order targeting, an empty for attribute (&lt;template for src="header.html"&gt;, &lt;template for buffer&gt;, &lt;template for sanitize&gt;) acts in place—replacing the &lt;template&gt; element itself without needing &lt;?start&gt;/&lt;?end&gt; markers, and composing cleanly inside &lt;template shadowrootmode="open"&gt;.</p>
+    <p>When you don't need out-of-order targeting, an empty for attribute (&lt;template for src="header.html"&gt;,
+      &lt;template for buffer&gt;, &lt;template for sanitize&gt;) acts in place—replacing the &lt;template&gt; element
+      itself without needing &lt;?start&gt;/&lt;?end&gt; markers, and composing cleanly inside &lt;template
+      shadowrootmode="open"&gt;.</p>
+  </section>
+
+  <section class="slide" id="summary">
+    <h2>Putting It All Together</h2>
+    <syntax-highlight language="html">&lt;template
+  &lt;!-- fetch external HTML fragment (CORS) --&gt;
+  src="/widget.html"
+  &lt;!-- stage in template &amp; swap. Some subresources block --&gt;
+  buffer
+  &lt;!-- src sanitized by default; "unsafe" opts out --&gt;
+  sanitize="unsafe"
+  &lt;!-- in-place --&gt;
+  for
+&gt;
+  &lt;!-- inline HTML can also be buffered --&gt;
+&lt;/template&gt;</syntax-highlight>
+  </section>
+
+  <section class="comment">
+    <p>Summary of all the new &lt;template&gt; attributes in one place: for (named slot or empty for in-place), src (external CORS fetch), buffer (atomic swap after stylesheets/preloads/nested includes), and sanitize (safe by default with Sanitizer API; sanitize="unsafe" opts out).</p>
+  </section>
+
+  <section class="slide" id="mutation-observer">
+    <h2>Observing Patches &amp; Errors (<code>MutationObserver</code>)</h2>
+    <syntax-highlight language="js">observer.observe(main, {
+      childList: true, subtree: true,
+      activeTemplateAttributeFilter: ["for", "src", "data-turn"]
+      });
+
+for (const r of records) {
+const src = r.activeTemplateAttributes?.get("src");
+// r.activeTemplateStatus: "start" | "update" | "end" | "abort"
+}</syntax-highlight>
+    <ul>
+      <li><strong><code>activeTemplateAttributes</code>:</strong> filtered <code>&lt;template&gt;</code> attributes</li>
+      <li><strong><code>activeTemplateStatus</code>:</strong> <code>"start" | "update" | "end" | "abort"</code> (e.g. fetch
+        error / truncated stream)</li>
+    </ul>
+  </section>
+
+  <section class="comment">
+    <p>Because &lt;template for&gt; is consumed by the parser and never enters the DOM, how does JS observe patch metadata
+      or recover from a failed src fetch / truncated stream? Opting into activeTemplateAttributeFilter in
+      MutationObserver.observe() populates record.activeTemplateAttributes and record.activeTemplateStatus ("start",
+      "update", "end", "abort").</p>
   </section>
 
   <section class="slide" id="details">
     <h2>Additional Details</h2>
     <ul>
       <li><code>&lt;template src&gt;</code> always uses CORS</li>
-      <li>(Maybe) a new <code>fragment-src</code> directive when sanitized; <code>script-src</code> when unsafe</li>
+      <li>CSP adds <code>fragment-src</code>, falls back to <code>script-src</code></li>
       <li>Relative URLs resolve against the document</li>
-      <li>Fun use case: include SVGs as inline SVGs</li>
     </ul>
   </section>
 
@@ -309,8 +353,8 @@
     <h2>Discussion</h2>
     <ul>
       <li><code>&lt;template&gt;</code> vs. a new element</li>
-      <li>Empty <code>for</code> shorthand (<code>&lt;template for src&gt;</code>)</li>
       <li>What should <code>buffer</code> wait for?</li>
+      <li>Empty <code>for</code> shorthand (<code>&lt;template for src&gt;</code>)</li>
       <li>Error handling &amp; fallbacks (<code>404</code> / <code>500</code>)</li>
     </ul>
     <p class="note"><strong>Try it:</strong> Chrome Canary flag · <a href="https://github.com/WICG/declarative-partial-updates"><code>WICG/declarative-partial-updates</code></a></p>
@@ -318,15 +362,6 @@
 
   <section class="comment">
     <p>Open the floor for feedback on &lt;template src&gt;, buffer, sanitize, and rel="expect" integration.</p>
-  </section>
-
-  <section class="slide final" id="dpu-ecosystem">
-    <h2>Also in Declarative Partial Updates (DPU)</h2>
-    <ul>
-      <li><strong><code>&lt;?shellboundary&gt;</code>:</strong> Progressive shells <em>(📅 Wednesday 9:00 Breakout)</em></li>
-      <li><strong><code>preserve</code>:</strong> Keep islands (<code>&lt;video&gt;</code>, <code>&lt;iframe&gt;</code>, state) alive across patches</li>
-      <li><strong>Parser-aware <code>MutationObserver</code></strong> <em>(📅 WHATWG Session)</em></li>
-    </ul>
   </section>
 
   <section class="comment">
